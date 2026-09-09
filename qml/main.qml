@@ -41,6 +41,7 @@ ContainmentItem {
     property bool notificationCopyActive: false
     property bool notificationSequenceActive: false
     property bool notificationReviewComplete: false
+    property var minimizedPriorityNotifications: ({})
     readonly property int compactWidth: Math.max(320,
         Math.min(600, Number(Plasmoid.configuration.compactWidth) || 400))
     readonly property bool adaptiveWidth: Plasmoid.configuration.adaptiveWidth !== false
@@ -74,6 +75,40 @@ ContainmentItem {
     ]
     readonly property bool hasAttention: notificationsEnabled
         && (railNotifications.count > 0 || demoNotificationVisible)
+
+    function priorityNotificationKey(model, modelIndex) {
+        const notificationId = model.data(modelIndex,
+            NotificationManager.Notifications.IdRole);
+        const created = model.data(modelIndex,
+            NotificationManager.Notifications.CreatedRole);
+        return String(notificationId) + "|" + String(created);
+    }
+
+    function isPriorityNotificationMinimized(model, modelIndex) {
+        return Boolean(minimizedPriorityNotifications[
+            priorityNotificationKey(model, modelIndex)]);
+    }
+
+    function isPriorityNotificationCandidate(model, modelIndex) {
+        const urgency = model.data(modelIndex,
+            NotificationManager.Notifications.UrgencyRole);
+        const hasDefaultAction = model.data(modelIndex,
+            NotificationManager.Notifications.HasDefaultActionRole);
+        const actions = model.data(modelIndex,
+            NotificationManager.Notifications.ActionNamesRole);
+        return urgency === NotificationManager.Notifications.CriticalUrgency
+            || hasDefaultAction
+            || (actions && actions.length > 0)
+            || isFreshLogoutCancellation(model, modelIndex);
+    }
+
+    function minimizePriorityNotification(modelIndex) {
+        const minimized = Object.assign({}, minimizedPriorityNotifications);
+        minimized[priorityNotificationKey(notificationHistory, modelIndex)] = true;
+        minimizedPriorityNotifications = minimized;
+        priorityNotifications.invalidateFilter();
+        railNotifications.invalidateFilter();
+    }
 
     component RailTicker: Item {
         id: ticker
@@ -681,21 +716,12 @@ ContainmentItem {
             if (!root.notificationsEnabled || !Plasmoid.configuration.showPriorityBanners)
                 return false;
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
-            const urgency = sourceModel.data(idx, NotificationManager.Notifications.UrgencyRole);
             const expired = Boolean(sourceModel.data(idx,
                 NotificationManager.Notifications.ExpiredRole));
-            const hasDefaultAction = sourceModel.data(idx,
-                NotificationManager.Notifications.HasDefaultActionRole);
-            const actions = sourceModel.data(idx, NotificationManager.Notifications.ActionNamesRole);
-            // Session managers report an application refusing to close through
-            // a logout-canceled event.
-            const isCanceledLogout = root.isFreshLogoutCancellation(sourceModel, idx);
             const isFresh = root.isFreshNotification(sourceModel, idx);
             return !expired && isFresh
-                && (urgency === NotificationManager.Notifications.CriticalUrgency
-                || hasDefaultAction
-                || (actions && actions.length > 0)
-                || isCanceledLogout);
+                && root.isPriorityNotificationCandidate(sourceModel, idx)
+                && !root.isPriorityNotificationMinimized(sourceModel, idx);
         }
         Component.onCompleted: sourceModel = notificationHistory
     }
@@ -705,8 +731,13 @@ ContainmentItem {
         filterRoleName: "read"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
-            return !sourceModel.data(idx, filterRole)
+            const unread = !sourceModel.data(idx, filterRole)
                 || root.isFreshLogoutCancellation(sourceModel, idx);
+            const reservedForBanner = root.notificationsEnabled
+                && Plasmoid.configuration.showPriorityBanners
+                && root.isPriorityNotificationCandidate(sourceModel, idx)
+                && !root.isPriorityNotificationMinimized(sourceModel, idx);
+            return unread && !reservedForBanner;
         }
         Component.onCompleted: sourceModel = notificationHistory
     }
@@ -1461,6 +1492,16 @@ ContainmentItem {
                         }
 
                         PlasmaComponents.ToolButton {
+                            icon.name: "window-minimize-symbolic"
+                            display: PlasmaComponents.AbstractButton.IconOnly
+                            text: i18n("Keep for review")
+                            onClicked: root.minimizePriorityNotification(
+                                priorityNotifications.mapToSource(
+                                    priorityNotifications.index(criticalCard.index, 0)))
+                            PlasmaComponents.ToolTip { text: parent.text }
+                        }
+
+                        PlasmaComponents.ToolButton {
                             icon.name: "window-close-symbolic"
                             display: PlasmaComponents.AbstractButton.IconOnly
                             text: i18n("Dismiss")
@@ -1478,6 +1519,7 @@ ContainmentItem {
                             if (criticalCard.hasDefaultAction) {
                                 notificationHistory.invokeDefaultAction(modelIndex);
                             } else {
+                                root.minimizePriorityNotification(modelIndex);
                                 root.openSurface("notifications");
                             }
                         }

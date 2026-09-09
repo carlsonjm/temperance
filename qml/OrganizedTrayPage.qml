@@ -21,14 +21,14 @@ Item {
 
     readonly property var sections: [
         {
-            categories: ["Hardware", "Communications"],
-            title: i18n("Devices"),
-            icon: "computer-symbolic"
-        },
-        {
             categories: ["ApplicationStatus"],
             title: i18n("Apps"),
             icon: "applications-other-symbolic"
+        },
+        {
+            categories: ["Hardware", "Communications"],
+            title: i18n("Devices"),
+            icon: "computer-symbolic"
         },
         {
             categories: ["SystemServices", "UnknownCategory"],
@@ -47,7 +47,9 @@ Item {
             x: 16
             y: Math.max(12, scrollView.availableHeight - implicitHeight - 24)
             width: scrollView.availableWidth - 32
-            spacing: 0
+            // Layouts ignore invisible children, so this creates hierarchy
+            // only between populated sections and fully collapses empty ones.
+            spacing: 24
 
             Repeater {
                 model: page.sections
@@ -57,7 +59,6 @@ Item {
                     required property int index
                     required property var modelData
                     Layout.fillWidth: true
-                    Layout.bottomMargin: section.index < page.sections.length - 1 ? 24 : 0
                     visible: categoryModel.count > 0
                     spacing: 12
 

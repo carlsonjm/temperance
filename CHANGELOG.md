@@ -2,6 +2,14 @@
 
 All notable changes to Temperance are documented here.
 
+## Unreleased
+
+- Matched Control Center's bottom pill clearance to the System Tray.
+- Reordered System Tray sections as Apps, Devices, and System, with empty
+  sections removed from the spacing hierarchy.
+- Separated priority-banner minimize and dismiss behavior so important alerts
+  do not duplicate in the ticker and can be retained for review.
+
 ## 1.1.0 — 2026-09-08
 
 - Rebranded the widget and package as Temperance.

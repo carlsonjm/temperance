@@ -24,7 +24,8 @@ Item {
         ? "#102729" : "#FFFFFF"
 
     implicitWidth: Kirigami.Units.gridUnit * 24
-    implicitHeight: contentLayout.implicitHeight + 24
+    // Match the Tray page's 12 px upper rhythm and 24 px pill-to-edge floor.
+    implicitHeight: contentLayout.implicitHeight + 36
 
     property string displayName: ""
     property int displayBrightness: 0
