@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/studio.warbler.temperance.png" width="180" alt="Temperance widget icon">
+</p>
+
 # Temperance
 
 Temperance is a Plasma 6 panel widget that combines a quiet notification rail,
