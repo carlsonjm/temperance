@@ -9,8 +9,6 @@ a compact Control Center, and an organized System Tray. It replaces only the
 stock System Tray; the launcher, task manager, and clock remain independent
 panel widgets.
 
-A Warbler Studio project. Under the leaves.
-
 ## Highlights
 
 - Animated notification intake, compact paging, and app-grouped history

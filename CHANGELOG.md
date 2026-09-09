@@ -4,7 +4,7 @@ All notable changes to Temperance are documented here.
 
 ## 1.1.0 — 2026-09-08
 
-- Rebranded the widget and package as Temperance by Warbler Studio.
+- Rebranded the widget and package as Temperance.
 - Replaced product-specific identifiers, copy, defaults, and demo content.
 - Made Control Center ordering follow the user's configured pill order.
 - Separated neighbor-aware responsive sizing from the manual fixed-width mode.
