@@ -71,6 +71,7 @@ public:
      * edge and the nearest non-spacer panel widget on its left.
      */
     Q_INVOKABLE int availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const;
+    Q_INVOKABLE int availablePopupHeight(QQuickItem *visualParent) const;
 
     /**
      * @brief isSystemTrayApplet checks if applet is allowed in the System Tray

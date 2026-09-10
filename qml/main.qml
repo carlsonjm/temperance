@@ -36,6 +36,17 @@ ContainmentItem {
     property bool demoNotificationVisible: false
     property int demoNotificationIndex: 0
     property int lastLiveNotificationCount: 0
+    property real notificationPopupHeightLimit: 600
+    property var presentedNotificationKeys: ({})
+
+    function nextUnpresentedNotification() {
+        for (let row = 0; row < railNotifications.count; ++row) {
+            const idx = railNotifications.index(row, 0);
+            if (!presentedNotificationKeys[priorityNotificationKey(railNotifications, idx)])
+                return row;
+        }
+        return -1;
+    }
     property int pendingNotificationCount: 0
     property int notificationAutoBatchSize: 0
     property bool notificationCopyActive: false
@@ -92,13 +103,8 @@ ContainmentItem {
     function isPriorityNotificationCandidate(model, modelIndex) {
         const urgency = model.data(modelIndex,
             NotificationManager.Notifications.UrgencyRole);
-        const hasDefaultAction = model.data(modelIndex,
-            NotificationManager.Notifications.HasDefaultActionRole);
-        const actions = model.data(modelIndex,
-            NotificationManager.Notifications.ActionNamesRole);
+        // An action makes a message interactive, not urgent.
         return urgency === NotificationManager.Notifications.CriticalUrgency
-            || hasDefaultAction
-            || (actions && actions.length > 0)
             || isFreshLogoutCancellation(model, modelIndex);
     }
 
@@ -138,6 +144,7 @@ ContainmentItem {
             x: 0
             anchors.verticalCenter: parent.verticalCenter
             text: ticker.text
+            textFormat: Text.PlainText
             maximumLineCount: 1
             Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
         }
@@ -158,7 +165,7 @@ ContainmentItem {
 
         Timer {
             id: scrollDelay
-            interval: 1400
+            interval: 1800
             repeat: false
             onTriggered: {
                 if (ticker.scrollingEnabled && ticker.overflow > 2) tickerScroll.restart();
@@ -179,8 +186,8 @@ ContainmentItem {
                 property: "x"
                 from: ticker.restingX
                 to: -ticker.overflow
-                duration: Math.max(1450, ticker.overflow * 25)
-                easing.type: Easing.InOutSine
+                duration: Math.max(1450, ticker.overflow * 20)
+                easing.type: Easing.Linear
             }
             PauseAnimation { duration: 1400 }
             NumberAnimation {
@@ -298,6 +305,7 @@ ContainmentItem {
     Layout.maximumHeight: 42
 
     function refreshResponsiveWidth() {
+        notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
         if (!adaptiveWidth) return;
         const measured = Plasmoid.availablePanelWidth(root, responsiveMinimumWidth, 6);
         if (Math.abs(measured - responsiveMeasuredWidth) > 1)
@@ -309,7 +317,7 @@ ContainmentItem {
     Timer {
         interval: 120
         repeat: true
-        running: root.adaptiveWidth && root.visible
+        running: root.visible
         onTriggered: root.refreshResponsiveWidth()
     }
 
@@ -400,7 +408,11 @@ ContainmentItem {
         notificationHide.stop();
         notificationCopyActive = false;
         notificationMessageLayer.opacity = 0;
-        notificationHistory.clear(NotificationManager.Notifications.ClearExpired);
+        // Clear is an explicit dismissal, including active/persistent alerts.
+        // Use the ungrouped model and walk backward as removals shift rows.
+        for (let row = notificationHistory.count - 1; row >= 0; --row) {
+            notificationHistory.close(notificationHistory.index(row, 0));
+        }
     }
 
     function acknowledgeNotifications() {
@@ -613,13 +625,18 @@ ContainmentItem {
         interval: 320
         repeat: false
         onTriggered: {
-            if (railNotifications.count === 0 || root.pendingNotificationCount === 0) return;
+            const row = root.nextUnpresentedNotification();
+            if (row < 0) return;
             root.notificationReviewComplete = false;
-            root.notificationAutoBatchSize = Math.min(root.pendingNotificationCount,
-                railNotifications.count);
             root.pendingNotificationCount = 0;
-            liveNotificationView.currentIndex = 0;
-            liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
+            liveNotificationView.currentIndex = row;
+            liveNotificationView.positionViewAtIndex(row, ListView.Contain);
+            // Claim the identity before animation starts. Model resets or an
+            // interrupted pass must not enqueue the same notification again.
+            const presented = Object.assign({}, root.presentedNotificationKeys);
+            presented[root.priorityNotificationKey(railNotifications,
+                railNotifications.index(row, 0))] = true;
+            root.presentedNotificationKeys = presented;
             root.notificationSequenceActive = true;
             root.playNotificationIntro();
         }
@@ -640,10 +657,8 @@ ContainmentItem {
                 root.pendingNotificationCount = 0;
                 return;
             }
-            if (railNotifications.count > root.lastLiveNotificationCount) {
+            if (railNotifications.count > 0) {
                 root.notificationReviewComplete = false;
-                root.pendingNotificationCount += railNotifications.count
-                    - root.lastLiveNotificationCount;
                 if (!root.notificationSequenceActive) notificationBatchTimer.restart();
             } else if (railNotifications.count === 0 && !root.demoNotificationVisible) {
                 notificationBatchTimer.stop();
@@ -735,9 +750,11 @@ ContainmentItem {
                 || root.isFreshLogoutCancellation(sourceModel, idx);
             const reservedForBanner = root.notificationsEnabled
                 && Plasmoid.configuration.showPriorityBanners
-                && root.isPriorityNotificationCandidate(sourceModel, idx)
+                && root.isPriorityNotificationCandidate(sourceModel, idx);
+            // A minimized banner remains in history, but has already had its
+            // presentation. Do not queue another automatic readout.
+            return unread && !reservedForBanner
                 && !root.isPriorityNotificationMinimized(sourceModel, idx);
-            return unread && !reservedForBanner;
         }
         Component.onCompleted: sourceModel = notificationHistory
     }
@@ -937,9 +954,13 @@ ContainmentItem {
                             && systemTrayState.expanded
                         color: "transparent"
                         clip: true
+                        HoverHandler {
+                            id: sharedControlsHover
+                            onHoveredChanged: notificationControls.syncSharedHover()
+                        }
                         function syncSharedHover() {
                             const pointerInside = reviewNotificationsButton.hovered
-                                || nextNotificationButton.hovered;
+                                || nextNotificationButton.hovered || sharedControlsHover.hovered;
                             if (pointerInside) {
                                 sharedHoverRelease.stop();
                                 revealed = true;
@@ -967,11 +988,11 @@ ContainmentItem {
                         }
                         Timer {
                             id: sharedHoverRelease
-                            interval: 90
+                            interval: 280
                             repeat: false
                             onTriggered: {
                                 const pointerInside = reviewNotificationsButton.hovered
-                                    || nextNotificationButton.hovered;
+                                    || nextNotificationButton.hovered || sharedControlsHover.hovered;
                                 if (!pointerInside) notificationControls.revealed = false;
                             }
                         }
@@ -1028,6 +1049,7 @@ ContainmentItem {
                                 } else {
                                     root.demoNotificationIndex++;
                                 }
+                                root.revealNotificationText();
                             }
                         }
 
@@ -1098,11 +1120,14 @@ ContainmentItem {
                             anchors.rightMargin: Kirigami.Units.smallSpacing
                             visible: railNotifications.count > 0
                             interactive: false
-                            clip: true
+                            // The outer content area owns the physical dock
+                            // boundary. This inner clip would cut off long text.
+                            clip: false
                             orientation: ListView.Horizontal
                             model: railNotifications
                             delegate: RowLayout {
                                 id: notificationDelegate
+                                visible: ListView.isCurrentItem
                                 required property string summary
                                 required property string body
                                 required property string applicationName
@@ -1119,6 +1144,7 @@ ContainmentItem {
                                     text: root.notificationDisplayText(notificationDelegate.applicationName,
                                         notificationDelegate.summary, notificationDelegate.body)
                                     scrollingEnabled: notificationControls.revealed
+                                        && !notificationReveal.running && !root.notificationReviewComplete
                                 }
                             }
                         }
@@ -1135,6 +1161,7 @@ ContainmentItem {
                                 exposeOverflow: notificationIntro.running
                                 text: root.demoNotificationTexts[root.demoNotificationIndex]
                                 scrollingEnabled: notificationControls.revealed
+                                    && !notificationReveal.running && !root.notificationReviewComplete
                             }
                         }
                         }
@@ -1158,9 +1185,9 @@ ContainmentItem {
                                 target: notificationMessageLayer
                                 property: "x"
                                 to: -Math.max(notificationMessageLayer.width, notificationMessageLayer.flybyWidth)
-                                duration: Math.max(9000,
-                                    (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 14)
-                                easing.type: Easing.InOutSine
+                                duration: Math.max(3000,
+                                    (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20)
+                                easing.type: Easing.Linear
                             }
                             ScriptAction {
                                 script: {
@@ -1181,23 +1208,12 @@ ContainmentItem {
                                     root.notificationCopyActive = false;
                                     return;
                                 }
-                                if (liveNotificationView.currentIndex
-                                        < root.notificationAutoBatchSize - 1) {
-                                    liveNotificationView.currentIndex++;
-                                    liveNotificationView.positionViewAtIndex(liveNotificationView.currentIndex,
-                                        ListView.Contain);
-                                    nextNotificationIntro.restart();
-                                } else {
-                                    // Playback finishes at n/n, but manual review should
-                                    // always open from the beginning of the unread batch.
-                                    liveNotificationView.currentIndex = 0;
-                                    liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
-                                    root.notificationSequenceActive = false;
-                                    root.notificationCopyActive = false;
-                                    root.notificationAutoBatchSize = 0;
-                                    if (root.pendingNotificationCount > 0)
-                                        notificationBatchTimer.restart();
-                                }
+                                liveNotificationView.currentIndex = 0;
+                                liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
+                                root.notificationSequenceActive = false;
+                                root.notificationCopyActive = false;
+                                root.notificationAutoBatchSize = 0;
+                                notificationBatchTimer.restart();
                             }
                         }
 
@@ -1210,7 +1226,7 @@ ContainmentItem {
                                     notificationMessageLayer.opacity = 0;
                                 }
                             }
-                            PauseAnimation { duration: 190 }
+                            PauseAnimation { duration: 60 }
                             NumberAnimation {
                                 target: notificationMessageLayer
                                 property: "opacity"
@@ -1427,14 +1443,45 @@ ContainmentItem {
             flags: Qt.WindowStaysOnTopHint
             hideOnWindowDeactivate: false
             backgroundHints: PlasmaCore.Dialog.NoBackground
-            visible: priorityNotifications.count > 0
+            visible: priorityNotifications.count > 0 && bannerStack.stackHeight > 0
 
-            mainItem: ListView {
+            mainItem: Item {
+                id: bannerStack
                 width: 360
-                height: currentItem ? currentItem.implicitHeight : 112
-                currentIndex: count > 0 ? 0 : -1
-                interactive: false
-                model: priorityNotifications
+                // Wayland rejects zero-size window geometry, even briefly
+                // during a show/hide transition. Animate cards, not this host.
+                height: Math.max(1, stackHeight)
+                property real stackHeight: 0
+                readonly property real heightLimit: root.notificationPopupHeightLimit
+                clip: true
+
+                function reflow() {
+                    let used = 0;
+                    let full = false;
+                    for (let row = 0; row < bannerRepeater.count; ++row) {
+                        const card = bannerRepeater.itemAt(row);
+                        if (!card) continue;
+                        const gap = used > 0 ? 4 : 0;
+                        const cardHeight = Math.min(card.implicitHeight, heightLimit);
+                        if (full || used + gap + cardHeight > heightLimit) {
+                            card.visible = false;
+                            full = true;
+                            continue;
+                        }
+                        card.y = used + gap;
+                        card.height = cardHeight;
+                        card.visible = true;
+                        used += gap + cardHeight;
+                    }
+                    stackHeight = used;
+                }
+                onHeightLimitChanged: Qt.callLater(reflow)
+
+                Repeater {
+                    id: bannerRepeater
+                    model: priorityNotifications
+                    onItemAdded: Qt.callLater(bannerStack.reflow)
+                    onItemRemoved: Qt.callLater(bannerStack.reflow)
 
                 delegate: Rectangle {
                     id: criticalCard
@@ -1444,8 +1491,37 @@ ContainmentItem {
                     required property string applicationName
                     required property string applicationIconName
                     required property bool hasDefaultAction
-                    width: ListView.view.width
+                    width: bannerStack.width
                     implicitHeight: criticalContent.implicitHeight + 32
+                    visible: false
+                    clip: true
+                    property real entranceProgress: 0
+                    opacity: entranceProgress
+                    transform: Translate {
+                        y: (1 - criticalCard.entranceProgress) * 12
+                    }
+                    onVisibleChanged: {
+                        if (visible) {
+                            bannerEntrance.restart();
+                        } else {
+                            bannerEntrance.stop();
+                            entranceProgress = 0;
+                        }
+                    }
+                    NumberAnimation {
+                        id: bannerEntrance
+                        target: criticalCard
+                        property: "entranceProgress"
+                        from: 0
+                        to: 1
+                        duration: 180
+                        easing.type: Easing.OutCubic
+                    }
+                    onImplicitHeightChanged: Qt.callLater(bannerStack.reflow)
+                    Behavior on y {
+                        enabled: criticalCard.visible
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
                     color: "#141414"
                     radius: 18
                     border.width: 1
@@ -1524,6 +1600,7 @@ ContainmentItem {
                             }
                         }
                     }
+                }
                 }
             }
         }

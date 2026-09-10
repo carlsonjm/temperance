@@ -647,6 +647,21 @@ QPointF SystemTray::popupPosition(QQuickItem *visualParent, int x, int y)
     return QPoint();
 }
 
+int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
+{
+    if (!visualParent || !visualParent->window() || !visualParent->window()->screen())
+        return 600;
+    const QRect screen = visualParent->window()->screen()->availableGeometry();
+    const QPointF top = visualParent->mapToGlobal(QPointF(0, 0));
+    const QPointF bottom = visualParent->mapToGlobal(QPointF(0, visualParent->height()));
+    qreal space = screen.height();
+    if (location() == Plasma::Types::BottomEdge)
+        space = top.y() - screen.top();
+    else if (location() == Plasma::Types::TopEdge)
+        space = screen.y() + screen.height() - bottom.y();
+    return std::max(1, int(space) - 20);
+}
+
 int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const
 {
     minimumWidth = std::max(1, minimumWidth);

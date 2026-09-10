@@ -21,6 +21,9 @@ Item {
     readonly property int nativePagePadding: 12
     readonly property int contentSafety: 4
     readonly property int headerSafety: 4
+    readonly property real notificationPageHeightLimit: Math.max(1,
+        root.notificationPopupHeightLimit - heading.implicitHeight
+        - headingBackground.bottomPadding - contentSafety * 2 - headerSafety)
     readonly property real desiredWidth: Kirigami.Units.gridUnit * 24
         + (systemTrayState.activeApplet ? nativePagePadding * 2 : 0)
         + contentSafety * 2
@@ -273,6 +276,8 @@ Item {
             Layout.fillHeight: true
             visible: !systemTrayState.activeApplet && systemTrayState.page === "notifications"
             notificationModel: root.notificationHistoryModel
+            maximumHeight: popup.notificationPageHeightLimit
+            launchApplication: desktopEntry => Plasmoid.launchApplication(desktopEntry)
             demoNotificationVisible: root.demoNotificationVisible
             clearHistory: () => root.clearNotificationHistory()
             resolveApplicationIcon: (applicationName, desktopEntry, fallbackIcon) =>

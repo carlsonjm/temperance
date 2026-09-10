@@ -4,6 +4,21 @@ All notable changes to Temperance are documented here.
 
 ## Unreleased
 
+- Kept normal actionable notifications in the ticker and critical alerts in
+  banners; minimized banners remain in history without another ticker pass.
+- Tracked automatic ticker playback by notification identity to prevent replay
+  after new arrivals or model resets; removed inner long-text clipping.
+- Added history-card default actions and desktop-entry launch fallback, app
+  labels for single notices, and explicit dismissal of active alerts via Clear.
+- Let notification history grow with expanded groups up to the available screen
+  height, preserving edge clearance and scrolling beyond that limit.
+- Joined bell/arrow hover areas and reset the reading pause after paging.
+- Stacked banners with 4 px internal gaps and 10 px edge clearance, adding
+  card entrance/settling and history-row transitions. Guarded banner windows
+  against zero-height Wayland geometry; window height itself is not animated.
+- Added isolated packaged-QML loading, notification identity regression, and
+  source safety checks. These supplement, not replace, live Plasma testing.
+
 - Matched Control Center's bottom pill clearance to the System Tray.
 - Reordered System Tray sections as Apps, Devices, and System, with empty
   sections removed from the spacing hierarchy.

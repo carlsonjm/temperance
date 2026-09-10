@@ -16,9 +16,11 @@ Item {
     required property var notificationModel
     required property var clearHistory
     required property var resolveApplicationIcon
+    required property var launchApplication
     required property bool demoNotificationVisible
+    required property real maximumHeight
 
-    implicitHeight: Math.min(Kirigami.Units.gridUnit * 22, notificationContent.implicitHeight + 24)
+    implicitHeight: Math.min(maximumHeight, notificationContent.implicitHeight + 24)
 
     ColumnLayout {
         id: notificationContent
@@ -92,8 +94,26 @@ Item {
 
         ListView {
             id: historyView
+            displaced: Transition {
+                NumberAnimation {
+                    properties: "x,y"
+                    duration: 220
+                    easing.type: Easing.OutCubic
+                }
+            }
+            add: Transition {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 140
+                    easing.type: Easing.OutCubic
+                }
+            }
             Layout.fillWidth: true
-            Layout.preferredHeight: visible ? Math.min(contentHeight, Kirigami.Units.gridUnit * 14) : 0
+            Layout.preferredHeight: visible ? contentHeight : 0
+            Layout.minimumHeight: 0
+            Layout.fillHeight: true
             visible: count > 0
             clip: true
             spacing: 0
@@ -111,6 +131,18 @@ Item {
                 required property string applicationName
                 required property string applicationIconName
                 required property string desktopEntry
+                required property bool hasDefaultAction
+                readonly property bool canOpen: !isGroup
+                    && (hasDefaultAction || desktopEntry.length > 0)
+                function openNotification() {
+                    if (!canOpen) return;
+                    if (hasDefaultAction) {
+                        page.notificationModel.invokeDefaultAction(
+                            page.notificationModel.index(index, 0));
+                    } else {
+                        page.launchApplication(desktopEntry);
+                    }
+                }
                 width: historyView.width
                 height: isGroup ? 44 : notificationCard.height + 8
 
@@ -177,6 +209,16 @@ Item {
 
                 Rectangle {
                     id: notificationCard
+                    activeFocusOnTab: historyItem.canOpen
+                    Accessible.role: Accessible.Button
+                    Accessible.name: historyItem.summary
+                    Accessible.onPressAction: historyItem.openNotification()
+                    Keys.onReturnPressed: historyItem.openNotification()
+                    Keys.onSpacePressed: historyItem.openNotification()
+                    TapHandler {
+                        enabled: historyItem.canOpen
+                        onTapped: historyItem.openNotification()
+                    }
                     visible: !historyItem.isGroup
                     anchors.left: parent.left
                     anchors.right: parent.right
@@ -200,6 +242,14 @@ Item {
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
+
+                            PlasmaComponents.Label {
+                                Layout.fillWidth: true
+                                visible: !historyItem.isInGroup
+                                text: historyItem.applicationName || i18n("Notifications")
+                                opacity: 0.68
+                                elide: Text.ElideRight
+                            }
 
                             PlasmaComponents.Label {
                                 Layout.fillWidth: true

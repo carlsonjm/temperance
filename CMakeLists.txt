@@ -145,3 +145,16 @@ add_test(NAME temperance_source_sanity
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_sanity.cmake)
+
+if(BUILD_TESTING)
+    find_package(KF6Package REQUIRED)
+    add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
+    target_link_libraries(temperance-panel-load-test PRIVATE
+        Qt6::Widgets Qt6::Quick Plasma::Plasma Plasma::PlasmaQuick KF6::Package)
+    add_dependencies(temperance-panel-load-test studio.warbler.temperance)
+    add_test(NAME temperance_panel_load
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+            $<TARGET_FILE:temperance-panel-load-test>
+            ${CMAKE_CURRENT_BINARY_DIR}/bin)
+    set_tests_properties(temperance_panel_load PROPERTIES TIMEOUT 30)
+endif()
