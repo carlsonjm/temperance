@@ -10,6 +10,11 @@
 #include "config-X11.h"
 #include "debug.h"
 #include "systemtray.h"
+#include "sessionaction.h"
+#include <sessionmanagement.h>
+#include <QDBusConnection>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 
 #include "plasmoidregistry.h"
 #include "sortedsystemtraymodel.h"
@@ -51,6 +56,28 @@
 #include <KWindowSystem>
 
 using namespace Qt::StringLiterals;
+
+void SystemTray::requestSessionAction(const QString &action)
+{
+    if (action == u"switchUser"_s) {
+        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
+        if (session && session->canSwitchUser()) session->switchUser();
+        else Q_EMIT sessionActionFailed();
+        return;
+    }
+    const auto message = sessionActionPrompt(action);
+    if (message.type() != QDBusMessage::MethodCallMessage) return;
+    auto *watcher = new QDBusPendingCallWatcher(
+        QDBusConnection::sessionBus().asyncCall(message, 5000), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher]() {
+        const QDBusPendingReply<> reply = *watcher;
+        if (reply.isError()) {
+            qCWarning(SYSTEM_TRAY) << "Unable to show session confirmation:" << reply.error();
+            Q_EMIT sessionActionFailed();
+        }
+        watcher->deleteLater();
+    });
+}
 
 void SystemTray::launchApplication(const QString &desktopName)
 {
@@ -261,6 +288,7 @@ static void showSystemTrayMenuWayland(QMenu *menu, QQuickItem *trayItem, Plasma:
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Containment(parent, data, args)
 {
+    m_sessionManagement = new SessionManagement(this);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
 }

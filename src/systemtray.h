@@ -95,6 +95,7 @@ public:
 
     Q_INVOKABLE void scroll(const QString &service, int delta, const QString &direction);
     Q_INVOKABLE void launchApplication(const QString &desktopName);
+    Q_INVOKABLE void requestSessionAction(const QString &action);
     Q_INVOKABLE QString resolveApplicationIcon(const QString &applicationName,
                                                const QString &desktopEntry,
                                                const QString &fallbackIcon) const;
@@ -108,6 +109,7 @@ public:
     Q_INVOKABLE void setVolumePercent(int percent);
 
 Q_SIGNALS:
+    void sessionActionFailed();
     void performancePresetsChanged();
     void activePerformancePresetChanged();
     void volumeChanged();
@@ -121,6 +123,7 @@ private Q_SLOTS:
     void stopApplet(const QString &pluginId);
 
 private:
+    QObject *m_sessionManagement = nullptr;
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();

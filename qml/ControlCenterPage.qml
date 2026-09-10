@@ -28,6 +28,16 @@ Item {
     implicitHeight: contentLayout.implicitHeight + 36
 
     property string displayName: ""
+    property bool sessionActionError: false
+    Connections {
+        target: Plasmoid
+        function onSessionActionFailed() { page.sessionActionError = true }
+    }
+
+    function requestSessionAction(action) {
+        page.sessionActionError = false
+        Plasmoid.requestSessionAction(action)
+    }
     property int displayBrightness: 0
     property int displayBrightnessMax: 100
     readonly property bool hasBattery: Boolean(battery.properties.IsPresent)
@@ -94,6 +104,12 @@ Item {
             }
         }
         HoverHandler { id: actionHover }
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: tileText
+        Accessible.onPressAction: triggered()
+        Keys.onReturnPressed: triggered()
+        Keys.onSpacePressed: triggered()
         TapHandler { onTapped: actionTile.triggered() }
     }
 
@@ -251,6 +267,14 @@ Item {
         anchors.rightMargin: Kirigami.Units.largeSpacing
         anchors.topMargin: 12
         spacing: 0
+
+        PlasmaComponents.Label {
+            visible: page.sessionActionError
+            Layout.fillWidth: true
+            Layout.bottomMargin: visible ? 12 : 0
+            text: i18n("The session action is unavailable or could not be started. Please try again.")
+            wrapMode: Text.Wrap
+        }
 
         RowLayout {
             Layout.fillWidth: true

@@ -7,6 +7,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
@@ -111,6 +112,44 @@ Item {
         return i18n("Control Center");
     }
 
+    component HeaderToolTip: PlasmaComponents.ToolTip {
+        // Header controls sit at the window edge: keep labels inside the surface.
+        readonly property real anchorX: parent ? parent.mapToItem(popup, 0, 0).x : 0
+        y: parent ? parent.height + 4 : 0
+        x: parent ? Math.max(10 - anchorX,
+            Math.min((parent.width - implicitWidth) / 2,
+                popup.width - 10 - anchorX - implicitWidth)) : 0
+    }
+
+    component HeaderPowerPill: PlasmaComponents.ToolButton {
+        id: powerPill
+        required property string glyph
+        Layout.preferredWidth: 42
+        Layout.minimumWidth: 42
+        Layout.maximumWidth: 42
+        Layout.preferredHeight: 30
+        Layout.minimumHeight: 30
+        Layout.maximumHeight: 30
+        Accessible.name: text
+        contentItem: Item {
+            Kirigami.Icon {
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                source: powerPill.glyph
+                color: "#F8F8FF"
+            }
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: powerPill.hovered || powerPill.down ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            border.width: 1
+            border.color: powerPill.activeFocus ? "#F8F8FF" : "#5a5a5a"
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        HeaderToolTip { text: powerPill.text }
+    }
+
     PlasmaExtras.PlasmoidHeading {
         id: headingBackground
         opacity: 0
@@ -153,8 +192,74 @@ Item {
                 elide: Text.ElideRight
             }
 
-            PlasmaComponents.ToolButton {
+            RowLayout {
+                id: sessionActions
                 visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
+                    && (Plasmoid.configuration.showRestart || Plasmoid.configuration.showShutdown || Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser)
+                spacing: 4
+                HeaderPowerPill {
+                    visible: Plasmoid.configuration.showLogout
+                    glyph: "system-log-out"
+                    text: i18n("Log Out")
+                    onClicked: controlPage.requestSessionAction("logout")
+                }
+                HeaderPowerPill {
+                    visible: Plasmoid.configuration.showRestart
+                    glyph: "system-reboot"
+                    text: i18n("Restart")
+                    onClicked: controlPage.requestSessionAction("restart")
+                }
+                HeaderPowerPill {
+                    visible: Plasmoid.configuration.showShutdown
+                    glyph: "system-shutdown"
+                    text: i18n("Shut Down")
+                    onClicked: controlPage.requestSessionAction("shutdown")
+                }
+                PlasmaComponents.ToolButton {
+                    id: sessionMore
+                    visible: Plasmoid.configuration.showSwitchUser
+                    Layout.preferredWidth: 30
+                    Layout.preferredHeight: 30
+                    icon.name: "view-more-symbolic"
+                    display: PlasmaComponents.AbstractButton.IconOnly
+                    text: i18n("More session options")
+                    onClicked: sessionMenu.open()
+                    HeaderToolTip { text: parent.text }
+                    QQC2.Menu {
+                        id: sessionMenu
+                        y: sessionMore.height + 4
+                        x: sessionMore.width - width
+                        width: 150
+                        padding: 6
+                        closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                        background: Rectangle {
+                            color: "#141414"
+                            radius: 14
+                            border.width: 1
+                            border.color: "#5a5a5a"
+                        }
+                        QQC2.MenuItem {
+                            id: switchUserOption
+                            text: i18n("Switch User")
+                            implicitHeight: 36
+                            onTriggered: controlPage.requestSessionAction("switchUser")
+                            contentItem: PlasmaComponents.Label {
+                                text: switchUserOption.text
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            background: Rectangle {
+                                radius: height / 2
+                                color: switchUserOption.highlighted ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                            }
+                        }
+                    }
+                }
+                onVisibleChanged: if (!visible) sessionMenu.close()
+            }
+
+            PlasmaComponents.ToolButton {
+                visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
                 icon.name: "applications-utilities-symbolic"
                 display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18n("Open System Settings")
@@ -162,7 +267,7 @@ Item {
                     systemTrayState.expanded = false;
                     KCM.KCMLauncher.openSystemSettings("kcm_landingpage");
                 }
-                PlasmaComponents.ToolTip { text: parent.text }
+                HeaderToolTip { text: parent.text }
             }
 
             PlasmaComponents.ToolButton {
@@ -171,7 +276,7 @@ Item {
                 display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18n("Configure system tray icons")
                 onClicked: Plasmoid.internalAction("configure").trigger()
-                PlasmaComponents.ToolTip { text: parent.text }
+                HeaderToolTip { text: parent.text }
             }
 
             PlasmaComponents.ToolButton {
@@ -185,7 +290,7 @@ Item {
                     systemTrayState.expanded = false;
                     Plasmoid.launchApplication(Plasmoid.configuration.weatherApplication);
                 }
-                PlasmaComponents.ToolTip { text: parent.text }
+                HeaderToolTip { text: parent.text }
             }
 
             RowLayout {
@@ -231,7 +336,7 @@ Item {
                     TapHandler {
                         onTapped: NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited
                     }
-                    PlasmaComponents.ToolTip {
+                    HeaderToolTip {
                         text: doNotDisturbPill.checked
                             ? i18n("Turn off Do Not Disturb") : i18n("Turn on Do Not Disturb")
                     }
@@ -246,7 +351,7 @@ Item {
                 icon.name: "window-pin"
                 display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18n("Keep Open")
-                PlasmaComponents.ToolTip { text: parent.text }
+                HeaderToolTip { text: parent.text }
             }
         }
 

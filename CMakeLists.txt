@@ -21,6 +21,7 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
 find_package(Plasma REQUIRED)
 find_package(PlasmaQuick REQUIRED)
 find_package(LibNotificationManager REQUIRED)
+find_package(LibKWorkspace REQUIRED)
 find_package(KF6PulseAudioQt REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -139,7 +140,7 @@ target_compile_definitions(studio.warbler.temperance PRIVATE
 target_include_directories(studio.warbler.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(studio.warbler.temperance PRIVATE
-    temperance_core KF6::CoreAddons KF6::PulseAudioQt PW::LibNotificationManager)
+    temperance_core KF6::CoreAddons KF6::PulseAudioQt PW::LibNotificationManager PW::KWorkspace)
 
 add_test(NAME temperance_source_sanity
     COMMAND ${CMAKE_COMMAND}
@@ -147,6 +148,10 @@ add_test(NAME temperance_source_sanity
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_sanity.cmake)
 
 if(BUILD_TESTING)
+    add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
+    target_include_directories(temperance-session-action-test PRIVATE src)
+    target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)
+    add_test(NAME temperance_session_actions COMMAND temperance-session-action-test)
     find_package(KF6Package REQUIRED)
     add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
     target_link_libraries(temperance-panel-load-test PRIVATE

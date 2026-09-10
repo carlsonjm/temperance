@@ -57,6 +57,22 @@
       <label>System tray entries promoted to Control Center pills</label>
       <default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth</default>
     </entry>
+    <entry name="showLogout" type="Bool">
+      <label>Show Log Out at the top of Control Center</label>
+      <default>true</default>
+    </entry>
+    <entry name="showSwitchUser" type="Bool">
+      <label>Show Switch User in the Control Center session menu</label>
+      <default>false</default>
+    </entry>
+    <entry name="showRestart" type="Bool">
+      <label>Show Restart at the top of Control Center</label>
+      <default>true</default>
+    </entry>
+    <entry name="showShutdown" type="Bool">
+      <label>Show Shut Down at the top of Control Center</label>
+      <default>true</default>
+    </entry>
     <entry name="compactWidth" type="Int">
       <label>Manual width of the panel widget in pixels when responsive layout is disabled</label>
       <default>400</default>
