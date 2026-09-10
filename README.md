@@ -4,10 +4,11 @@
 
 # Temperance
 
-Temperance is a Plasma 6 panel widget that combines a quiet notification rail,
-a compact Control Center, and an organized System Tray. It replaces only the
-stock System Tray; the launcher, task manager, and clock remain independent
-panel widgets.
+Stay informed without losing your flow. Temperance brings quiet notifications,
+weather, battery status, and everyday controls together in one cohesive Plasma 6
+panel widget. A compact Control Center and organized System Tray keep the
+essentials close. It replaces only the stock System Tray; the launcher, task
+manager, and clock remain independent panel widgets.
 
 ## Highlights
 

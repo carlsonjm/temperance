@@ -6,7 +6,7 @@
             }
         ],
         "Category": "System Information",
-        "Description": "A quiet notification rail, compact control center, and organized system tray",
+        "Description": "Stay informed and in control with quiet notifications and everyday essentials",
         "EnabledByDefault": true,
         "FormFactors": ["desktop"],
         "Icon": "studio.warbler.temperance",
