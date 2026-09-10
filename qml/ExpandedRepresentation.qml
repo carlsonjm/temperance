@@ -172,20 +172,9 @@ Item {
             Layout.rightMargin: popup.headerSafety
             Layout.topMargin: popup.headerSafety
 
-            PlasmaComponents.ToolButton {
-                visible: systemTrayState.activeApplet !== null || systemTrayState.page === "notifications"
-                icon.name: "go-previous-symbolic"
-                display: PlasmaComponents.AbstractButton.IconOnly
-                text: i18n("Back")
-                onClicked: {
-                    systemTrayState.setActiveApplet(null);
-                    systemTrayState.page = systemTrayState.page === "notifications" ? "tray" : "control";
-                }
-            }
-
             Kirigami.Heading {
                 Layout.fillWidth: true
-                leftPadding: systemTrayState.activeApplet ? 0 : Kirigami.Units.largeSpacing
+                leftPadding: Kirigami.Units.largeSpacing
                 level: 1
                 text: popup.pageTitle()
                 maximumLineCount: 1

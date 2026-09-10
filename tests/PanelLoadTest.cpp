@@ -47,6 +47,53 @@ int main(int argc, char **argv)
     QFile source(QStringLiteral(":/qt/qml/plasma/applet/studio/warbler/temperance/main.qml"));
     if (!source.open(QIODevice::ReadOnly)) return 6;
     const QString qml = QString::fromUtf8(source.readAll());
+    QString navigationFunctions;
+    for (const auto &name : {"activateAppletById", "openSurface"}) {
+        const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
+        const auto finish = qml.indexOf(QStringLiteral("\n    }"), begin);
+        if (begin < 0 || finish < 0) return 11;
+        navigationFunctions += qml.mid(begin, finish - begin + 6);
+    }
+    const auto navigationTest = engine.evaluate(QStringLiteral(R"JS(
+        (function() {
+            const appletsById = {weather: {}, audio: {}};
+            const systemTrayState = {expanded: false, page: 'control', activeApplet: null,
+                setActiveApplet: function(a) { this.activeApplet = a; if (a) this.expanded = true; }};
+    )JS") + navigationFunctions + QStringLiteral(R"JS(
+            openSurface('tray');
+            if (!systemTrayState.expanded) throw 'open tray';
+            openSurface('tray');
+            if (systemTrayState.expanded) throw 'close tray';
+            openSurface('notifications'); openSurface('control');
+            if (!systemTrayState.expanded || systemTrayState.page !== 'control') throw 'switch';
+            activateAppletById('weather'); activateAppletById('weather');
+            if (systemTrayState.expanded) throw 'close weather';
+            activateAppletById('weather'); openSurface('tray');
+            if (!systemTrayState.expanded || systemTrayState.activeApplet) throw 'weather to tray';
+            return true;
+        })()
+    )JS"));
+    if (navigationTest.isError() || !navigationTest.toBool()) {
+        qCritical() << "Panel navigation regression:" << navigationTest.toString();
+        return 12;
+    }
+    const auto acStart = qml.indexOf(QStringLiteral("function acHoldingCharge("));
+    const auto acEnd = qml.indexOf(QStringLiteral("\n    }"), acStart);
+    if (acStart < 0 || acEnd < 0) return 9;
+    const auto acTest = engine.evaluate(QStringLiteral("(function() {")
+        + qml.mid(acStart, acEnd - acStart + 6) + QStringLiteral(R"JS(
+            if (!acHoldingCharge(false, 4) || !acHoldingCharge(false, 5)) throw 'AC hold';
+            for (const state of [0, 1, 2, 3, 6, undefined])
+                if (acHoldingCharge(false, state)) throw 'not holding';
+            for (const power of [true, undefined, null])
+                if (acHoldingCharge(power, 5)) throw 'AC unconfirmed';
+            return true;
+        })()
+    )JS"));
+    if (acTest.isError() || !acTest.toBool()) {
+        qCritical() << "AC indicator regression:" << acTest.toString();
+        return 10;
+    }
     const auto start = qml.indexOf(QStringLiteral("function nextUnpresentedNotification()"));
     const auto end = qml.indexOf(QStringLiteral("\n    }"), start);
     if (start < 0 || end < 0) return 7;

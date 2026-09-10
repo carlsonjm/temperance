@@ -217,6 +217,8 @@ ContainmentItem {
                 width: 18
                 height: 18
                 anchors.centerIn: parent
+                // Keep the same optical baseline when the clapper returns.
+                anchors.verticalCenterOffset: 1.8
                 glyphColor: railControlButton.glyphColor
                 clapperProgress: root.hasAttention ? 0 : 1
             }
@@ -337,10 +339,19 @@ ContainmentItem {
 
     function activateAppletById(itemId) {
         const applet = appletsById[itemId];
+        if (applet && systemTrayState.expanded && systemTrayState.activeApplet === applet) {
+            systemTrayState.expanded = false;
+            return;
+        }
         if (applet) systemTrayState.setActiveApplet(applet);
     }
 
     function openSurface(page) {
+        if (systemTrayState.expanded && !systemTrayState.activeApplet
+                && systemTrayState.page === page) {
+            systemTrayState.expanded = false;
+            return;
+        }
         systemTrayState.setActiveApplet(null);
         systemTrayState.page = page;
         systemTrayState.expanded = true;
@@ -460,19 +471,28 @@ ContainmentItem {
         notificationHide.restart();
     }
 
+    function acHoldingCharge(onBattery, state) {
+        // UPower: fully charged (4) or pending charge (5), with AC confirmed.
+        return onBattery === false && (Number(state) === 4 || Number(state) === 5);
+    }
+
+    readonly property bool batteryOnAC: acHoldingCharge(compactPower.properties.OnBattery,
+        compactBattery.properties.State)
+
     function batteryLabel() {
         if (!hasBattery) return "";
+        const rawPercentage = compactBattery.properties.Percentage;
+        if (rawPercentage !== undefined && rawPercentage !== null && rawPercentage !== "") {
+            const percentage = Number(rawPercentage);
+            if (Number.isFinite(percentage) && percentage >= 0 && percentage <= 100)
+                return Math.round(percentage) + "%";
+        }
         const batteryApplet = appletsById["org.kde.plasma.battery"];
         if (batteryApplet) {
             const tooltip = String(batteryApplet.toolTipMainText || "") + " "
                 + String(batteryApplet.toolTipSubText || "");
             const displayedPercentage = tooltip.match(/([0-9]{1,3})\s*%/);
             if (displayedPercentage) return displayedPercentage[1] + "%";
-        }
-        const rawPercentage = compactBattery.properties.Percentage;
-        if (rawPercentage !== undefined && rawPercentage !== null && rawPercentage !== "") {
-            const percentage = Number(rawPercentage);
-            if (Number.isFinite(percentage)) return Math.round(percentage) + "%";
         }
         return "—";
     }
@@ -680,6 +700,14 @@ ContainmentItem {
     Connections {
         target: Plasmoid
         function onActivated() { root.openSurface("control"); }
+    }
+
+    DBus.Properties {
+        id: compactPower
+        busType: DBus.BusType.System
+        service: "org.freedesktop.UPower"
+        path: "/org/freedesktop/UPower"
+        iface: "org.freedesktop.UPower"
     }
 
     DBus.Properties {
@@ -1065,8 +1093,8 @@ ContainmentItem {
                         Item {
                             id: notificationCountBadge
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
-                            anchors.bottom: notificationControls.bottom
-                            anchors.bottomMargin: 1
+                            y: Math.min(notificationControls.height - height,
+                                notificationControls.height / 2 + 6)
                             visible: opacity > 0
                             opacity: root.hasAttention ? 1 : 0
                             scale: root.hasAttention ? 1 : 0.72
@@ -1275,16 +1303,14 @@ ContainmentItem {
                 Accessible.role: Accessible.Button
 
                 Item {
-                    anchors.centerIn: parent
-                    width: 24
-                    height: 32
+                    anchors.fill: parent
                     scale: weatherStatusHover.hovered ? 1.06 : 1
                     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                     Kirigami.Icon {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.horizontalCenterOffset: -1
-                        y: 5
+                        anchors.verticalCenter: parent.verticalCenter
                         width: 16
                         height: 16
                         source: root.weatherIcon()
@@ -1293,7 +1319,7 @@ ContainmentItem {
 
                     Item {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
+                        y: Math.min(parent.height - height, parent.height / 2 + 6)
                         width: Math.max(18, weatherTemperatureLabel.implicitWidth + 6)
                         height: 12
                         z: 2
@@ -1325,7 +1351,7 @@ ContainmentItem {
             Item {
                 id: batteryStatusButton
                 visible: root.hasBattery
-                Layout.preferredWidth: Math.max(26, batteryPercentReadout.implicitWidth + 2)
+                Layout.preferredWidth: root.batteryOnAC ? 26 : Math.max(26, batteryPercentReadout.implicitWidth + 2)
                 Layout.minimumWidth: Layout.preferredWidth
                 Layout.maximumWidth: Layout.preferredWidth
                 Layout.fillHeight: true
@@ -1336,6 +1362,7 @@ ContainmentItem {
 
                 PlasmaComponents.Label {
                     id: batteryPercentReadout
+                    visible: !root.batteryOnAC
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.batteryLabel() || "—"
@@ -1345,9 +1372,28 @@ ContainmentItem {
                     scale: batteryStatusHover.hovered ? 1.06 : 1
                     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                 }
+                Canvas {
+                    anchors.centerIn: parent
+                    width: 18
+                    height: 18
+                    visible: root.batteryOnAC
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.fillStyle = "#F8F8FF";
+                        ctx.beginPath();
+                        ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
+                        ctx.lineTo(8, 10); ctx.lineTo(7, 17);
+                        ctx.lineTo(14.5, 7); ctx.lineTo(10, 7);
+                        ctx.closePath(); ctx.fill();
+                    }
+                }
                 HoverHandler { id: batteryStatusHover }
                 TapHandler { onTapped: root.openSurface("control") }
-                PlasmaComponents.ToolTip { text: i18n("Battery and Control Center") }
+                PlasmaComponents.ToolTip {
+                    text: root.batteryOnAC ? i18n("AC power · %1", root.batteryLabel())
+                        : i18n("Battery and Control Center")
+                }
             }
 
             Item {
@@ -1360,15 +1406,85 @@ ContainmentItem {
                 Layout.bottomMargin: 4
                 Accessible.name: i18n("System tray")
                 Accessible.role: Accessible.Button
-                Rectangle {
+                readonly property bool active: systemTrayState.activeApplet === null
+                    && systemTrayState.page === "tray" && systemTrayState.expanded
+                property real rippleProgress: 0
+                onActiveChanged: {
+                    if (active) trayRipple.restart();
+                    else { trayRipple.stop(); rippleProgress = 0; }
+                }
+                NumberAnimation {
+                    id: trayRipple
+                    target: trayButton
+                    property: "rippleProgress"
+                    from: 0
+                    to: 1
+                    duration: 320
+                    easing.type: Easing.OutCubic
+                }
+                Canvas {
+                    id: trayGlyph
                     anchors.centerIn: parent
-                    width: 12
-                    height: 12
-                    radius: width / 2
-                    color: "#F8F8FF"
+                    anchors.verticalCenterOffset: 1
+                    width: 28
+                    height: 28
                     scale: trayHover.hovered ? 1.06 : 1
-                    Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                    Connections {
+                        target: trayButton
+                        function onRippleProgressChanged() { trayGlyph.requestPaint(); }
+                        function onActiveChanged() { trayGlyph.requestPaint(); }
+                    }
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        ctx.reset();
+                        function triangle(size) {
+                            const cx = width / 2;
+                            const cy = height / 2;
+                            const vertices = [[cx, cy - size * 0.55],
+                                [cx + size * 0.6, cy + size * 0.4],
+                                [cx - size * 0.6, cy + size * 0.4]];
+                            // Round the path itself, not just the stroke join.
+                            const inset = size * 0.16;
+                            ctx.beginPath();
+                            for (let i = 0; i < 3; ++i) {
+                                const v = vertices[i];
+                                const prev = vertices[(i + 2) % 3];
+                                const next = vertices[(i + 1) % 3];
+                                const a = inset / Math.hypot(prev[0] - v[0], prev[1] - v[1]);
+                                const b = inset / Math.hypot(next[0] - v[0], next[1] - v[1]);
+                                const x = v[0] + (prev[0] - v[0]) * a;
+                                const y = v[1] + (prev[1] - v[1]) * a;
+                                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                                ctx.quadraticCurveTo(v[0], v[1],
+                                    v[0] + (next[0] - v[0]) * b,
+                                    v[1] + (next[1] - v[1]) * b);
+                            }
+                            ctx.closePath();
+                        }
+                        ctx.lineJoin = "round";
+                        ctx.fillStyle = "#F8F8FF";
+                        ctx.strokeStyle = "#F8F8FF";
+                        if (trayButton.active) {
+                            // Offset the SAME path with a stroke band, rather than
+                            // scaling vertices. This keeps clearance uniform around
+                            // both the straight edges and the rounded corners.
+                            const offset = 2 + trayButton.rippleProgress * 1.6;
+                            ctx.globalAlpha = 0.8 - trayButton.rippleProgress * 0.3;
+                            ctx.lineWidth = offset * 2 + 1;
+                            triangle(9);
+                            ctx.stroke();
+                            ctx.globalCompositeOperation = "destination-out";
+                            ctx.globalAlpha = 1;
+                            ctx.lineWidth = offset * 2 - 1;
+                            ctx.fill();
+                            ctx.stroke();
+                            ctx.globalCompositeOperation = "source-over";
+                        }
+                        ctx.globalAlpha = 1;
+                        ctx.lineWidth = 2;
+                        triangle(9); ctx.fill(); ctx.stroke();
+                    }
                 }
                 HoverHandler { id: trayHover }
                 TapHandler { onTapped: root.openSurface("tray") }
