@@ -264,6 +264,86 @@ ContainmentItem {
         }
     }
 
+    component BannerActionButton: Item {
+        id: bannerActionButton
+        property bool closeGlyph: false
+        property string text: ""
+        signal clicked()
+        readonly property bool hovered: bannerActionHover.hovered
+        readonly property bool pressed: bannerActionTap.pressed
+        implicitWidth: 44
+        implicitHeight: 40
+        Layout.preferredWidth: 44
+        Layout.minimumWidth: 44
+        Layout.maximumWidth: 44
+        Layout.preferredHeight: 40
+        Layout.minimumHeight: 40
+        Layout.maximumHeight: 40
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+
+        Rectangle {
+            id: bannerActionVisual
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: 28
+            height: 28
+            radius: height / 2
+            color: bannerActionButton.hovered || bannerActionButton.pressed
+                ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            border.width: bannerActionButton.activeFocus ? 1 : 0
+            border.color: "#F8F8FF"
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            Canvas {
+                id: bannerActionGlyph
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                antialiasing: true
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#F8F8FF";
+                    ctx.lineWidth = 2.2;
+                    ctx.lineCap = "round";
+                    if (bannerActionButton.closeGlyph) {
+                        ctx.moveTo(5, 5);
+                        ctx.lineTo(13, 13);
+                        ctx.moveTo(13, 5);
+                        ctx.lineTo(5, 13);
+                    } else {
+                        ctx.moveTo(5, 9);
+                        ctx.lineTo(13, 9);
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+
+        HoverHandler {
+            id: bannerActionHover
+        }
+        TapHandler {
+            id: bannerActionTap
+            onTapped: {
+                bannerActionButton.forceActiveFocus();
+                bannerActionButton.clicked();
+            }
+        }
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Return
+                    || event.key === Qt.Key_Enter
+                    || event.key === Qt.Key_Space) {
+                bannerActionButton.clicked();
+                event.accepted = true;
+            }
+        }
+        Accessible.onPressAction: bannerActionButton.clicked()
+    }
+
     component StatusIconButton: Item {
         id: statusIconButton
         required property var statusIcon
@@ -1607,8 +1687,14 @@ ContainmentItem {
                     required property string applicationName
                     required property string applicationIconName
                     required property bool hasDefaultAction
+                    readonly property bool hasApplicationIcon:
+                        applicationIconName.length > 0
                     width: bannerStack.width
-                    implicitHeight: criticalContent.implicitHeight + 32
+                    // Keep the banner bounded by its message instead of by a
+                    // permanently wide action row. The 44 px action rail stays
+                    // comfortable to target while one uninterrupted text column
+                    // owns the remaining width beside it.
+                    implicitHeight: Math.max(68, criticalContent.implicitHeight + 24)
                     visible: false
                     clip: true
                     property real entranceProgress: 0
@@ -1646,61 +1732,86 @@ ContainmentItem {
                     RowLayout {
                         id: criticalContent
                         anchors.fill: parent
-                        anchors.margins: 16
+                        anchors.margins: 12
                         spacing: 12
-
-                        Kirigami.Icon {
-                            Layout.alignment: Qt.AlignTop
-                            source: criticalCard.applicationIconName || "dialog-warning-symbolic"
-                            implicitWidth: Kirigami.Units.iconSizes.medium
-                            implicitHeight: implicitWidth
-                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 4
+                            Layout.alignment: Qt.AlignTop
+                            spacing: 12
 
-                            PlasmaComponents.Label {
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                text: criticalCard.applicationName || i18n("System alert")
-                                opacity: 0.62
-                                elide: Text.ElideRight
+                                spacing: 2
+
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: criticalCard.applicationName || i18n("System alert")
+                                    opacity: 0.62
+                                    elide: Text.ElideRight
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: criticalCard.summary
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 4
+                                    elide: Text.ElideRight
+                                }
                             }
-                            PlasmaComponents.Label {
-                                Layout.fillWidth: true
-                                text: criticalCard.summary
-                                font.weight: Font.DemiBold
-                                wrapMode: Text.Wrap
-                            }
+
                             PlasmaComponents.Label {
                                 Layout.fillWidth: true
                                 visible: text.length > 0
                                 text: criticalCard.body
                                 opacity: 0.78
                                 wrapMode: Text.Wrap
-                                maximumLineCount: 3
+                                maximumLineCount: 8
                                 elide: Text.ElideRight
                             }
                         }
 
-                        PlasmaComponents.ToolButton {
-                            icon.name: "window-minimize-symbolic"
-                            display: PlasmaComponents.AbstractButton.IconOnly
-                            text: i18n("Keep for review")
-                            onClicked: root.minimizePriorityNotification(
-                                priorityNotifications.mapToSource(
-                                    priorityNotifications.index(criticalCard.index, 0)))
-                            PlasmaComponents.ToolTip { text: parent.text }
-                        }
+                        Item {
+                            id: actionRail
+                            Layout.preferredWidth: 44
+                            Layout.minimumWidth: 44
+                            Layout.maximumWidth: 44
+                            Layout.fillHeight: true
+                            Layout.minimumHeight: actionButtons.implicitHeight
+                                + (criticalCard.hasApplicationIcon
+                                    ? 8 + Kirigami.Units.iconSizes.small : 0)
 
-                        PlasmaComponents.ToolButton {
-                            icon.name: "window-close-symbolic"
-                            display: PlasmaComponents.AbstractButton.IconOnly
-                            text: i18n("Dismiss")
-                            onClicked: notificationHistory.close(
-                                priorityNotifications.mapToSource(
-                                    priorityNotifications.index(criticalCard.index, 0)))
-                            PlasmaComponents.ToolTip { text: parent.text }
+                            ColumnLayout {
+                                id: actionButtons
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                                spacing: 0
+
+                                BannerActionButton {
+                                    closeGlyph: true
+                                    text: i18n("Dismiss")
+                                    onClicked: notificationHistory.close(
+                                        priorityNotifications.mapToSource(
+                                            priorityNotifications.index(criticalCard.index, 0)))
+                                }
+
+                                BannerActionButton {
+                                    text: i18n("Keep for review")
+                                    onClicked: root.minimizePriorityNotification(
+                                        priorityNotifications.mapToSource(
+                                            priorityNotifications.index(criticalCard.index, 0)))
+                                }
+                            }
+
+                            Kirigami.Icon {
+                                visible: criticalCard.hasApplicationIcon
+                                anchors.right: parent.right
+                                anchors.rightMargin: 6
+                                anchors.bottom: parent.bottom
+                                width: Kirigami.Units.iconSizes.small
+                                height: width
+                                source: criticalCard.applicationIconName
+                            }
                         }
                     }
 

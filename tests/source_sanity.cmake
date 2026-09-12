@@ -7,6 +7,16 @@ string(FIND "${main_qml}" "priorityNotifications.count > 0 && bannerStack.stackH
 if(safe_banner_height LESS 0 OR safe_banner_visibility LESS 0)
     message(FATAL_ERROR "Banner windows must never expose zero-height Wayland geometry")
 endif()
+if(NOT main_qml MATCHES "implicitHeight: Math.max\\(68, criticalContent.implicitHeight \\+ 24\\)"
+   OR NOT main_qml MATCHES "Layout.minimumWidth: 44"
+   OR main_qml MATCHES "applicationIconName \\|\\| \"dialog-warning-symbolic\""
+   OR NOT main_qml MATCHES "id: actionRail"
+   OR NOT main_qml MATCHES "Layout.maximumWidth: 44"
+   OR NOT main_qml MATCHES "anchors.right: parent.right"
+   OR NOT main_qml MATCHES "Layout.minimumHeight: actionButtons.implicitHeight"
+   OR NOT main_qml MATCHES "maximumLineCount: 8")
+    message(FATAL_ERROR "Banner cards must retain bounded content sizing and touch-safe actions")
+endif()
 if(main_qml MATCHES "notificationHistory.clear\\(NotificationManager.Notifications.ClearExpired\\)")
     message(FATAL_ERROR "Clear history must dismiss active alerts, not only expired notifications")
 endif()
@@ -23,7 +33,15 @@ if(NOT priority_policy MATCHES "CriticalUrgency" OR NOT priority_policy MATCHES 
 endif()
 file(READ "${SOURCE_DIR}/qml/ControlCenterPage.qml" control_center_qml)
 file(READ "${SOURCE_DIR}/qml/OrganizedTrayPage.qml" organized_tray_qml)
+file(READ "${SOURCE_DIR}/qml/NotificationHistoryPage.qml" notification_history_qml)
 file(READ "${SOURCE_DIR}/main.xml" config_xml)
+if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
+   OR NOT notification_history_qml MATCHES "summaryLabel.truncated \\|\\| bodyLabel.truncated"
+   OR NOT notification_history_qml MATCHES "i18n\\(\"Show more\"\\)"
+   OR NOT notification_history_qml MATCHES "i18n\\(\"Show less\"\\)"
+   OR NOT notification_history_qml MATCHES "radius: height / 2")
+    message(FATAL_ERROR "Truncated notification history cards must expand in place")
+endif()
 foreach(session_toggle showLogout showRestart showShutdown)
     if(NOT config_xml MATCHES "<entry name=\"${session_toggle}\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
         message(FATAL_ERROR "Session control ${session_toggle} must default enabled")
@@ -56,8 +74,14 @@ if(NOT main_qml MATCHES "minimizePriorityNotification")
     message(FATAL_ERROR "Important alerts must support keeping an item for review")
 endif()
 
-if(NOT main_qml MATCHES "window-minimize-symbolic")
-    message(FATAL_ERROR "The important-alert minimize control is missing")
+if(NOT main_qml MATCHES "component BannerActionButton: Item"
+   OR NOT main_qml MATCHES "ctx.lineCap = \"round\""
+   OR NOT main_qml MATCHES "width: 28[\n\r ]+height: 28[\n\r ]+radius: height / 2"
+   OR NOT main_qml MATCHES "Layout.maximumWidth: 44"
+   OR NOT main_qml MATCHES "anchors.centerIn: parent"
+   OR main_qml MATCHES "PlasmaComponents.ToolTip \\{ text: bannerActionButton.text \\}"
+   OR NOT main_qml MATCHES "text: i18n\\(\"Keep for review\"\\)")
+    message(FATAL_ERROR "Important-alert actions must retain touch-safe targets and compact rounded visuals")
 endif()
 
 if(NOT main_qml MATCHES "reservedForBanner")

@@ -132,6 +132,7 @@ Item {
                 required property string applicationIconName
                 required property string desktopEntry
                 required property bool hasDefaultAction
+                property bool detailsExpanded: false
                 readonly property bool canOpen: !isGroup
                     && (hasDefaultAction || desktopEntry.length > 0)
                 function openNotification() {
@@ -252,21 +253,49 @@ Item {
                             }
 
                             PlasmaComponents.Label {
+                                id: summaryLabel
                                 Layout.fillWidth: true
                                 text: historyItem.summary
                                 font.weight: Font.DemiBold
                                 wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
+                                maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
+                                elide: historyItem.detailsExpanded
+                                    ? Text.ElideNone : Text.ElideRight
                             }
                             PlasmaComponents.Label {
+                                id: bodyLabel
                                 Layout.fillWidth: true
                                 visible: text.length > 0 && text !== historyItem.summary
                                 text: historyItem.body
                                 opacity: 0.68
                                 wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
+                                maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
+                                elide: historyItem.detailsExpanded
+                                    ? Text.ElideNone : Text.ElideRight
+                            }
+
+                            PlasmaComponents.ToolButton {
+                                id: detailsButton
+                                Layout.alignment: Qt.AlignRight
+                                Layout.minimumHeight: 30
+                                leftPadding: 12
+                                rightPadding: 12
+                                visible: historyItem.detailsExpanded
+                                    || summaryLabel.truncated || bodyLabel.truncated
+                                text: historyItem.detailsExpanded
+                                    ? i18n("Show less") : i18n("Show more")
+                                display: PlasmaComponents.AbstractButton.TextOnly
+                                onClicked: historyItem.detailsExpanded
+                                    = !historyItem.detailsExpanded
+                                background: Rectangle {
+                                    radius: height / 2
+                                    color: detailsButton.hovered || detailsButton.down
+                                        ? Qt.rgba(1, 1, 1, 0.12)
+                                        : Qt.rgba(1, 1, 1, 0.07)
+                                    border.width: detailsButton.activeFocus ? 1 : 0
+                                    border.color: "#F8F8FF"
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                }
                             }
                         }
                     }
