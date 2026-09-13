@@ -1173,13 +1173,17 @@ ContainmentItem {
                         Item {
                             id: notificationCountBadge
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
+                            // Bell rim: centered 18px canvas, +1.8 optical
+                            // offset, 0.708 normalized rim, half 1.65px stroke.
+                            // Keep one logical pixel below that painted rim.
                             y: Math.min(notificationControls.height - height,
-                                notificationControls.height / 2 + 6)
+                                notificationControls.height / 2 - 9 + 1.8
+                                + 18 * 0.708 + 1.65 / 2 + 1)
                             visible: opacity > 0
                             opacity: root.hasAttention ? 1 : 0
                             scale: root.hasAttention ? 1 : 0.72
                             width: Math.max(18, notificationCountLabel.implicitWidth + 6)
-                            height: 12
+                            height: countInk.tightBoundingRect.height
                             z: 40
                             Behavior on opacity {
                                 NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
@@ -1188,9 +1192,15 @@ ContainmentItem {
                                 NumberAnimation { duration: 180; easing.type: Easing.OutBack }
                             }
 
+                            TextMetrics {
+                                id: countInk
+                                font: notificationCountLabel.font
+                                text: notificationCountLabel.text
+                            }
                             PlasmaComponents.Label {
                                 id: notificationCountLabel
-                                anchors.centerIn: parent
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                y: -baselineOffset - countInk.tightBoundingRect.y
                                 text: root.notificationReviewComplete ? "✓"
                                     : notificationControls.revealed
                                     ? (railNotifications.count > 0
@@ -1198,7 +1208,8 @@ ContainmentItem {
                                         : (root.demoNotificationIndex + 1) + "/" + root.demoNotificationTexts.length)
                                     : (railNotifications.count > 0
                                         ? railNotifications.count : root.demoNotificationTexts.length)
-                                font.pixelSize: 8
+                                // Previous 8px at 96dpi = 6pt; increase by 1pt.
+                                font.pointSize: 7
                                 font.weight: Font.Medium
                                 color: "#F8F8FF"
                             }
@@ -1729,6 +1740,20 @@ ContainmentItem {
                     border.width: 1
                     border.color: "#333333"
 
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            const modelIndex = priorityNotifications.mapToSource(
+                                priorityNotifications.index(criticalCard.index, 0));
+                            if (criticalCard.hasDefaultAction) {
+                                notificationHistory.invokeDefaultAction(modelIndex);
+                            } else {
+                                root.minimizePriorityNotification(modelIndex);
+                                root.openSurface("notifications");
+                            }
+                        }
+                    }
+
                     RowLayout {
                         id: criticalContent
                         anchors.fill: parent
@@ -1751,8 +1776,10 @@ ContainmentItem {
                                     elide: Text.ElideRight
                                 }
                                 PlasmaComponents.Label {
+                                    id: criticalSummary
                                     Layout.fillWidth: true
                                     text: criticalCard.summary
+                                    textFormat: Text.PlainText
                                     font.weight: Font.DemiBold
                                     wrapMode: Text.Wrap
                                     maximumLineCount: 4
@@ -1761,13 +1788,25 @@ ContainmentItem {
                             }
 
                             PlasmaComponents.Label {
+                                id: criticalBody
                                 Layout.fillWidth: true
                                 visible: text.length > 0
                                 text: criticalCard.body
+                                textFormat: Text.StyledText
                                 opacity: 0.78
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 8
                                 elide: Text.ElideRight
+                            }
+                            PlasmaComponents.ToolButton {
+                                text: i18n("Show more")
+                                visible: criticalSummary.truncated || criticalBody.truncated
+                                Layout.minimumHeight: 44
+                                onClicked: {
+                                    root.minimizePriorityNotification(priorityNotifications.mapToSource(
+                                        priorityNotifications.index(criticalCard.index, 0)));
+                                    root.openNotifications();
+                                }
                             }
                         }
 
@@ -1815,18 +1854,6 @@ ContainmentItem {
                         }
                     }
 
-                    TapHandler {
-                        onTapped: {
-                            const modelIndex = priorityNotifications.mapToSource(
-                                priorityNotifications.index(criticalCard.index, 0));
-                            if (criticalCard.hasDefaultAction) {
-                                notificationHistory.invokeDefaultAction(modelIndex);
-                            } else {
-                                root.minimizePriorityNotification(modelIndex);
-                                root.openSurface("notifications");
-                            }
-                        }
-                    }
                 }
                 }
             }

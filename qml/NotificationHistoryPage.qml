@@ -121,6 +121,7 @@ Item {
 
             delegate: Item {
                 id: historyItem
+                objectName: "notificationRow" + index
                 required property int index
                 required property bool isGroup
                 required property bool isInGroup
@@ -216,9 +217,10 @@ Item {
                     Accessible.onPressAction: historyItem.openNotification()
                     Keys.onReturnPressed: historyItem.openNotification()
                     Keys.onSpacePressed: historyItem.openNotification()
-                    TapHandler {
+                    MouseArea {
+                        anchors.fill: parent
                         enabled: historyItem.canOpen
-                        onTapped: historyItem.openNotification()
+                        onClicked: historyItem.openNotification()
                     }
                     visible: !historyItem.isGroup
                     anchors.left: parent.left
@@ -254,8 +256,10 @@ Item {
 
                             PlasmaComponents.Label {
                                 id: summaryLabel
+                                objectName: "notificationSummary"
                                 Layout.fillWidth: true
                                 text: historyItem.summary
+                                textFormat: Text.PlainText
                                 font.weight: Font.DemiBold
                                 wrapMode: Text.Wrap
                                 maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
@@ -264,9 +268,13 @@ Item {
                             }
                             PlasmaComponents.Label {
                                 id: bodyLabel
+                                objectName: "notificationBody"
                                 Layout.fillWidth: true
                                 visible: text.length > 0 && text !== historyItem.summary
                                 text: historyItem.body
+                                // StyledText supports bounded lines/truncation;
+                                // AutoText may choose RichText, which does not.
+                                textFormat: Text.StyledText
                                 opacity: 0.68
                                 wrapMode: Text.Wrap
                                 maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
@@ -276,8 +284,9 @@ Item {
 
                             PlasmaComponents.ToolButton {
                                 id: detailsButton
+                                objectName: "notificationReadMore"
                                 Layout.alignment: Qt.AlignRight
-                                Layout.minimumHeight: 30
+                                Layout.minimumHeight: 44
                                 leftPadding: 12
                                 rightPadding: 12
                                 visible: historyItem.detailsExpanded

@@ -148,6 +148,15 @@ add_test(NAME temperance_source_sanity
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_sanity.cmake)
 
 if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    add_executable(temperance-notification-interaction-test tests/NotificationInteractionTest.cpp)
+    target_link_libraries(temperance-notification-interaction-test PRIVATE
+        Qt6::Widgets Qt6::Quick Qt6::Test KF6::I18n)
+    target_compile_definitions(temperance-notification-interaction-test PRIVATE
+        HISTORY_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/NotificationHistoryPage.qml")
+    add_test(NAME temperance_notification_interaction COMMAND temperance-notification-interaction-test)
+    set_tests_properties(temperance_notification_interaction PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 30)
     add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
     target_include_directories(temperance-session-action-test PRIVATE src)
     target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)

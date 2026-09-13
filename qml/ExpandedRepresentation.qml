@@ -269,6 +269,37 @@ Item {
             }
 
             PlasmaComponents.ToolButton {
+                id: addBluetoothDevice
+                objectName: "addBluetoothDevice"
+                visible: systemTrayState.activeApplet
+                    && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
+                text: i18n("Add new device")
+                icon.name: "list-add-symbolic"
+                Layout.minimumHeight: 44
+                leftPadding: 12
+                rightPadding: 12
+                background: Item {
+                    Rectangle {
+                        objectName: "bluetoothPairingPill"
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        height: 30
+                        radius: height / 2
+                        color: addBluetoothDevice.hovered || addBluetoothDevice.down
+                            ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                        border.width: 1
+                        border.color: addBluetoothDevice.activeFocus ? "#F8F8FF" : "#5a5a5a"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                    }
+                }
+                onClicked: {
+                    Plasmoid.launchApplication("org.kde.bluedevilwizard");
+                    systemTrayState.expanded = false;
+                }
+                HeaderToolTip { text: parent.text }
+            }
+
+            PlasmaComponents.ToolButton {
                 readonly property bool isWeather: systemTrayState.activeApplet
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.weather"
                 visible: isWeather && String(Plasmoid.configuration.weatherApplication || "").length > 0

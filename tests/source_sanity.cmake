@@ -51,6 +51,19 @@ if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*
     message(FATAL_ERROR "Switch User must remain opt-in")
 endif()
 file(READ "${SOURCE_DIR}/qml/ExpandedRepresentation.qml" expanded_qml)
+if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
+   OR NOT expanded_qml MATCHES "bluetoothPairingPill"
+   OR NOT expanded_qml MATCHES "addBluetoothDevice.hovered \\|\\| addBluetoothDevice.down"
+   OR NOT expanded_qml MATCHES "org.kde.plasma.bluetooth"
+   OR NOT expanded_qml MATCHES "Add new device")
+    message(FATAL_ERROR "Bluetooth must offer the native pairing wizard")
+endif()
+if(NOT notification_history_qml MATCHES "textFormat: Text.StyledText"
+   OR NOT main_qml MATCHES "criticalSummary.truncated \\|\\| criticalBody.truncated"
+   OR NOT main_qml MATCHES "font.pointSize: 7"
+   OR NOT main_qml MATCHES "countInk.tightBoundingRect")
+    message(FATAL_ERROR "Formatted notification expansion and measured badge geometry must be preserved")
+endif()
 string(FIND "${expanded_qml}" "id: sessionActions" session_actions_position)
 if(session_actions_position LESS 0 OR control_center_qml MATCHES "id: sessionActions")
     message(FATAL_ERROR "Session controls belong in the popup header, not content")

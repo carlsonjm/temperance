@@ -2,7 +2,16 @@
 
 All notable changes to Temperance are documented here.
 
-## Unreleased
+## September 13, 2026 — accepted QoL freeze
+
+- Added native Bluetooth pairing access in the Bluetooth page header.
+- Increased the bell counter by one point with measured ink clearance.
+- Made formatted grouped/standalone history text expandable, with isolated
+  expansion controls; truncated critical banners offer a history-reading route.
+- Matched Bluetooth's Add new device highlight to the shared pill treatment.
+- Verified the installed build and five automated checks; J accepted the update.
+
+## Earlier notification polish
 
 - Kept normal actionable notifications in the ticker and critical alerts in
   banners; minimized banners remain in history without another ticker pass.
