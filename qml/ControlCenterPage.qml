@@ -308,7 +308,7 @@ Item {
             Layout.topMargin: 12
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
-                icon.source: Qt.resolvedUrl("../assets/icons/lucide/sun.svg")
+                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sun.svg"
                 icon.color: "#F8F8FF"
                 contentItem: SuiteIcon {
                     glyph: "sun"

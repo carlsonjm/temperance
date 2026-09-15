@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 #include <QApplication>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QFile>
+#include <QEventLoop>
+#include <QImage>
+#include <QQuickItem>
+#include <QQuickItemGrabResult>
 #include <QQuickWindow>
 #include <QTimer>
 #include <QQmlEngine>
@@ -13,6 +18,7 @@
 #include <Plasma/Containment>
 #include <Plasma/Corona>
 #include <PlasmaQuick/AppletQuickItem>
+#include <memory>
 
 class TestCorona : public Plasma::Corona {
 public:
@@ -131,6 +137,76 @@ int main(int argc, char **argv)
     if (!component.isReady()) {
         qCritical() << component.errors();
         return 4;
+    }
+    QQmlComponent iconComponent(&engine,
+        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/studio/warbler/temperance/SuiteIcon.qml")),
+        QQmlComponent::PreferSynchronous);
+    if (!iconComponent.isReady()) {
+        qCritical() << iconComponent.errors();
+        return 14;
+    }
+    QQuickWindow iconWindow;
+    iconWindow.setGeometry(0, 0, 64, 64);
+    iconWindow.setColor(Qt::transparent);
+    iconWindow.show();
+    const QStringList glyphs{
+        QStringLiteral("ellipsis"), QStringLiteral("settings"), QStringLiteral("plus"),
+        QStringLiteral("pin"), QStringLiteral("trash-2"), QStringLiteral("chevron-up"),
+        QStringLiteral("chevron-down"), QStringLiteral("log-out"), QStringLiteral("rotate-cw"),
+        QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"),
+        QStringLiteral("gauge")
+    };
+    for (const QString &glyph : glyphs) {
+        std::unique_ptr<QObject> icon(iconComponent.createWithInitialProperties(
+            {{QStringLiteral("glyph"), glyph}}));
+        auto *item = qobject_cast<QQuickItem *>(icon.get());
+        if (!item || !item->isVisible() || item->implicitWidth() < 18
+            || item->implicitHeight() < 18 || item->width() < 18 || item->height() < 18) {
+            qCritical() << "Zero-size or invisible SuiteIcon:" << glyph;
+            return 15;
+        }
+        item->setParentItem(iconWindow.contentItem());
+        auto *imageItem = item->findChild<QQuickItem *>(QStringLiteral("suiteIconImage"));
+        QElapsedTimer loadTimer;
+        loadTimer.start();
+        while (imageItem && imageItem->property("status").toInt() != 1
+               && imageItem->property("status").toInt() != 3
+               && loadTimer.elapsed() < 3000) {
+            app.processEvents(QEventLoop::AllEvents, 20);
+        }
+        if (!imageItem || !imageItem->isVisible()
+            || imageItem->property("status").toInt() != 1) {
+            qCritical() << "SuiteIcon source did not become visible:" << glyph
+                        << (imageItem ? imageItem->property("status") : QVariant());
+            return 16;
+        }
+        const auto grab = item->grabToImage(QSize(40, 40));
+        QEventLoop grabLoop;
+        QTimer grabTimeout;
+        grabTimeout.setSingleShot(true);
+        QObject::connect(grab.data(), &QQuickItemGrabResult::ready,
+            &grabLoop, &QEventLoop::quit);
+        QObject::connect(&grabTimeout, &QTimer::timeout,
+            &grabLoop, &QEventLoop::quit);
+        grabTimeout.start(3000);
+        grabLoop.exec();
+        const QImage rendered = grab->image();
+        bool hasVisibleInk = false;
+        for (int y = 0; y < rendered.height() && !hasVisibleInk; ++y) {
+            for (int x = 0; x < rendered.width(); ++x) {
+                const QColor pixel = rendered.pixelColor(x, y);
+                if (pixel.alpha() > 32 && pixel.red() > 180
+                    && pixel.green() > 180 && pixel.blue() > 180) {
+                    hasVisibleInk = true;
+                    break;
+                }
+            }
+        }
+        if (!hasVisibleInk) {
+            qCritical() << "SuiteIcon rendered without visible Ghost White ink:" << glyph;
+            return 17;
+        }
+        item->setParentItem(nullptr);
     }
     qInfo("Built Temperance plugin and nested QML components loaded successfully");
     return 0;

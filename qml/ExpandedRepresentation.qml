@@ -135,14 +135,15 @@ Item {
         Layout.preferredHeight: 30
         Layout.minimumHeight: 30
         Layout.maximumHeight: 30
+        leftPadding: 12
+        rightPadding: 12
+        topPadding: 6
+        bottomPadding: 6
         Accessible.name: text
-        contentItem: Item {
-            SuiteIcon {
-                anchors.centerIn: parent
-                width: 18
-                height: 18
-                glyph: powerPill.glyph
-            }
+        contentItem: SuiteIcon {
+            glyph: powerPill.glyph
+            implicitWidth: 18
+            implicitHeight: 18
         }
         background: Rectangle {
             radius: height / 2
@@ -213,7 +214,7 @@ Item {
                     visible: Plasmoid.configuration.showSwitchUser
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
-                    icon.source: Qt.resolvedUrl("../assets/icons/lucide/ellipsis.svg")
+                    icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis.svg"
                     icon.color: "#F8F8FF"
                     contentItem: SuiteIcon {
                         glyph: "ellipsis"
@@ -258,7 +259,7 @@ Item {
 
             PlasmaComponents.ToolButton {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                icon.source: Qt.resolvedUrl("../assets/icons/lucide/settings.svg")
+                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/settings.svg"
                 icon.color: "#F8F8FF"
                 contentItem: SuiteIcon {
                     glyph: "settings"
@@ -275,7 +276,7 @@ Item {
 
             PlasmaComponents.ToolButton {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                icon.source: Qt.resolvedUrl("../assets/icons/lucide/sliders-horizontal.svg")
+                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sliders-horizontal.svg"
                 icon.color: "#F8F8FF"
                 contentItem: SuiteIcon {
                     glyph: "sliders-horizontal"
@@ -293,7 +294,7 @@ Item {
                 visible: systemTrayState.activeApplet
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
                 text: i18n("Add new device")
-                icon.source: Qt.resolvedUrl("../assets/icons/lucide/plus.svg")
+                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/plus.svg"
                 icon.color: "#F8F8FF"
                 contentItem: Row {
                     spacing: 6
@@ -400,7 +401,7 @@ Item {
                 checkable: true
                 checked: Plasmoid.configuration.pin
                 onToggled: Plasmoid.configuration.pin = checked
-                icon.source: Qt.resolvedUrl("../assets/icons/lucide/pin.svg")
+                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/pin.svg"
                 icon.color: "#F8F8FF"
                 contentItem: SuiteIcon {
                     glyph: "pin"

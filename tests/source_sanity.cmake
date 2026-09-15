@@ -105,9 +105,15 @@ endif()
 
 if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"
    OR NOT EXISTS "${SOURCE_DIR}/assets/icons/lucide/LICENSE"
-   OR NOT expanded_qml MATCHES "assets/icons/lucide/ellipsis.svg"
-   OR NOT notification_history_qml MATCHES "assets/icons/lucide/trash-2.svg")
+   OR NOT expanded_qml MATCHES "temperance/ellipsis.svg"
+   OR NOT notification_history_qml MATCHES "temperance/trash-2.svg"
+   OR NOT expanded_qml MATCHES "temperance/settings.svg"
+   OR NOT control_center_qml MATCHES "temperance/sun.svg")
     message(FATAL_ERROR "Pinned Lucide suite action assets are incomplete")
+endif()
+if(expanded_qml MATCHES "contentItem:[\n\r ]*Item[\n\r ]*\\{[\n\r ]*SuiteIcon"
+   OR NOT expanded_qml MATCHES "component HeaderPowerPill:[^}]+leftPadding: 12[^}]+topPadding: 6[^}]+contentItem: SuiteIcon[\n\r ]*\\{[^}]+implicitWidth: 18[^}]+implicitHeight: 18")
+    message(FATAL_ERROR "Header session glyphs must use a directly sized SuiteIcon content item")
 endif()
 
 if(NOT main_qml MATCHES "reservedForBanner")

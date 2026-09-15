@@ -230,7 +230,7 @@ Item {
                         id: clearGroupButton
                         objectName: "notificationClearGroup"
                         text: i18n("Clear")
-                        icon.source: Qt.resolvedUrl("../assets/icons/lucide/trash-2.svg")
+                        icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/trash-2.svg"
                         icon.color: "#F8F8FF"
                         contentItem: SuiteIcon {
                             glyph: "trash-2"
@@ -249,8 +249,8 @@ Item {
                         id: expandGroupButton
                         objectName: "notificationExpandGroup"
                         icon.source: historyItem.isGroupExpanded
-                            ? Qt.resolvedUrl("../assets/icons/lucide/chevron-up.svg")
-                            : Qt.resolvedUrl("../assets/icons/lucide/chevron-down.svg")
+                            ? "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-up.svg"
+                            : "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-down.svg"
                         icon.color: "#F8F8FF"
                         contentItem: SuiteIcon {
                             glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
