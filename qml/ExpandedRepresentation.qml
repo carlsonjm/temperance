@@ -60,6 +60,11 @@ Item {
 
     function playEntrance() {
         entranceMotion.stop();
+        if (Kirigami.Units.longDuration <= 0) {
+            presentationOffset = 0;
+            presentationOpacity = 1;
+            return;
+        }
         presentationOffset = 24;
         presentationOpacity = 0;
         entranceMotion.restart();
@@ -91,7 +96,7 @@ Item {
             property: "presentationOpacity"
             from: 0
             to: 1
-            duration: 190
+            duration: Kirigami.Units.longDuration
             easing.type: Easing.OutCubic
         }
     }
@@ -107,9 +112,9 @@ Item {
 
     function pageTitle() {
         if (systemTrayState.activeApplet) return systemTrayState.activeApplet.plasmoid.title;
-        if (systemTrayState.page === "tray") return i18n("System Tray");
+        if (systemTrayState.page === "tray") return i18n("System tray");
         if (systemTrayState.page === "notifications") return i18n("Notifications");
-        return i18n("Control Center");
+        return i18n("Control center");
     }
 
     component HeaderToolTip: PlasmaComponents.ToolTip {
@@ -132,12 +137,11 @@ Item {
         Layout.maximumHeight: 30
         Accessible.name: text
         contentItem: Item {
-            Kirigami.Icon {
+            SuiteIcon {
                 anchors.centerIn: parent
                 width: 18
                 height: 18
-                source: powerPill.glyph
-                color: "#F8F8FF"
+                glyph: powerPill.glyph
             }
         }
         background: Rectangle {
@@ -188,20 +192,20 @@ Item {
                 spacing: 4
                 HeaderPowerPill {
                     visible: Plasmoid.configuration.showLogout
-                    glyph: "system-log-out"
-                    text: i18n("Log Out")
+                    glyph: "log-out"
+                    text: i18n("Log out")
                     onClicked: controlPage.requestSessionAction("logout")
                 }
                 HeaderPowerPill {
                     visible: Plasmoid.configuration.showRestart
-                    glyph: "system-reboot"
+                    glyph: "rotate-cw"
                     text: i18n("Restart")
                     onClicked: controlPage.requestSessionAction("restart")
                 }
                 HeaderPowerPill {
                     visible: Plasmoid.configuration.showShutdown
-                    glyph: "system-shutdown"
-                    text: i18n("Shut Down")
+                    glyph: "power"
+                    text: i18n("Shut down")
                     onClicked: controlPage.requestSessionAction("shutdown")
                 }
                 PlasmaComponents.ToolButton {
@@ -209,7 +213,12 @@ Item {
                     visible: Plasmoid.configuration.showSwitchUser
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
-                    icon.name: "view-more-symbolic"
+                    icon.source: Qt.resolvedUrl("../assets/icons/lucide/ellipsis.svg")
+                    icon.color: "#F8F8FF"
+                    contentItem: SuiteIcon {
+                        glyph: "ellipsis"
+                        implicitWidth: 18; implicitHeight: 18
+                    }
                     display: PlasmaComponents.AbstractButton.IconOnly
                     text: i18n("More session options")
                     onClicked: sessionMenu.open()
@@ -229,7 +238,7 @@ Item {
                         }
                         QQC2.MenuItem {
                             id: switchUserOption
-                            text: i18n("Switch User")
+                            text: i18n("Switch user")
                             implicitHeight: 36
                             onTriggered: controlPage.requestSessionAction("switchUser")
                             contentItem: PlasmaComponents.Label {
@@ -249,9 +258,14 @@ Item {
 
             PlasmaComponents.ToolButton {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                icon.name: "applications-utilities-symbolic"
+                icon.source: Qt.resolvedUrl("../assets/icons/lucide/settings.svg")
+                icon.color: "#F8F8FF"
+                contentItem: SuiteIcon {
+                    glyph: "settings"
+                    implicitWidth: 20; implicitHeight: 20
+                }
                 display: PlasmaComponents.AbstractButton.IconOnly
-                text: i18n("Open System Settings")
+                text: i18n("Open system settings")
                 onClicked: {
                     systemTrayState.expanded = false;
                     KCM.KCMLauncher.openSystemSettings("kcm_landingpage");
@@ -261,7 +275,12 @@ Item {
 
             PlasmaComponents.ToolButton {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                icon.name: "configure-symbolic"
+                icon.source: Qt.resolvedUrl("../assets/icons/lucide/sliders-horizontal.svg")
+                icon.color: "#F8F8FF"
+                contentItem: SuiteIcon {
+                    glyph: "sliders-horizontal"
+                    implicitWidth: 20; implicitHeight: 20
+                }
                 display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18n("Configure system tray icons")
                 onClicked: Plasmoid.internalAction("configure").trigger()
@@ -274,7 +293,20 @@ Item {
                 visible: systemTrayState.activeApplet
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
                 text: i18n("Add new device")
-                icon.name: "list-add-symbolic"
+                icon.source: Qt.resolvedUrl("../assets/icons/lucide/plus.svg")
+                icon.color: "#F8F8FF"
+                contentItem: Row {
+                    spacing: 6
+                    SuiteIcon {
+                        glyph: "plus"
+                        width: 18; height: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    PlasmaComponents.Label {
+                        text: addBluetoothDevice.text
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
                 Layout.minimumHeight: 44
                 leftPadding: 12
                 rightPadding: 12
@@ -305,7 +337,7 @@ Item {
                 visible: isWeather && String(Plasmoid.configuration.weatherApplication || "").length > 0
                 icon.name: "weather-clear-symbolic"
                 display: PlasmaComponents.AbstractButton.IconOnly
-                text: i18n("Open Weather")
+                text: i18n("Open weather")
                 onClicked: {
                     systemTrayState.expanded = false;
                     Plasmoid.launchApplication(Plasmoid.configuration.weatherApplication);
@@ -319,7 +351,7 @@ Item {
                 spacing: 7
 
                 PlasmaComponents.Label {
-                    text: i18n("Do Not Disturb")
+                    text: i18n("Do not disturb")
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     font.weight: Font.Medium
                     color: "#F8F8FF"
@@ -358,7 +390,7 @@ Item {
                     }
                     HeaderToolTip {
                         text: doNotDisturbPill.checked
-                            ? i18n("Turn off Do Not Disturb") : i18n("Turn on Do Not Disturb")
+                            ? i18n("Turn off Do not disturb") : i18n("Turn on Do not disturb")
                     }
                 }
             }
@@ -368,9 +400,14 @@ Item {
                 checkable: true
                 checked: Plasmoid.configuration.pin
                 onToggled: Plasmoid.configuration.pin = checked
-                icon.name: "window-pin"
+                icon.source: Qt.resolvedUrl("../assets/icons/lucide/pin.svg")
+                icon.color: "#F8F8FF"
+                contentItem: SuiteIcon {
+                    glyph: "pin"
+                    implicitWidth: 20; implicitHeight: 20
+                }
                 display: PlasmaComponents.AbstractButton.IconOnly
-                text: i18n("Keep Open")
+                text: i18n("Keep open")
                 HeaderToolTip { text: parent.text }
             }
         }

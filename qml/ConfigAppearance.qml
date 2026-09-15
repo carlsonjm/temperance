@@ -49,22 +49,22 @@ KCMUtils.ScrollViewKCM {
     header: Kirigami.FormLayout {
         QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Session controls:")
-            text: i18n("Show Log Out")
+            text: i18n("Show log out")
             checked: page.cfg_showLogout
             onToggled: page.cfg_showLogout = checked
         }
         QQC2.CheckBox {
-            text: i18n("Show Restart")
+            text: i18n("Show restart")
             checked: page.cfg_showRestart
             onToggled: page.cfg_showRestart = checked
         }
         QQC2.CheckBox {
-            text: i18n("Show Switch User in the session menu")
+            text: i18n("Show switch user in the session menu")
             checked: page.cfg_showSwitchUser
             onToggled: page.cfg_showSwitchUser = checked
         }
         QQC2.CheckBox {
-            text: i18n("Show Shut Down")
+            text: i18n("Show shut down")
             checked: page.cfg_showShutdown
             onToggled: page.cfg_showShutdown = checked
         }
@@ -78,7 +78,7 @@ KCMUtils.ScrollViewKCM {
 
         QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Popup controls:")
-            text: i18n("Show Keep Open pin")
+            text: i18n("Show keep open pin")
             checked: page.cfg_showPinButton
             onToggled: page.cfg_showPinButton = checked
         }

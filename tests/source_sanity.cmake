@@ -97,6 +97,19 @@ if(NOT main_qml MATCHES "component BannerActionButton: Item"
     message(FATAL_ERROR "Important-alert actions must retain touch-safe targets and compact rounded visuals")
 endif()
 
+if(NOT main_qml MATCHES "motionEnabled: Kirigami.Units.longDuration > 0"
+   OR NOT main_qml MATCHES "root.motionEnabled \\? Math.max\\(3000"
+   OR NOT main_qml MATCHES "root.motionEnabled[\n\r ]+\\? notificationContentArea.width : 2")
+    message(FATAL_ERROR "Notification travel must retain a reduced-motion path")
+endif()
+
+if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"
+   OR NOT EXISTS "${SOURCE_DIR}/assets/icons/lucide/LICENSE"
+   OR NOT expanded_qml MATCHES "assets/icons/lucide/ellipsis.svg"
+   OR NOT notification_history_qml MATCHES "assets/icons/lucide/trash-2.svg")
+    message(FATAL_ERROR "Pinned Lucide suite action assets are incomplete")
+endif()
+
 if(NOT main_qml MATCHES "reservedForBanner")
     message(FATAL_ERROR "Banner alerts must not simultaneously enter the ticker")
 endif()

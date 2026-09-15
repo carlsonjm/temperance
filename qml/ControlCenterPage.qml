@@ -308,7 +308,12 @@ Item {
             Layout.topMargin: 12
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
-                icon.name: "brightness-high"
+                icon.source: Qt.resolvedUrl("../assets/icons/lucide/sun.svg")
+                icon.color: "#F8F8FF"
+                contentItem: SuiteIcon {
+                    glyph: "sun"
+                    implicitWidth: 20; implicitHeight: 20
+                }
                 text: i18n("Open brightness settings")
                 display: PlasmaComponents.AbstractButton.IconOnly
                 onClicked: page.activateAppletById("org.kde.plasma.brightness")
@@ -419,8 +424,8 @@ Item {
                     spacing: 12
                     RowLayout {
                         spacing: Kirigami.Units.smallSpacing
-                        Kirigami.Icon {
-                            source: "speedometer-symbolic"
+                        SuiteIcon {
+                            glyph: "gauge"
                             implicitWidth: Kirigami.Units.iconSizes.small
                             implicitHeight: implicitWidth
                         }

@@ -184,7 +184,12 @@ Item {
                     PlasmaComponents.ToolButton {
                         id: clearGroupButton
                         text: i18n("Clear")
-                        icon.name: "edit-clear-history"
+                        icon.source: Qt.resolvedUrl("../assets/icons/lucide/trash-2.svg")
+                        icon.color: "#F8F8FF"
+                        contentItem: SuiteIcon {
+                            glyph: "trash-2"
+                            implicitWidth: 20; implicitHeight: 20
+                        }
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: page.notificationModel.close(
                             page.notificationModel.index(historyItem.index, 0))
@@ -196,8 +201,14 @@ Item {
 
                     PlasmaComponents.ToolButton {
                         id: expandGroupButton
-                        icon.name: historyItem.isGroupExpanded
-                            ? "go-up-symbolic" : "go-down-symbolic"
+                        icon.source: historyItem.isGroupExpanded
+                            ? Qt.resolvedUrl("../assets/icons/lucide/chevron-up.svg")
+                            : Qt.resolvedUrl("../assets/icons/lucide/chevron-down.svg")
+                        icon.color: "#F8F8FF"
+                        contentItem: SuiteIcon {
+                            glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
+                            implicitWidth: 20; implicitHeight: 20
+                        }
                         display: PlasmaComponents.AbstractButton.IconOnly
                         text: historyItem.isGroupExpanded
                             ? i18n("Collapse") : i18n("Expand")

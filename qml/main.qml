@@ -33,6 +33,7 @@ ContainmentItem {
     property var appletsById: ({})
     readonly property bool previewMode: Qt.application.name === "plasmawindowed"
     readonly property color accentColor: Plasmoid.configuration.accentColor || "#00F2BA"
+    readonly property bool motionEnabled: Kirigami.Units.longDuration > 0
     property bool demoNotificationVisible: false
     property int demoNotificationIndex: 0
     property int lastLiveNotificationCount: 0
@@ -137,7 +138,7 @@ ContainmentItem {
             scrollDelay.stop();
             tickerScroll.stop();
             tickerLabel.x = restingX;
-            if (scrollingEnabled && overflow > 2) scrollDelay.restart();
+            if (root.motionEnabled && scrollingEnabled && overflow > 2) scrollDelay.restart();
         }
 
         PlasmaComponents.Label {
@@ -147,7 +148,10 @@ ContainmentItem {
             text: ticker.text
             textFormat: Text.PlainText
             maximumLineCount: 1
-            Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            Behavior on opacity {
+                enabled: root.motionEnabled
+                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+            }
         }
 
         onTextChanged: {
@@ -160,8 +164,14 @@ ContainmentItem {
         onOverflowChanged: resizeSettle.restart()
         SequentialAnimation {
             id: tickerReveal
-            PauseAnimation { duration: 30 }
-            NumberAnimation { target: tickerLabel; property: "opacity"; to: 1; duration: 180; easing.type: Easing.OutCubic }
+            PauseAnimation { duration: root.motionEnabled ? 30 : 0 }
+            NumberAnimation {
+                target: tickerLabel
+                property: "opacity"
+                to: 1
+                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
+                easing.type: Easing.OutCubic
+            }
         }
 
         Timer {
@@ -169,7 +179,8 @@ ContainmentItem {
             interval: 1800
             repeat: false
             onTriggered: {
-                if (ticker.scrollingEnabled && ticker.overflow > 2) tickerScroll.restart();
+                if (root.motionEnabled && ticker.scrollingEnabled && ticker.overflow > 2)
+                    tickerScroll.restart();
             }
         }
 
@@ -1290,11 +1301,12 @@ ContainmentItem {
                             ScriptAction {
                                 script: {
                                     root.notificationCopyActive = true;
-                                    notificationMessageLayer.x = notificationContentArea.width;
+                                    notificationMessageLayer.x = root.motionEnabled
+                                        ? notificationContentArea.width : 2;
                                     notificationMessageLayer.opacity = 0;
                                 }
                             }
-                            PauseAnimation { duration: 210 }
+                            PauseAnimation { duration: root.motionEnabled ? 210 : 0 }
                             ScriptAction {
                                 script: {
                                     notificationMessageLayer.opacity = 1;
@@ -1303,9 +1315,12 @@ ContainmentItem {
                             NumberAnimation {
                                 target: notificationMessageLayer
                                 property: "x"
-                                to: -Math.max(notificationMessageLayer.width, notificationMessageLayer.flybyWidth)
-                                duration: Math.max(3000,
-                                    (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20)
+                                to: root.motionEnabled
+                                    ? -Math.max(notificationMessageLayer.width,
+                                        notificationMessageLayer.flybyWidth) : 2
+                                duration: root.motionEnabled ? Math.max(3000,
+                                    (notificationContentArea.width
+                                        + notificationMessageLayer.flybyWidth) * 20) : 1800
                                 easing.type: Easing.Linear
                             }
                             ScriptAction {
@@ -1345,12 +1360,12 @@ ContainmentItem {
                                     notificationMessageLayer.opacity = 0;
                                 }
                             }
-                            PauseAnimation { duration: 60 }
+                            PauseAnimation { duration: root.motionEnabled ? 60 : 0 }
                             NumberAnimation {
                                 target: notificationMessageLayer
                                 property: "opacity"
                                 to: 1
-                                duration: 180
+                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
                                 easing.type: Easing.OutCubic
                             }
                         }
@@ -1361,7 +1376,7 @@ ContainmentItem {
                                 target: notificationMessageLayer
                                 property: "opacity"
                                 to: 0
-                                duration: 130
+                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
                                 easing.type: Easing.InCubic
                             }
                             ScriptAction {
