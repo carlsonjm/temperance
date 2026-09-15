@@ -706,7 +706,7 @@ int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, 
 
     const qreal ownLeft = ownItem->mapToScene(QPointF(0, 0)).x();
     const qreal ownRight = ownItem->mapToScene(QPointF(ownItem->width(), 0)).x();
-    qreal nearestLeftEdge = -1;
+    qreal nearestRightEdge = -1;
 
     for (Plasma::Applet *applet : containment()->applets()) {
         if (!applet || applet == this || applet->destroyed()) {
@@ -725,18 +725,57 @@ int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, 
             continue;
         }
 
-        const qreal itemRight = item->mapToScene(QPointF(item->width(), 0)).x();
-        if (itemRight <= ownLeft + 1 && itemRight > nearestLeftEdge) {
-            nearestLeftEdge = itemRight;
+        const qreal itemLeft = item->mapToScene(QPointF(0, 0)).x();
+        if (itemLeft >= ownRight - 1
+            && (nearestRightEdge < 0 || itemLeft < nearestRightEdge)) {
+            nearestRightEdge = itemLeft;
         }
     }
 
-    if (nearestLeftEdge < 0) {
+    if (nearestRightEdge < 0) {
         return minimumWidth;
     }
 
     return std::max(minimumWidth,
-                    static_cast<int>(std::floor(ownRight - nearestLeftEdge - gap)));
+                    static_cast<int>(std::floor(nearestRightEdge - ownLeft - gap)));
+}
+
+void SystemTray::watchGeometryItem(QQuickItem *item)
+{
+    m_watchedGeometryItems.removeIf([](const QPointer<QQuickItem> &watched) {
+        return watched.isNull();
+    });
+    if (!item || m_watchedGeometryItems.contains(item)) {
+        return;
+    }
+    m_watchedGeometryItems.append(item);
+    const auto changed = [this] { Q_EMIT panelGeometryChanged(); };
+    connect(item, &QQuickItem::xChanged, this, changed);
+    connect(item, &QQuickItem::widthChanged, this, changed);
+    connect(item, &QQuickItem::visibleChanged, this, changed);
+    connect(item, &QQuickItem::windowChanged, this, changed);
+}
+
+void SystemTray::watchPanelGeometry(QQuickItem *visualParent)
+{
+    watchGeometryItem(visualParent);
+    if (!containment()) {
+        return;
+    }
+    if (!m_watchingPanelGeometry) {
+        m_watchingPanelGeometry = true;
+        connect(containment(), &Plasma::Containment::appletAdded, this,
+                [this](Plasma::Applet *) {
+                    QTimer::singleShot(0, this, [this] { Q_EMIT panelGeometryChanged(); });
+                });
+        connect(containment(), &Plasma::Containment::appletRemoved, this,
+                [this](Plasma::Applet *) { Q_EMIT panelGeometryChanged(); });
+    }
+    for (Plasma::Applet *applet : containment()->applets()) {
+        if (applet && PlasmaQuick::AppletQuickItem::hasItemForApplet(applet)) {
+            watchGeometryItem(PlasmaQuick::AppletQuickItem::itemForApplet(applet));
+        }
+    }
 }
 
 bool SystemTray::isSystemTrayApplet(const QString &appletId)

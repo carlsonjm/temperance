@@ -8,6 +8,7 @@
 
 #include <QAbstractItemModel>
 #include <QPointer>
+#include <QList>
 
 #include <KConfigWatcher>
 
@@ -67,10 +68,11 @@ public:
     Q_INVOKABLE QPointF popupPosition(QQuickItem *visualParent, int x, int y);
 
     /**
-     * Returns the horizontal panel space between this applet's fixed right
-     * edge and the nearest non-spacer panel widget on its left.
+     * Returns the horizontal panel space between this applet's fixed left
+     * edge and the nearest non-spacer panel widget on its right.
      */
     Q_INVOKABLE int availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const;
+    Q_INVOKABLE void watchPanelGeometry(QQuickItem *visualParent);
     Q_INVOKABLE int availablePopupHeight(QQuickItem *visualParent) const;
 
     /**
@@ -113,6 +115,7 @@ Q_SIGNALS:
     void performancePresetsChanged();
     void activePerformancePresetChanged();
     void volumeChanged();
+    void panelGeometryChanged();
 
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets
@@ -129,6 +132,7 @@ private:
     void initSettingsAndRegistry();
     void refreshPerformancePresets();
     void updateDefaultAudioSink(PulseAudioQt::Sink *sink);
+    void watchGeometryItem(QQuickItem *item);
 
     KConfigWatcher::Ptr m_configWatcher;
     bool m_xwaylandClientsScale = true;
@@ -147,4 +151,6 @@ private:
     QString m_activePerformancePreset;
     QString m_performanceHelper;
     QPointer<PulseAudioQt::Sink> m_defaultAudioSink;
+    QList<QPointer<QQuickItem>> m_watchedGeometryItems;
+    bool m_watchingPanelGeometry = false;
 };

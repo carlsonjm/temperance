@@ -47,6 +47,8 @@ int main(int argc, char **argv)
     QFile source(QStringLiteral(":/qt/qml/plasma/applet/studio/warbler/temperance/main.qml"));
     if (!source.open(QIODevice::ReadOnly)) return 6;
     const QString qml = QString::fromUtf8(source.readAll());
+    if (!qml.contains(QStringLiteral("Plasmoid.watchPanelGeometry(root)"))
+        || !qml.contains(QStringLiteral("function onPanelGeometryChanged()"))) return 13;
     QString navigationFunctions;
     for (const auto &name : {"activateAppletById", "openSurface"}) {
         const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));

@@ -56,8 +56,9 @@ ContainmentItem {
     readonly property int compactWidth: Math.max(320,
         Math.min(600, Number(Plasmoid.configuration.compactWidth) || 400))
     readonly property bool adaptiveWidth: Plasmoid.configuration.adaptiveWidth !== false
-    // Only the controls establish a floor. The ticker receives whatever live
-    // gap remains between the task dock and this applet's right edge.
+    // Only the controls establish a floor. On the left side of the centered
+    // dock, the ticker receives the gap from this applet's fixed left edge to
+    // the nearest real panel item on its right.
     readonly property int responsiveMinimumWidth: 10
         + 26 // network
         + 26 // tray
@@ -389,6 +390,7 @@ ContainmentItem {
     function refreshResponsiveWidth() {
         notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
         if (!adaptiveWidth) return;
+        Plasmoid.watchPanelGeometry(root);
         const measured = Plasmoid.availablePanelWidth(root, responsiveMinimumWidth, 6);
         if (Math.abs(measured - responsiveMeasuredWidth) > 1)
             responsiveMeasuredWidth = measured;
@@ -396,11 +398,9 @@ ContainmentItem {
 
     onAdaptiveWidthChanged: Qt.callLater(refreshResponsiveWidth)
     onResponsiveMinimumWidthChanged: Qt.callLater(refreshResponsiveWidth)
-    Timer {
-        interval: 120
-        repeat: true
-        running: root.visible
-        onTriggered: root.refreshResponsiveWidth()
+    Connections {
+        target: Plasmoid
+        function onPanelGeometryChanged() { Qt.callLater(root.refreshResponsiveWidth); }
     }
 
     function registerApplet(itemId, applet) {
