@@ -1,6 +1,8 @@
 # Temperance boundary with Ambient Tette
 
-Product boundary approved September 15, 2026.
+Product boundary approved September 15, 2026. The mirrored responsive geometry
+was implemented in integrated commit `fb2d4aa` (accepted candidate `a56288e`)
+and physically accepted by J on September 15, 2026.
 
 Temperance answers **what changed**. Today it implements notification intake,
 the left-side notification ticker, priority banners, and notification history.
@@ -26,9 +28,15 @@ Source applications and services own underlying state and actions. Temperance
 must not infer live progress from notification text, run a second job owner, or
 duplicate an outcome already presented through the shared notification model.
 
-The center application dock remains physically centered. Temperance may flex only
-inside its left-side allocation while Ambient Tette flexes inside the right-side
-allocation.
+The center application dock remains physically centered. Temperance measures and
+flexes inside its left-side allocation using event-driven panel geometry. On the
+right, the accepted order is `Tette launcher → responsive Ambient strip → task
+dock`. Ambient activity expansion uses one compact popup per activity; the
+combined full-screen activity view was removed before acceptance.
+
+The accepted compositor remains fixture-only through
+`TETTE_AMBIENT_FIXTURE=transfer-media`. Real activity providers and source action
+routing remain A2 work in Tette and are not part of this freeze.
 
 ## Future event-source slice
 
