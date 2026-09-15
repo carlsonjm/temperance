@@ -43,6 +43,12 @@ PlasmaCore.ToolTipArea {
     property bool inlinePresentation: false
     property var inlineIcon: presentationIcon
 
+    function suiteSentenceCaseLabel(value) {
+        if (value === "Disks & Devices") return i18n("Disks & devices");
+        if (value === "Display Configuration") return i18n("Display configuration");
+        return value;
+    }
+
     // Keep these in sync with HiddenItems.qml
     readonly property int margins: Kirigami.Units.smallSpacing
     readonly property int maxTextLines: cardBackground ? 1 : 2
@@ -200,7 +206,8 @@ PlasmaCore.ToolTipArea {
         }
         PlasmaComponents3.Label {
             Layout.fillWidth: true
-            text: abstractItem.presentationText || abstractItem.text
+            text: abstractItem.presentationText
+                || abstractItem.suiteSentenceCaseLabel(abstractItem.text)
             maximumLineCount: 1
             elide: Text.ElideRight
         }

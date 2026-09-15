@@ -409,11 +409,13 @@ Item {
                 width: parent.width
                 spacing: Kirigami.Units.mediumSpacing
 
-                Kirigami.Icon {
+                BellGlyph {
+                    objectName: "notificationEmptyBell"
                     Layout.alignment: Qt.AlignHCenter
-                    source: "notifications-symbolic"
-                    implicitWidth: Kirigami.Units.iconSizes.huge
-                    implicitHeight: implicitWidth
+                    Layout.preferredWidth: Kirigami.Units.iconSizes.huge
+                    Layout.preferredHeight: Kirigami.Units.iconSizes.huge
+                    glyphColor: "#F8F8FF"
+                    strokeWidth: 1.4
                     opacity: 0.34
                 }
                 PlasmaComponents.Label {
@@ -422,12 +424,6 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     font.weight: Font.DemiBold
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
-                }
-                PlasmaComponents.Label {
-                    Layout.fillWidth: true
-                    text: i18n("New alerts will appear in the dock first.")
-                    horizontalAlignment: Text.AlignHCenter
-                    opacity: 0.62
                 }
             }
         }

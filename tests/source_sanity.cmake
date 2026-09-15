@@ -32,8 +32,10 @@ if(NOT priority_policy MATCHES "CriticalUrgency" OR NOT priority_policy MATCHES 
     message(FATAL_ERROR "Critical and logout-cancellation alerts must keep their banner route")
 endif()
 file(READ "${SOURCE_DIR}/qml/ControlCenterPage.qml" control_center_qml)
+file(READ "${SOURCE_DIR}/qml/AbstractItem.qml" abstract_item_qml)
 file(READ "${SOURCE_DIR}/qml/OrganizedTrayPage.qml" organized_tray_qml)
 file(READ "${SOURCE_DIR}/qml/NotificationHistoryPage.qml" notification_history_qml)
+file(READ "${SOURCE_DIR}/qml/ExpandedRepresentation.qml" expanded_qml)
 file(READ "${SOURCE_DIR}/main.xml" config_xml)
 if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
    OR NOT notification_history_qml MATCHES "summaryLabel.truncated \\|\\| bodyLabel.truncated"
@@ -41,6 +43,14 @@ if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
    OR NOT notification_history_qml MATCHES "i18n\\(\"Show less\"\\)"
    OR NOT notification_history_qml MATCHES "radius: height / 2")
     message(FATAL_ERROR "Truncated notification history cards must expand in place")
+endif()
+if(NOT expanded_qml MATCHES "i18n\\(\"Do not disturb\"\\)"
+   OR notification_history_qml MATCHES "New alerts will appear in the dock first"
+   OR notification_history_qml MATCHES "notifications-symbolic"
+   OR NOT notification_history_qml MATCHES "objectName: \"notificationEmptyBell\""
+   OR NOT abstract_item_qml MATCHES "Disks & devices"
+   OR NOT abstract_item_qml MATCHES "Display configuration")
+    message(FATAL_ERROR "Visible notification and system tray copy must follow suite sentence case")
 endif()
 foreach(session_toggle showLogout showRestart showShutdown)
     if(NOT config_xml MATCHES "<entry name=\"${session_toggle}\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
@@ -50,7 +60,6 @@ endforeach()
 if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>false</default>")
     message(FATAL_ERROR "Switch User must remain opt-in")
 endif()
-file(READ "${SOURCE_DIR}/qml/ExpandedRepresentation.qml" expanded_qml)
 if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
    OR NOT expanded_qml MATCHES "bluetoothPairingPill"
    OR NOT expanded_qml MATCHES "addBluetoothDevice.hovered \\|\\| addBluetoothDevice.down"
