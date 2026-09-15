@@ -126,10 +126,25 @@ plasma_add_applet(studio.warbler.temperance
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml
         qml/StatusNotifierItem.qml
+        qml/SuiteIcon.qml
         qml/SystemTrayState.qml
         qml/config.qml
         qml/main.qml
-    RESOURCES main.xml
+    RESOURCES
+        main.xml
+        assets/icons/lucide/ellipsis.svg
+        assets/icons/lucide/settings.svg
+        assets/icons/lucide/plus.svg
+        assets/icons/lucide/pin.svg
+        assets/icons/lucide/trash-2.svg
+        assets/icons/lucide/chevron-up.svg
+        assets/icons/lucide/chevron-down.svg
+        assets/icons/lucide/log-out.svg
+        assets/icons/lucide/rotate-cw.svg
+        assets/icons/lucide/power.svg
+        assets/icons/lucide/sliders-horizontal.svg
+        assets/icons/lucide/sun.svg
+        assets/icons/lucide/gauge.svg
 )
 
 install(FILES assets/studio.warbler.temperance.png
