@@ -55,6 +55,8 @@ int main(int argc, char **argv)
     const QString qml = QString::fromUtf8(source.readAll());
     if (!qml.contains(QStringLiteral("Plasmoid.watchPanelGeometry(root)"))
         || !qml.contains(QStringLiteral("function onPanelGeometryChanged()"))) return 13;
+    if (!qml.contains(QStringLiteral("nearest real panel item on"))
+        || !qml.contains(QStringLiteral("its left to this applet's fixed right edge"))) return 14;
     QString navigationFunctions;
     for (const auto &name : {"activateAppletById", "openSurface"}) {
         const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));

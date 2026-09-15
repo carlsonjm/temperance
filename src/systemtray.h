@@ -68,8 +68,8 @@ public:
     Q_INVOKABLE QPointF popupPosition(QQuickItem *visualParent, int x, int y);
 
     /**
-     * Returns the horizontal panel space between this applet's fixed left
-     * edge and the nearest non-spacer panel widget on its right.
+     * Returns the horizontal panel space between this applet's fixed right
+     * edge and the nearest non-spacer panel widget on its left.
      */
     Q_INVOKABLE int availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const;
     Q_INVOKABLE void watchPanelGeometry(QQuickItem *visualParent);

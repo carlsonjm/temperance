@@ -706,7 +706,7 @@ int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, 
 
     const qreal ownLeft = ownItem->mapToScene(QPointF(0, 0)).x();
     const qreal ownRight = ownItem->mapToScene(QPointF(ownItem->width(), 0)).x();
-    qreal nearestRightEdge = -1;
+    qreal nearestLeftEdge = -1;
 
     for (Plasma::Applet *applet : containment()->applets()) {
         if (!applet || applet == this || applet->destroyed()) {
@@ -725,19 +725,18 @@ int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, 
             continue;
         }
 
-        const qreal itemLeft = item->mapToScene(QPointF(0, 0)).x();
-        if (itemLeft >= ownRight - 1
-            && (nearestRightEdge < 0 || itemLeft < nearestRightEdge)) {
-            nearestRightEdge = itemLeft;
+        const qreal itemRight = item->mapToScene(QPointF(item->width(), 0)).x();
+        if (itemRight <= ownLeft + 1 && itemRight > nearestLeftEdge) {
+            nearestLeftEdge = itemRight;
         }
     }
 
-    if (nearestRightEdge < 0) {
+    if (nearestLeftEdge < 0) {
         return minimumWidth;
     }
 
     return std::max(minimumWidth,
-                    static_cast<int>(std::floor(nearestRightEdge - ownLeft - gap)));
+                    static_cast<int>(std::floor(ownRight - nearestLeftEdge - gap)));
 }
 
 void SystemTray::watchGeometryItem(QQuickItem *item)
