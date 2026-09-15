@@ -22,6 +22,35 @@ Item {
 
     implicitHeight: Math.min(maximumHeight, notificationContent.implicitHeight + 24)
 
+    component NotificationActionPill: PlasmaComponents.ToolButton {
+        id: pill
+        display: PlasmaComponents.AbstractButton.TextOnly
+        implicitHeight: Math.max(44, contentItem.implicitHeight + 16)
+        leftPadding: 12
+        rightPadding: 12
+        Accessible.name: text
+        // ToolButton handles Space; consume Enter here before the card's
+        // default/open key handler can receive it through parent propagation.
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+        contentItem: PlasmaComponents.Label {
+            text: pill.text
+            textFormat: Text.PlainText
+            color: "#F8F8FF"
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.Wrap
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: pill.down ? Qt.rgba(1, 1, 1, 0.24)
+                : pill.hovered ? Qt.rgba(1, 1, 1, 0.12)
+                : Qt.rgba(1, 1, 1, 0.07)
+            border.width: pill.activeFocus ? 1 : 0
+            border.color: "#F8F8FF"
+        }
+    }
+
     ColumnLayout {
         id: notificationContent
         anchors.fill: parent
@@ -133,6 +162,22 @@ Item {
                 required property string applicationIconName
                 required property string desktopEntry
                 required property bool hasDefaultAction
+                required property var actionNames
+                required property var actionLabels
+                readonly property var producerActions: {
+                    const actions = [];
+                    if (isGroup) return actions;
+                    const names = actionNames || [];
+                    const labels = actionLabels || [];
+                    for (let i = 0; i < Math.min(names.length, labels.length); ++i) {
+                        // NotificationManager excludes the default action from
+                        // these roles; keep it exclusively on the card even if
+                        // a producer/model supplies it in the named-action list.
+                        if (names[i] && names[i] !== "default" && labels[i])
+                            actions.push({name: names[i], label: labels[i]});
+                    }
+                    return actions;
+                }
                 property bool detailsExpanded: false
                 readonly property bool canOpen: !isGroup
                     && (hasDefaultAction || desktopEntry.length > 0)
@@ -183,6 +228,7 @@ Item {
 
                     PlasmaComponents.ToolButton {
                         id: clearGroupButton
+                        objectName: "notificationClearGroup"
                         text: i18n("Clear")
                         icon.source: Qt.resolvedUrl("../assets/icons/lucide/trash-2.svg")
                         icon.color: "#F8F8FF"
@@ -201,6 +247,7 @@ Item {
 
                     PlasmaComponents.ToolButton {
                         id: expandGroupButton
+                        objectName: "notificationExpandGroup"
                         icon.source: historyItem.isGroupExpanded
                             ? Qt.resolvedUrl("../assets/icons/lucide/chevron-up.svg")
                             : Qt.resolvedUrl("../assets/icons/lucide/chevron-down.svg")
@@ -315,6 +362,35 @@ Item {
                                     border.width: detailsButton.activeFocus ? 1 : 0
                                     border.color: "#F8F8FF"
                                     Behavior on color { ColorAnimation { duration: 120 } }
+                                }
+                            }
+
+                            Flow {
+                                id: actionFlow
+                                Layout.fillWidth: true
+                                Layout.topMargin: 8
+                                spacing: 8
+                                // These controls stack above the card's earlier
+                                // MouseArea and accept their own pointer/key input.
+                                Repeater {
+                                    model: historyItem.producerActions
+                                    delegate: NotificationActionPill {
+                                        required property var modelData
+                                        objectName: "notificationAction-" + modelData.name
+                                        width: Math.min(implicitWidth, actionFlow.width)
+                                        text: modelData.label
+                                        onClicked: page.notificationModel.invokeAction(
+                                            page.notificationModel.index(historyItem.index, 0),
+                                            modelData.name)
+                                    }
+                                }
+                                NotificationActionPill {
+                                    objectName: "notificationDismiss"
+                                    width: Math.min(implicitWidth, actionFlow.width)
+                                    text: i18n("Dismiss")
+                                    Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
+                                    onClicked: page.notificationModel.close(
+                                        page.notificationModel.index(historyItem.index, 0))
                                 }
                             }
                         }
