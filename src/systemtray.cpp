@@ -744,15 +744,22 @@ void SystemTray::watchGeometryItem(QQuickItem *item)
     m_watchedGeometryItems.removeIf([](const QPointer<QQuickItem> &watched) {
         return watched.isNull();
     });
-    if (!item || m_watchedGeometryItems.contains(item)) {
-        return;
+    // availablePanelWidth() uses scene coordinates. Plasma moves ancestor
+    // AppletContainers while the applet roots keep their local x and width.
+    // Observe that entire dependency chain, including reparenting; the queued
+    // QML refresh will subscribe to any newly assigned ancestors.
+    for (; item; item = item->parentItem()) {
+        if (m_watchedGeometryItems.contains(item)) {
+            continue;
+        }
+        m_watchedGeometryItems.append(item);
+        const auto changed = [this] { Q_EMIT panelGeometryChanged(); };
+        connect(item, &QQuickItem::xChanged, this, changed);
+        connect(item, &QQuickItem::widthChanged, this, changed);
+        connect(item, &QQuickItem::visibleChanged, this, changed);
+        connect(item, &QQuickItem::windowChanged, this, changed);
+        connect(item, &QQuickItem::parentChanged, this, changed);
     }
-    m_watchedGeometryItems.append(item);
-    const auto changed = [this] { Q_EMIT panelGeometryChanged(); };
-    connect(item, &QQuickItem::xChanged, this, changed);
-    connect(item, &QQuickItem::widthChanged, this, changed);
-    connect(item, &QQuickItem::visibleChanged, this, changed);
-    connect(item, &QQuickItem::windowChanged, this, changed);
 }
 
 void SystemTray::watchPanelGeometry(QQuickItem *visualParent)

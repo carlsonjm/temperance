@@ -143,6 +143,7 @@ ContainmentItem {
 
         PlasmaComponents.Label {
             id: tickerLabel
+            objectName: "temperance-ticker-label"
             x: 0
             anchors.verticalCenter: parent.verticalCenter
             text: ticker.text
@@ -1027,6 +1028,7 @@ ContainmentItem {
 
     MouseArea {
         id: compactSurface
+        objectName: "temperance-compact-surface"
         width: root.width
         height: Math.min(42, root.height)
         anchors.right: parent.right
@@ -1044,6 +1046,7 @@ ContainmentItem {
 
             Rectangle {
                 id: notificationRail
+                objectName: "temperance-notification-rail"
                 Layout.fillWidth: true
                 Layout.minimumWidth: 34
                 Layout.fillHeight: true
@@ -1058,6 +1061,7 @@ ContainmentItem {
 
                     Rectangle {
                         id: notificationControls
+                        objectName: "temperance-ticker-controls"
                         visible: root.notificationsEnabled
                         readonly property real expandedWidth: root.hasAttention ? 56 : 26
                         property bool layoutOpen: active || revealed
@@ -1229,6 +1233,7 @@ ContainmentItem {
 
                     Item {
                         id: notificationContentArea
+                        objectName: "temperance-ticker-content"
                         visible: root.notificationsEnabled
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -1268,6 +1273,7 @@ ContainmentItem {
                                 spacing: 0
                                 RailTicker {
                                     id: notificationTicker
+                                    objectName: "temperance-live-ticker"
                                     Layout.fillWidth: true
                                     alignRight: true
                                     exposeOverflow: notificationIntro.running
@@ -1286,6 +1292,7 @@ ContainmentItem {
                             spacing: 0
                             RailTicker {
                                 id: demoNotificationTicker
+                                objectName: "temperance-demo-ticker"
                                 Layout.fillWidth: true
                                 alignRight: true
                                 exposeOverflow: notificationIntro.running

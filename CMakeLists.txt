@@ -190,3 +190,12 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_BINARY_DIR}/bin)
     set_tests_properties(temperance_panel_load PROPERTIES TIMEOUT 30)
 endif()
+
+if(BUILD_TESTING)
+    find_package(LayerShellQt REQUIRED)
+    add_executable(temperance-ticker-panel-test tests/TickerPanelTest.cpp)
+    target_link_libraries(temperance-ticker-panel-test PRIVATE Qt6::Widgets Qt6::Quick Qt6::Test
+        Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface)
+    add_dependencies(temperance-ticker-panel-test studio.warbler.temperance)
+    # Requires the unchanged accepted Tette plugin as an explicit fixture input.
+endif()
