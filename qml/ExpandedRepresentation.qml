@@ -352,7 +352,7 @@ Item {
                 spacing: 7
 
                 PlasmaComponents.Label {
-                    text: i18n("Do not disturb")
+                    text: i18n("do not disturb")
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     font.weight: Font.Medium
                     color: "#F8F8FF"
@@ -391,7 +391,7 @@ Item {
                     }
                     HeaderToolTip {
                         text: doNotDisturbPill.checked
-                            ? i18n("Turn off Do not disturb") : i18n("Turn on Do not disturb")
+                            ? i18n("Turn off do not disturb") : i18n("Turn on do not disturb")
                     }
                 }
             }

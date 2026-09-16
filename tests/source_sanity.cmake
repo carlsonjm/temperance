@@ -44,13 +44,16 @@ if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
    OR NOT notification_history_qml MATCHES "radius: height / 2")
     message(FATAL_ERROR "Truncated notification history cards must expand in place")
 endif()
-if(NOT expanded_qml MATCHES "i18n\\(\"Do not disturb\"\\)"
+if(NOT expanded_qml MATCHES "i18n\\(\"do not disturb\"\\)"
+   OR expanded_qml MATCHES "i18n\\(\"Do not disturb\"\\)"
+   OR NOT expanded_qml MATCHES "i18n\\(\"Turn off do not disturb\"\\)"
+   OR NOT expanded_qml MATCHES "i18n\\(\"Turn on do not disturb\"\\)"
    OR notification_history_qml MATCHES "New alerts will appear in the dock first"
    OR notification_history_qml MATCHES "notifications-symbolic"
    OR NOT notification_history_qml MATCHES "objectName: \"notificationEmptyBell\""
    OR NOT abstract_item_qml MATCHES "Disks & devices"
    OR NOT abstract_item_qml MATCHES "Display configuration")
-    message(FATAL_ERROR "Visible notification and system tray copy must follow suite sentence case")
+    message(FATAL_ERROR "Visible notification and system tray copy must follow suite casing rules")
 endif()
 foreach(session_toggle showLogout showRestart showShutdown)
     if(NOT config_xml MATCHES "<entry name=\"${session_toggle}\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
