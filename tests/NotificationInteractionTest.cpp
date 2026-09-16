@@ -46,7 +46,7 @@ public:
         Q_EMIT dataChanged(idx, idx, {Roles::IsGroupExpandedRole});
         return true;
     }
-    void append(bool grouped, bool group = false) {
+    void append(bool grouped, bool group = false, bool actionable = false) {
         const int row = rows.size();
         beginInsertRows({}, row, row);
         rows.append({{QStringLiteral("isGroup"), group}, {QStringLiteral("isInGroup"), grouped},
@@ -57,7 +57,13 @@ public:
             {QStringLiteral("applicationName"), QStringLiteral("Fixture")},
             {QStringLiteral("applicationIconName"), QString()}, {QStringLiteral("desktopEntry"), QStringLiteral("fixture")},
             {QStringLiteral("hasDefaultAction"), true},
-            {QStringLiteral("actionNames"), QStringList{}}, {QStringLiteral("actionLabels"), QStringList{}}});
+            {QStringLiteral("actionNames"), actionable
+                ? QStringList{QStringLiteral("accept"), QStringLiteral("reject"),
+                    QStringLiteral("default"), QStringLiteral("unlabelled")}
+                : QStringList{}},
+            {QStringLiteral("actionLabels"), actionable
+                ? QStringList{QStringLiteral("Accept"), QStringLiteral("Reject"), QStringLiteral("Open")}
+                : QStringList{}}});
         endInsertRows();
         Q_EMIT countChanged();
     }
@@ -254,6 +260,9 @@ private Q_SLOTS:
         QVERIFY(actionBackground);
         QTRY_COMPARE(actionBackground->height(), 30.0);
         QVERIFY(actionBackground->height() < accept->height());
+        QCOMPARE(accept->property("visualOutlineWidth").toReal(), 1.0);
+        QCOMPARE(accept->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#F8F8FF")));
+        QCOMPARE(accept->property("visualFill").value<QColor>().alpha(), 0);
         auto *device = touch ? QTest::createTouchDevice() : nullptr;
         const auto click = [&](QQuickItem *target) {
             const auto point = target->mapToScene(QPointF(target->width()/2, target->height()/2)).toPoint();
@@ -262,6 +271,13 @@ private Q_SLOTS:
                 QTest::touchEvent(&window, device).release(0, point, &window);
             } else QTest::mouseClick(&window, Qt::LeftButton, Qt::NoModifier, point);
         };
+        if (!touch) {
+            const auto hoverPoint = accept->mapToScene(
+                QPointF(accept->width() / 2, accept->height() / 2)).toPoint();
+            QTest::mouseMove(&window, hoverPoint);
+            QTRY_VERIFY(accept->property("hovered").toBool());
+            QTRY_VERIFY(accept->property("visualFill").value<QColor>().alpha() > 0);
+        }
         click(accept);
         QTRY_COMPARE(model.actionCalls, 1);
         QCOMPARE(model.actionRow, 1);
@@ -276,6 +292,7 @@ private Q_SLOTS:
         QCOMPARE(model.closedRow, 1); // Individual child, never the group index.
         QCOMPARE(model.defaultCalls, 0);
         accept->forceActiveFocus();
+        QTRY_COMPARE(accept->property("visualOpacity").toReal(), 1.0);
         QTest::keyClick(&window, Qt::Key_Space);
         QTRY_COMPARE(model.actionCalls, 3);
         QCOMPARE(model.defaultCalls, 0);
@@ -300,6 +317,49 @@ private Q_SLOTS:
         QTRY_COMPARE(model.closeCalls, 2);
         QCOMPARE(model.closedRow, 0); // Group clear keeps the group API semantics.
         QCOMPARE(model.defaultCalls, 1);
+        item->setParentItem(nullptr);
+    }
+
+    void repeatedActionGeometry() {
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        HistoryFixture model;
+        model.append(false, true);
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 900}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        QQuickWindow window;
+        window.resize(430, 900);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 900));
+        window.show();
+        const qreal initialImplicitHeight = item->implicitHeight();
+        model.append(true, false, true);
+        model.append(false, false, true);
+        QTRY_VERIFY(item->implicitHeight() > initialImplicitHeight);
+        for (int index : {1, 2}) {
+            QQuickItem *actionRow = nullptr;
+            QTRY_VERIFY((actionRow = findItem(item, QStringLiteral("notificationRow%1").arg(index))));
+            auto *actionCard = actionRow->findChild<QQuickItem *>("notificationCard");
+            auto *actionFlow = actionRow->findChild<QQuickItem *>("notificationActionFlow");
+            auto *firstAction = findItem(actionRow, QStringLiteral("notificationAction-accept"));
+            auto *secondAction = findItem(actionRow, QStringLiteral("notificationAction-reject"));
+            QVERIFY(actionCard && actionFlow && firstAction && secondAction);
+            QTRY_VERIFY(actionFlow->height() >= 44);
+            for (auto *action : {firstAction, secondAction}) {
+                const QRectF actionRect = action->mapRectToItem(actionCard, action->boundingRect());
+                QVERIFY2(actionRect.top() >= 0 && actionRect.bottom() <= actionCard->height() + 0.5,
+                    "Repeated notification actions must remain inside their card");
+            }
+        }
         item->setParentItem(nullptr);
     }
 

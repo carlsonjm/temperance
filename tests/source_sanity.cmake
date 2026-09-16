@@ -48,6 +48,10 @@ endif()
 if(NOT notification_history_qml MATCHES "id: notificationHeader"
    OR NOT notification_history_qml MATCHES "visible: applicationLabel.visible && summaryLabel.visible"
    OR NOT notification_history_qml MATCHES "anchors.topMargin: Kirigami.Units.mediumSpacing"
+   OR NOT notification_history_qml MATCHES "Layout.preferredHeight: childrenRect.height"
+   OR NOT notification_history_qml MATCHES "color: pill.hovered \\|\\| pill.down"
+   OR NOT notification_history_qml MATCHES "border.width: 1"
+   OR NOT notification_history_qml MATCHES "border.color: \"#F8F8FF\""
    OR NOT notification_history_qml MATCHES "height: 30"
    OR NOT notification_history_qml MATCHES "implicitHeight: 44")
     message(FATAL_ERROR "Notification cards must retain the compact header/body/action geometry")

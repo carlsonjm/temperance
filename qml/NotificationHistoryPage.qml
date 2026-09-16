@@ -24,6 +24,10 @@ Item {
 
     component NotificationActionPill: PlasmaComponents.ToolButton {
         id: pill
+        readonly property color visualFill: actionBackground.color
+        readonly property color visualOutline: actionBackground.border.color
+        readonly property real visualOutlineWidth: actionBackground.border.width
+        readonly property real visualOpacity: actionBackground.opacity
         display: PlasmaComponents.AbstractButton.TextOnly
         implicitHeight: 44
         leftPadding: 10
@@ -41,17 +45,22 @@ Item {
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.Wrap
         }
-        background: Rectangle {
-            objectName: "notificationActionBackground"
-            anchors.centerIn: parent
-            width: Math.max(32, parent.width - 8)
-            height: 30
-            radius: height / 2
-            color: pill.down ? Qt.rgba(1, 1, 1, 0.24)
-                : pill.hovered ? Qt.rgba(1, 1, 1, 0.12)
-                : Qt.rgba(1, 1, 1, 0.07)
-            border.width: pill.activeFocus ? 1 : 0
-            border.color: "#F8F8FF"
+        background: Item {
+            Rectangle {
+                id: actionBackground
+                objectName: "notificationActionBackground"
+                anchors.centerIn: parent
+                width: Math.max(32, parent.width - 8)
+                height: 30
+                radius: height / 2
+                color: pill.hovered || pill.down
+                    ? Qt.rgba(1, 1, 1, pill.down ? 0.20 : 0.12) : "transparent"
+                border.width: 1
+                border.color: "#F8F8FF"
+                opacity: pill.activeFocus ? 1 : 0.62
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on opacity { NumberAnimation { duration: 120 } }
+            }
         }
     }
 
@@ -400,7 +409,10 @@ Item {
 
                             Flow {
                                 id: actionFlow
+                                objectName: "notificationActionFlow"
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: childrenRect.height
+                                Layout.minimumHeight: childrenRect.height
                                 Layout.topMargin: 4
                                 spacing: 6
                                 // These controls stack above the card's earlier
