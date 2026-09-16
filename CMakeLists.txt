@@ -122,6 +122,7 @@ plasma_add_applet(studio.warbler.temperance
         qml/ItemLoader.qml
         qml/NotificationHistoryPage.qml
         qml/OrganizedTrayPage.qml
+        qml/PanelPopupAnchor.qml
         qml/PlasmoidItem.qml
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml

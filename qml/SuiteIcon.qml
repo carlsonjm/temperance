@@ -6,6 +6,7 @@ import QtQuick
 
 Item {
     required property string glyph
+    property real glyphInset: 0
     objectName: "suiteIcon-" + glyph
     implicitWidth: 20
     implicitHeight: 20
@@ -13,6 +14,7 @@ Item {
     Image {
         objectName: "suiteIconImage"
         anchors.fill: parent
+        anchors.margins: parent.glyphInset
         source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/"
             + parent.glyph + ".svg"
         fillMode: Image.PreserveAspectFit

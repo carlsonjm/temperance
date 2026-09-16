@@ -36,6 +36,7 @@ file(READ "${SOURCE_DIR}/qml/AbstractItem.qml" abstract_item_qml)
 file(READ "${SOURCE_DIR}/qml/OrganizedTrayPage.qml" organized_tray_qml)
 file(READ "${SOURCE_DIR}/qml/NotificationHistoryPage.qml" notification_history_qml)
 file(READ "${SOURCE_DIR}/qml/ExpandedRepresentation.qml" expanded_qml)
+file(READ "${SOURCE_DIR}/qml/PanelPopupAnchor.qml" popup_anchor_qml)
 file(READ "${SOURCE_DIR}/main.xml" config_xml)
 if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
    OR NOT notification_history_qml MATCHES "summaryLabel.truncated \\|\\| bodyLabel.truncated"
@@ -43,6 +44,19 @@ if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
    OR NOT notification_history_qml MATCHES "i18n\\(\"Show less\"\\)"
    OR NOT notification_history_qml MATCHES "radius: height / 2")
     message(FATAL_ERROR "Truncated notification history cards must expand in place")
+endif()
+if(NOT notification_history_qml MATCHES "id: notificationHeader"
+   OR NOT notification_history_qml MATCHES "visible: applicationLabel.visible && summaryLabel.visible"
+   OR NOT notification_history_qml MATCHES "anchors.topMargin: Kirigami.Units.mediumSpacing"
+   OR NOT notification_history_qml MATCHES "height: 30"
+   OR NOT notification_history_qml MATCHES "implicitHeight: 44")
+    message(FATAL_ERROR "Notification cards must retain the compact header/body/action geometry")
+endif()
+if(NOT expanded_qml MATCHES "glyphInset: 2"
+   OR NOT popup_anchor_qml MATCHES "readonly property real panelGap: 18"
+   OR NOT main_qml MATCHES "PanelPopupAnchor \\{"
+   OR NOT main_qml MATCHES "floating: 10")
+    message(FATAL_ERROR "Session glyph and popup anchor geometry must retain visible polish")
 endif()
 if(NOT expanded_qml MATCHES "i18n\\(\"do not disturb\"\\)"
    OR expanded_qml MATCHES "i18n\\(\"Do not disturb\"\\)"

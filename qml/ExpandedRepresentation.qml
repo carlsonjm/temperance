@@ -142,6 +142,9 @@ Item {
         Accessible.name: text
         contentItem: SuiteIcon {
             glyph: powerPill.glyph
+            // ToolButton expands its contentItem to the available 18 px box.
+            // Inset the rendered image so the visible glyph is truly 14 px.
+            glyphInset: 2
             implicitWidth: 18
             implicitHeight: 18
         }

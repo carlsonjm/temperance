@@ -147,6 +147,34 @@ int main(int argc, char **argv)
         qCritical() << iconComponent.errors();
         return 14;
     }
+    QQmlComponent anchorComponent(&engine,
+        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/studio/warbler/temperance/PanelPopupAnchor.qml")),
+        QQmlComponent::PreferSynchronous);
+    if (!anchorComponent.isReady()) {
+        qCritical() << anchorComponent.errors();
+        return 18;
+    }
+    const auto makeAnchor = [&](Plasma::Types::Location location, bool vertical) {
+        return std::unique_ptr<QObject>(anchorComponent.createWithInitialProperties({
+            {QStringLiteral("vertical"), vertical}, {QStringLiteral("surfaceWidth"), 240.0},
+            {QStringLiteral("surfaceHeight"), 48.0}, {QStringLiteral("panelLocation"), int(location)}
+        }));
+    };
+    auto bottomAnchor = makeAnchor(Plasma::Types::BottomEdge, false);
+    auto topAnchor = makeAnchor(Plasma::Types::TopEdge, false);
+    auto leftAnchor = makeAnchor(Plasma::Types::LeftEdge, true);
+    auto rightAnchor = makeAnchor(Plasma::Types::RightEdge, true);
+    const auto *bottomItem = qobject_cast<QQuickItem *>(bottomAnchor.get());
+    const auto *topItem = qobject_cast<QQuickItem *>(topAnchor.get());
+    const auto *leftItem = qobject_cast<QQuickItem *>(leftAnchor.get());
+    const auto *rightItem = qobject_cast<QQuickItem *>(rightAnchor.get());
+    if (!bottomItem || !topItem || !leftItem || !rightItem
+        || bottomItem->y() != -18 || topItem->y() != 18
+        || leftItem->x() != 18 || rightItem->x() != -18
+        || bottomItem->x() != 239 || bottomItem->width() != 1) {
+        qCritical() << "Popup anchor does not provide the intended panel clearance";
+        return 19;
+    }
     QQuickWindow iconWindow;
     iconWindow.setGeometry(0, 0, 64, 64);
     iconWindow.setColor(Qt::transparent);
@@ -210,6 +238,22 @@ int main(int argc, char **argv)
         }
         item->setParentItem(nullptr);
     }
+    std::unique_ptr<QObject> insetIcon(iconComponent.createWithInitialProperties({
+        {QStringLiteral("glyph"), QStringLiteral("power")}, {QStringLiteral("glyphInset"), 2.0}
+    }));
+    auto *insetItem = qobject_cast<QQuickItem *>(insetIcon.get());
+    if (!insetItem) return 20;
+    insetItem->setWidth(18);
+    insetItem->setHeight(18);
+    insetItem->setParentItem(iconWindow.contentItem());
+    app.processEvents();
+    auto *insetImage = insetItem->findChild<QQuickItem *>(QStringLiteral("suiteIconImage"));
+    if (!insetImage || insetImage->width() != 14 || insetImage->height() != 14
+        || insetImage->x() != 2 || insetImage->y() != 2) {
+        qCritical() << "Session glyph inset did not reduce the rendered image to 14 px";
+        return 20;
+    }
+    insetItem->setParentItem(nullptr);
     qInfo("Built Temperance plugin and nested QML components loaded successfully");
     return 0;
 }

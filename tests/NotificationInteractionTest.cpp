@@ -112,7 +112,26 @@ private Q_SLOTS:
         auto *more = row->findChild<QQuickItem *>("notificationReadMore");
         auto *body = row->findChild<QQuickItem *>("notificationBody");
         auto *summary = row->findChild<QQuickItem *>("notificationSummary");
-        QVERIFY(more && body && summary);
+        auto *application = row->findChild<QQuickItem *>("notificationApplication");
+        auto *header = row->findChild<QQuickItem *>("notificationHeader");
+        auto *separator = row->findChild<QQuickItem *>("notificationHeaderSeparator");
+        auto *card = row->findChild<QQuickItem *>("notificationCard");
+        auto *cardContent = row->findChild<QQuickItem *>("notificationCardContent");
+        QVERIFY(more && body && summary && application && header && separator && card && cardContent);
+        QTRY_VERIFY(header->height() > 0 && body->height() > 0);
+        const QRectF headerRect = header->mapRectToScene(header->boundingRect());
+        const QRectF bodyRect = body->mapRectToScene(body->boundingRect());
+        QVERIFY2(bodyRect.top() >= headerRect.bottom(), "Notification body must sit directly below the header row");
+        QVERIFY2(card->height() - cardContent->implicitHeight() <= 16,
+            "Notification card vertical padding must stay compact");
+        QCOMPARE(application->isVisible(), !grouped);
+        QCOMPARE(separator->isVisible(), !grouped);
+        if (!grouped) {
+            const QRectF applicationRect = application->mapRectToScene(application->boundingRect());
+            const QRectF summaryRect = summary->mapRectToScene(summary->boundingRect());
+            QVERIFY2(qAbs(applicationRect.center().y() - summaryRect.center().y()) < 1.0,
+                "Application and title must share one header row");
+        }
         QTRY_VERIFY(more->isVisible());
         QVERIFY(body->property("truncated").toBool());
         auto *device = touch ? QTest::createTouchDevice() : nullptr;
@@ -140,6 +159,49 @@ private Q_SLOTS:
         click(findItem(row, QStringLiteral("notificationDismiss")));
         QTRY_COMPARE(model.closedRow, 0);
         QCOMPARE(model.defaultCalls, 1);
+        item->setParentItem(nullptr);
+    }
+    void layoutFallbacks() {
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        HistoryFixture model;
+        model.append(false);
+        model.append(false);
+        model.append(false);
+        model.rows[0][QStringLiteral("applicationName")] = QString();
+        model.rows[1][QStringLiteral("summary")] = QString();
+        model.rows[2][QStringLiteral("applicationName")] = QString();
+        model.rows[2][QStringLiteral("summary")] = QString();
+        for (auto &row : model.rows) row[QStringLiteral("body")] = QStringLiteral("Body only");
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        QQuickWindow window;
+        window.resize(430, 600);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 600));
+        window.show();
+        for (int index = 0; index < 3; ++index) {
+            QQuickItem *row = nullptr;
+            QTRY_VERIFY((row = findItem(item, QStringLiteral("notificationRow%1").arg(index))));
+            auto *application = row->findChild<QQuickItem *>("notificationApplication");
+            auto *summary = row->findChild<QQuickItem *>("notificationSummary");
+            auto *separator = row->findChild<QQuickItem *>("notificationHeaderSeparator");
+            auto *header = row->findChild<QQuickItem *>("notificationHeader");
+            auto *body = row->findChild<QQuickItem *>("notificationBody");
+            QVERIFY(application && summary && separator && header && body);
+            QVERIFY(!separator->isVisible());
+            QCOMPARE(header->isVisible(), index != 2);
+            QTRY_VERIFY(body->isVisible() && body->height() > 0);
+        }
         item->setParentItem(nullptr);
     }
     void actions_data() {
@@ -188,6 +250,10 @@ private Q_SLOTS:
         QVERIFY(!findItem(row, QStringLiteral("notificationAction-unlabelled")));
         QCOMPARE(accept->property("text").toString(), QStringLiteral("Accept"));
         QTRY_VERIFY(accept->isVisible() && accept->height() >= 44 && accept->width() >= 44);
+        auto *actionBackground = accept->findChild<QQuickItem *>("notificationActionBackground");
+        QVERIFY(actionBackground);
+        QTRY_COMPARE(actionBackground->height(), 30.0);
+        QVERIFY(actionBackground->height() < accept->height());
         auto *device = touch ? QTest::createTouchDevice() : nullptr;
         const auto click = [&](QQuickItem *target) {
             const auto point = target->mapToScene(QPointF(target->width()/2, target->height()/2)).toPoint();

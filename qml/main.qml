@@ -1611,19 +1611,15 @@ ContainmentItem {
             onTriggered: systemTrayState.expanded = dialog.visible
         }
 
-        // Keep every popup attached to the status end of the responsive rail.
-        // Plasma handles screen-edge clamping; the dialog's floating margin
-        // supplies the deliberate 10 px safety from the panel and screen.
-        Item {
+        // Move the visual parent itself away from the panel. Dialog.floating
+        // controls screen-border treatment and does not create this panel gap.
+        PanelPopupAnchor {
             id: popupAnchor
-            width: root.vertical ? compactSurface.width : 1
-            height: compactSurface.height
-            x: root.vertical
-                ? (Plasmoid.location === PlasmaCore.Types.LeftEdge ? 10
-                    : Plasmoid.location === PlasmaCore.Types.RightEdge ? -10 : 0)
-                : compactSurface.width - width
-            y: Plasmoid.location === PlasmaCore.Types.TopEdge ? 10
-                : Plasmoid.location === PlasmaCore.Types.BottomEdge ? -10 : 0
+            objectName: "popupAnchor"
+            vertical: root.vertical
+            surfaceWidth: compactSurface.width
+            surfaceHeight: compactSurface.height
+            panelLocation: Plasmoid.location
         }
 
         Item {

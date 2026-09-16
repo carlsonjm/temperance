@@ -25,9 +25,9 @@ Item {
     component NotificationActionPill: PlasmaComponents.ToolButton {
         id: pill
         display: PlasmaComponents.AbstractButton.TextOnly
-        implicitHeight: Math.max(44, contentItem.implicitHeight + 16)
-        leftPadding: 12
-        rightPadding: 12
+        implicitHeight: 44
+        leftPadding: 10
+        rightPadding: 10
         Accessible.name: text
         // ToolButton handles Space; consume Enter here before the card's
         // default/open key handler can receive it through parent propagation.
@@ -42,6 +42,10 @@ Item {
             wrapMode: Text.Wrap
         }
         background: Rectangle {
+            objectName: "notificationActionBackground"
+            anchors.centerIn: parent
+            width: Math.max(32, parent.width - 8)
+            height: 30
             radius: height / 2
             color: pill.down ? Qt.rgba(1, 1, 1, 0.24)
                 : pill.hovered ? Qt.rgba(1, 1, 1, 0.12)
@@ -269,9 +273,12 @@ Item {
 
                 Rectangle {
                     id: notificationCard
+                    objectName: "notificationCard"
                     activeFocusOnTab: historyItem.canOpen
                     Accessible.role: Accessible.Button
-                    Accessible.name: historyItem.summary
+                    Accessible.name: historyItem.summary.length > 0 ? historyItem.summary
+                        : historyItem.applicationName.length > 0 ? historyItem.applicationName
+                        : historyItem.body
                     Accessible.onPressAction: historyItem.openNotification()
                     Keys.onReturnPressed: historyItem.openNotification()
                     Keys.onSpacePressed: historyItem.openNotification()
@@ -284,14 +291,19 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    height: notificationCardContent.implicitHeight + Kirigami.Units.largeSpacing * 2
+                    height: notificationCardContent.implicitHeight
+                        + Kirigami.Units.mediumSpacing * 2
                     radius: 18
                     color: Qt.rgba(1, 1, 1, 0.075)
 
                     RowLayout {
                         id: notificationCardContent
+                        objectName: "notificationCardContent"
                         anchors.fill: parent
-                        anchors.margins: Kirigami.Units.largeSpacing
+                        anchors.leftMargin: Kirigami.Units.largeSpacing
+                        anchors.rightMargin: Kirigami.Units.largeSpacing
+                        anchors.topMargin: Kirigami.Units.mediumSpacing
+                        anchors.bottomMargin: Kirigami.Units.mediumSpacing
                         spacing: Kirigami.Units.mediumSpacing
 
                         Item {
@@ -302,27 +314,48 @@ Item {
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: 4
 
-                            PlasmaComponents.Label {
+                            RowLayout {
+                                id: notificationHeader
+                                objectName: "notificationHeader"
                                 Layout.fillWidth: true
-                                visible: !historyItem.isInGroup
-                                text: historyItem.applicationName || i18n("Notifications")
-                                opacity: 0.68
-                                elide: Text.ElideRight
-                            }
+                                visible: applicationLabel.visible || summaryLabel.visible
+                                spacing: 4
 
-                            PlasmaComponents.Label {
-                                id: summaryLabel
-                                objectName: "notificationSummary"
-                                Layout.fillWidth: true
-                                text: historyItem.summary
-                                textFormat: Text.PlainText
-                                font.weight: Font.DemiBold
-                                wrapMode: Text.Wrap
-                                maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
-                                elide: historyItem.detailsExpanded
-                                    ? Text.ElideNone : Text.ElideRight
+                                PlasmaComponents.Label {
+                                    id: applicationLabel
+                                    objectName: "notificationApplication"
+                                    Layout.fillWidth: !summaryLabel.visible
+                                    Layout.maximumWidth: summaryLabel.visible
+                                        ? Kirigami.Units.gridUnit * 8 : Number.POSITIVE_INFINITY
+                                    visible: !historyItem.isInGroup
+                                        && historyItem.applicationName.length > 0
+                                    text: historyItem.applicationName
+                                    opacity: 0.68
+                                    elide: Text.ElideRight
+                                }
+
+                                PlasmaComponents.Label {
+                                    objectName: "notificationHeaderSeparator"
+                                    visible: applicationLabel.visible && summaryLabel.visible
+                                    text: "·"
+                                    opacity: 0.42
+                                }
+
+                                PlasmaComponents.Label {
+                                    id: summaryLabel
+                                    objectName: "notificationSummary"
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: historyItem.summary
+                                    textFormat: Text.PlainText
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: historyItem.detailsExpanded ? 1000 : 1
+                                    elide: historyItem.detailsExpanded
+                                        ? Text.ElideNone : Text.ElideRight
+                                }
                             }
                             PlasmaComponents.Label {
                                 id: bodyLabel
@@ -368,8 +401,8 @@ Item {
                             Flow {
                                 id: actionFlow
                                 Layout.fillWidth: true
-                                Layout.topMargin: 8
-                                spacing: 8
+                                Layout.topMargin: 4
+                                spacing: 6
                                 // These controls stack above the card's earlier
                                 // MouseArea and accept their own pointer/key input.
                                 Repeater {
