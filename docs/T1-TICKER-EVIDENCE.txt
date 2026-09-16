@@ -47,4 +47,3 @@ QINFO  : TickerPanelTest::livePanel() T1_BOUNDARY QRect(1920,0 1280x720) false 2
 QINFO  : TickerPanelTest::livePanel() T1_REAL 1 200 56 -3.55005 DPR 1.5
 QINFO  : TickerPanelTest::livePanel() T1_ERRORS 1 4
 Totals: 3 passed, 0 failed, 0 skipped, 0 blacklisted, 15133ms
-

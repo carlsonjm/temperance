@@ -1,7 +1,9 @@
-# T1: ticker geometry invalidation candidate
+# T1: accepted ticker geometry correction
 
 Base: `10fb70f0e5cc602afd68991b6c0ea154a88c73dc`.
-Branch: `a/temperance-t1`.
+Accepted candidate: `8022fc649e375e489a22a498c930dff1111f8845`.
+J physically passed September 16: ticker is back to normal with both stock
+spacers expanding. Freeze publication adds documentation only.
 
 ## Correction
 
@@ -45,18 +47,17 @@ bash tests/run-ticker-panel-test.sh /tmp/temperance-t1-build/bin/temperance-tick
 Other matrix suffixes: `1920 1080 1 1` and `1920 1080 1.5 1`.
 Evidence excerpts are in `T1-TICKER-EVIDENCE.txt`.
 
-## Limit and physical gate
+## Physical acceptance and scope
 
-The test reproduces the missing parent-only geometry invalidation. It does not
-reproduce J's exact 128px live-root startup sequence, nor prove this is the only
-cause of that physical collapse. This is a source candidate for physical review,
-not a physically accepted fix. No live install, restart, configuration change,
-or push was performed.
+The test reproduces the missing parent-only geometry invalidation, not the exact
+live startup sequence. J's installed September 16 test supplies physical evidence:
+the ticker is back to normal with expanding spacers. The installed plugin was
+compared byte for byte with `/tmp/temperance-t1-build` and matched. Documentation
+freeze does not change production sources. No further live install, restart,
+configuration change or logout is performed during publication.
 
-After PM/J installs, with restored expanding spacers: verify the ticker fills
-its assigned free span; expand/collapse arrows; send long text and verify scroll;
-grow/shrink tasks and confirm no overlap; repeat adaptive off/on and tablet /
-monitor / fractional scale. Reject if the tiny strip persists after restart.
+Acceptance closes the ticker regression only. Notification layout, popup
+clearance, casing, power-icon scale, spacing and other polish remain open.
 
 Rollback: build accepted commit `10fb70f` in a separate checkout/build directory,
 install that Temperance artifact and restart Plasma. No branch reset or spacer
