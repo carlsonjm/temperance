@@ -2,13 +2,13 @@
 
 This is the sole Temperance execution plan. No implementation packet is active.
 
-## 1. Verify September 17 production candidate
+## 1. September 17 presentation polish
 
-In one physical pass, check notification action padding/hover and a real producer
-Snooze action; distinct recent cards and long-history scrolling without clipping;
-Control Center and System tray spacing; popup clearance; casing; session glyph
-scale; dismissal; and pointer, touch, keyboard, and focus behavior. Accept the
-packet or record a measured failure, then freeze passed items.
+**Status:** Complete and physically accepted.
+
+Notification action padding and hover, producer-owned Snooze dispatch, distinct
+recent cards, popup fitting, and Control Center/System Tray spacing passed the
+September 17 physical review. Reopen only for a measured regression.
 
 ## 2. Decide on presenter switching
 
