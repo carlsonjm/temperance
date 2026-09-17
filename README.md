@@ -1,34 +1,83 @@
 <p align="center">
-  <img src="assets/studio.warbler.temperance.png" width="180" alt="Temperance widget icon">
+  <img src="assets/studio.warbler.temperance.png" width="180" alt="Temperance">
 </p>
 
 # Temperance
 
-Stay informed without losing your flow. Temperance brings quiet notifications,
-weather, battery status, and everyday controls together in one cohesive Plasma 6
-panel widget. A compact Control Center and organized System Tray keep the
-essentials close. It replaces only the stock System Tray; the launcher, task
-manager, and clock remain independent panel widgets.
+Temperance is a Status Bar for KDE Plasma 6. It keeps system state and recent
+changes together in one panel widget: notifications, weather, battery, common
+controls, and the System Tray.
 
-## Highlights
+Temperance replaces Plasma's stock System Tray presentation. Your launcher, task
+manager, clock, and other panel widgets remain independent.
 
-- Animated notification intake, compact paging, and app-grouped history
-- Weather and battery information without a second status row
-- Volume, brightness, connectivity, battery, and capability-detected performance controls
-- Native tray visibility settings
-- Solid `#141414` popups with a subtle `#333333` outline and bottom-up motion
-- Configurable accent color, adaptive panel width, optional notification and weather
-  modules, temperature unit, weather application, priority banners, pin visibility,
-  and Control Center entries
+## Status Bar
+
+The compact panel view can show:
+
+- Recent notification activity
+- Current weather
+- Battery state
+- Volume and brightness
+- Network and other System Tray entries
+
+Temperance adjusts its width to the space available in the panel. Optional modules
+can be turned off, and the remaining sections share the available space.
+
+## Notifications
+
+New notifications appear briefly in the Status Bar and remain available in recent
+history. Notifications from the same application can be grouped and expanded.
+
+When an application supplies actions such as reply, dismiss, or snooze, Temperance
+keeps those actions with the notification. It does not invent actions that the
+application did not provide.
+
+Critical and selected system notifications can appear as larger banners. Ordinary
+notifications stay in the quieter ticker and history flow.
+
+## Control Center
+
+Control Center provides quick access to volume, brightness, connectivity, battery,
+and the performance controls supported by the current system.
+
+Unavailable controls are omitted. Temperance does not show a control that the
+machine cannot use.
+
+## System Tray
+
+The organized System Tray keeps application and device entries in one place. Each
+entry can be shown in the panel, placed in the tray popup, or disabled through the
+widget settings.
+
+Control Center and System Tray remain available even when optional notification or
+weather sections are turned off.
+
+## Configure
+
+Right-click the widget and choose **Configure Temperance**.
+
+- **Tray Entries** controls which native tray entries appear in the panel, in the
+  popup, or nowhere.
+- **Appearance** controls the highlight color, automatic or fixed width, optional
+  notification and weather sections, temperature unit, weather application,
+  important-alert behavior, popup pin, and Control Center entries.
+
+When online weather fallback is enabled, Temperance sends the configured station
+coordinates or location name to Open-Meteo for the current temperature. Disable
+the fallback to keep weather data local to Plasma's installed Weather widget.
 
 ## Compatibility
 
-The 1.1.0 binary bundle is built for x86_64 against Plasma 6.7.4, Qt 6.11.2,
-and KDE Frameworks 6.29. Temperance contains a native C++ plugin and must be
-rebuilt after incompatible Qt or Plasma upgrades.
+The 1.1.0 binary bundle targets x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE Frameworks
+6.29 on a horizontal Wayland panel.
 
-The source requires Qt 6.9 or newer and KDE Frameworks 6.20 or newer. It targets
-a horizontal Plasma panel on Wayland.
+Temperance includes a native C++ plugin and must be rebuilt after incompatible Qt
+or Plasma upgrades. Building from source requires Qt 6.9 or newer and KDE
+Frameworks 6.20 or newer.
+
+Because the package identity changed in 1.1.0, remove the previous package and add
+Temperance to the panel as a new widget after installing this release.
 
 ## Build from source
 
@@ -42,55 +91,36 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Install the compiled target using a compatible native package. Native Plasma
-plugins are system-installed; they are not ordinary user-local `.plasmoid`
-archives.
-
-Create the tested, installable release archive with:
+Create the tested installable release archive with:
 
 ```sh
 ./packaging/build-release.sh
 ```
 
-## Configure
+Native Plasma plugins are installed through a compatible native package. They are
+not ordinary user-local `.plasmoid` archives.
 
-Right-click the widget and choose **Configure Temperance**.
+## Development
 
-- **Tray Entries** controls which native tray entries are shown, placed in the
-  popup, or disabled.
-- **Appearance** controls the highlight color, adaptive panel width, optional
-  notification and weather modules, weather unit and application,
-  important-system-alert behavior, popup pin, and which tray entries become
-  Control Center pills. Control Center and System Tray remain permanently available.
+Read `AGENTS.md` before working in this repository. The documentation index is in
+`docs/README.md`.
 
-When the optional online weather fallback is enabled, Temperance sends the
-configured weather station coordinates or location name to Open-Meteo to obtain
-the current temperature. Disable the fallback to keep weather data local to the
-installed Plasma Weather widget.
+- `docs/CURRENT_STATE.md` describes current behavior and limitations.
+- `docs/NEXT-ROADMAP.md` is the execution plan.
+- `docs/DECISIONS.md` records durable architecture and invariants.
 
-Because the package identity changed in 1.1.0, remove the previous package and
-add Temperance to the panel as a new widget after installing this release.
+Run the repository checks before proposing a build:
 
-## Distribution
-
-Compiled widgets are distributed through source control and native package
-channels rather than as ordinary widget-store archives.
-
-## Documentation
-
-- [Current state](docs/CURRENT_STATE.md) describes the product as it exists.
-- [Next roadmap](docs/NEXT-ROADMAP.md) is the only execution plan.
-- [Decisions](docs/DECISIONS.md) records durable architecture and invariants.
-- [Documentation index](docs/README.md) classifies the remaining references and
-  archived evidence.
+```bash
+./verify.sh
+```
 
 ## Architecture and attribution
 
-The tray host is derived from KDE Plasma Workspace 6.7.4 (tag `v6.7.4`, commit
-`fd05f4c88ab093aee23ce137bf6f2412437c9bba`). Presentation code lives in `qml/`
-and the inherited native tray implementation lives in `src/` and
+The tray host is derived from KDE Plasma Workspace 6.7.4. Presentation code lives
+in `qml/`; the inherited native tray implementation lives in `src/` and
 `libdbusmenuqt/`.
 
-See individual SPDX headers, the complete texts in [LICENSES](LICENSES), and
+See the SPDX headers, [LICENSES](LICENSES), and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for licensing and required
 third-party attribution.
