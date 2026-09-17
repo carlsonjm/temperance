@@ -198,5 +198,5 @@ if(BUILD_TESTING)
     target_link_libraries(temperance-ticker-panel-test PRIVATE Qt6::Widgets Qt6::Quick Qt6::Test
         Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface)
     add_dependencies(temperance-ticker-panel-test studio.warbler.temperance)
-    # Requires the unchanged accepted Tette plugin as an explicit fixture input.
+    # The real-panel fixture pairs Temperance with a separately built Tette plugin.
 endif()

@@ -1223,7 +1223,6 @@ ContainmentItem {
                                         : (root.demoNotificationIndex + 1) + "/" + root.demoNotificationTexts.length)
                                     : (railNotifications.count > 0
                                         ? railNotifications.count : root.demoNotificationTexts.length)
-                                // Previous 8px at 96dpi = 6pt; increase by 1pt.
                                 font.pointSize: 7
                                 font.weight: Font.Medium
                                 color: "#F8F8FF"
