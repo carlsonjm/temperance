@@ -1,24 +1,26 @@
 # Agent instructions
 
-These instructions apply to the entire Temperance repository.
+Applies to the whole repository.
 
-## Startup order
+## Startup
 
-1. Read `AGENTS.md`.
-2. Read the canonical current roadmap/state document: `docs/CURRENT_STATE.md`.
-3. Read `SWARM.md`.
-4. Read only source/docs relevant to the assigned task.
-5. Do not reconstruct historical context unless one of those sources explicitly requires it.
+Read only:
 
-## Coordination
+1. `AGENTS.md`
+2. `docs/CURRENT_STATE.md`
+3. `docs/NEXT-ROADMAP.md`
+4. `SWARM.md`
 
-- Use `SWARM.md` only for currently active cross-agent handoffs and runtime coordination.
-- Keep no more than three live handoffs, with no more than 50 words per handoff.
-- Delete completed handoffs instead of archiving them in `SWARM.md`.
-- Record durable architectural and engineering decisions in the canonical decision or architecture documents.
-- Let Git history record implementation changes.
-- Keep code comments limited to code behavior and reasoning. Never put agent conversation, handoffs, PM instructions, implementation history, or authorship notes in code comments.
+Then read task-relevant source and decisions. Load visual-language guidance for
+presentation work and `docs/archive/` only for regression or provenance.
 
-## Scope discipline
+## Rules
 
-Preserve existing behavior unless the assigned task explicitly requires a behavior change. Keep edits focused on the assigned source and documentation.
+- Preserve behavior unless the task explicitly changes it.
+- Keep one implementation owner. Add `SWARM.md` entries only when another live
+  agent must act; remove completed handoffs.
+- Keep plans in `NEXT-ROADMAP.md`, current truth in `CURRENT_STATE.md`, and
+  durable rationale in `DECISIONS.md`.
+- Leave history to Git and `docs/archive/`; keep narration out of live docs/code.
+- Preserve licensing, ABI, packaging, ownership, geometry, and accessibility
+  invariants unless a roadmap item changes them.

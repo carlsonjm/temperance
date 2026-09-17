@@ -1,280 +1,178 @@
 # Itasca visual language
 
-**Status:** Accepted suite reference derived from the Kadunce, Tettegouche, and
-Temperance interfaces. This defines shared visual grammar and guides future audit
-and alignment work without replacing app-specific interaction contracts.
+This is the shared presentation reference for Temperance. It guides new work
+without replacing app-specific interaction, ownership, or accessibility contracts.
 
 ## Intent
 
-Itasca should feel quiet, spatial, and touch-native. Shape, spacing, and contrast
-should explain what an object does before copy has to explain it. Preserve the
-character already visible in Tette's launcher, Temperance's rail and popups, and
-Kadunce's cards rather than adopting a generic desktop theme wholesale.
+Itasca is quiet, spatial, and touch-native. Shape, spacing, contrast, and motion
+should explain an object's role before copy does. Preserve established product
+silhouettes and source-owned identity.
 
-## Shape means function
+## Shape and grouping
 
-### Pills are controls
+**Pills are controls.** They act, choose, switch, filter, or change state. Their
+radius is half their height. Related controls share alignment and treatment;
+icon-only controls may be circular when their target is square. Passive labels
+must not look actionable.
 
-A pill means the user can act, choose, switch, filter, or change state.
+**Rounded boxes are information.** Use 14 px corners for compact cards and menus,
+16 px for list/result cards, and 18 px for substantial popup or alert surfaces.
+Information boxes may contain pills, but the outer surface remains visually
+distinct.
 
-- Radius equals half the control height.
-- Related controls stay adjacent. A media transport is one compact cluster.
-- Icon-only controls may be circular when their hit area is square.
-- Selected controls may use a quiet fill. Hover may add a lighter fill. Focus may
-  add an outline.
-- A passive label must not look like a pill merely because it is short.
+Preserve rounded continuity:
 
-Examples: search, Do Not Disturb, power actions, sort choices, file actions,
-previous/play/next, Cancel, and popup action buttons.
+- Align adjacent control centerlines and use one radius treatment per family.
+- Keep at least 4 px between separate pills; use 6–8 px outside a tight cluster.
+- Make highlights follow the object's silhouette.
+- Put surplus width after a complete group, never between its children.
 
-### Rounded boxes are information
+## Spacing
 
-A rounded rectangle means content, context, or a bounded region of information.
-
-- Use 14 px corners for compact cards and menus, 16 px for list/result cards, and
-  18 px for substantial popup surfaces and alert cards.
-- Large spatial sheets may retain an accepted app-specific outer radius when
-  changing it would alter the product silhouette.
-- Information boxes may contain pills. The outer box remains distinct from the
-  controls within it.
-- Do not make informational status button-shaped unless the whole object acts.
-
-Examples: notification cards, alert cards, file tiles, menus, transfer details,
-and expanded system surfaces.
-
-### Rounded continuity
-
-- Align the centerlines of adjacent controls.
-- Use one radius treatment for all members of a control family.
-- Keep a minimum 4 px visual gap between separate pills; use 6–8 px when controls
-  are not one tight transport cluster.
-- A highlight follows the object's silhouette instead of introducing another
-  unrelated corner radius.
-- Surplus width belongs after a complete activity or group, never between children.
-
-## Spacing hierarchy
-
-Use a 4 px base rhythm. These are semantic roles, not an immediate migration list.
+Use a 4 px base rhythm.
 
 | Role | Value | Use |
 |---|---:|---|
-| Hairline | 2 px | Baseline correction, stacked-label gap, optical offset |
-| Tight | 4 px | One control cluster, icon/badge relationship |
-| Compact | 8 px | Icon-to-label, compact internal grouping |
-| Standard | 12 px | Card padding, ordinary row grouping |
-| Comfortable | 16 px | Larger control inset, related content groups |
+| Hairline | 2 px | Optical correction or stacked-label gap |
+| Tight | 4 px | One cluster or icon/badge relation |
+| Compact | 8 px | Icon-to-label and compact grouping |
+| Standard | 12 px | Card padding and ordinary rows |
+| Comfortable | 16 px | Larger control inset |
 | Section | 20 px | Pane columns and major local groups |
 | Surface | 24 px | Popup breathing room and section separation |
 
-- Keep spacing within a group smaller than spacing between groups.
-- Preserve touch targets when glyphs are compact. Panel icon hit areas should
-  normally remain at least 40–44 px.
-- Responsive layouts remove optional information before crushing useful spacing.
-- If content fits naturally, show it. Do not leave usable space empty while
-  eliding or hiding information.
+Spacing inside a group stays smaller than spacing between groups. Compact glyphs
+do not reduce touch targets; panel controls normally retain 40–44 px targets.
+Responsive layouts remove optional information before crushing useful spacing and
+use available space before eliding content.
 
-## Color roles
+## Color
 
-These consolidate values already used by Tette and Temperance. Code migration is
-a later engineering block.
-
-| Role | Current baseline | Purpose |
+| Role | Value | Purpose |
 |---|---|---|
-| Surface | `#141414` | Primary dark popup/card surface |
+| Surface | `#141414` | Primary popup/card surface |
 | Raised control | `#242424` | Resting filled control |
 | Divider / quiet border | `#333333` | Low-emphasis separation |
-| Strong border | `#5A5A5A` | Focusable edge or control outline |
-| Primary text/glyph — Ghost White | `#F8F8FF` | Main labels and icons |
-| Soft primary | `#F2FFFFFF` | Large content surfaces where primary is too bright |
-| Secondary text | `#A8FFFFFF` | Supporting labels and metadata |
-| Edge hint | `#88FFFFFF` | Spatial invitations and quiet edge affordances |
-| Subtle fill | `7–8% white` | Resting information-card separation |
-| Hover fill | `12–13% white` | Pointer hover and light emphasis |
-| Selected fill | `24% white` | Current result, row, or local option |
+| Strong border | `#5A5A5A` | Focusable edge |
+| Primary / Ghost White | `#F8F8FF` | Main labels and suite glyphs |
+| Soft primary | `#F2FFFFFF` | Large surfaces where full white is too bright |
+| Secondary | `#A8FFFFFF` | Supporting labels and metadata |
+| Edge hint | `#88FFFFFF` | Quiet spatial affordance |
+| Subtle fill | 7–8% white | Resting information separation |
+| Hover fill | 12–13% white | Pointer hover |
+| Selected fill | 24% white | Current local selection |
 | Accent | Plasma/user accent | Active state, progress, high-value signal |
-| Dark accent foreground | `#102729` | Content on a bright accent fill |
-| Error | `#FFB5A8` | Actionable failure copy |
+| Accent foreground | `#102729` | Content on a bright accent |
+| Error | `#FFB5A8` | Actionable failure |
 
-- Accent communicates state; it is not general decoration or the default hover.
-- Prefer opacity steps of soft white over unrelated grays on translucent surfaces.
-- Keep primary text and glyphs near-white; use opacity for supporting context.
-- Application artwork and source icons may retain native color. Suite chrome stays
-  monochrome unless state requires accent or error color.
+Accent communicates state rather than decoration. Prefer opacity steps of soft
+white to unrelated grays. Application artwork and provider identity may keep native
+color; suite chrome stays monochrome unless state requires accent or error color.
 
-## Highlights and state
+## Interaction states
 
 | State | Treatment |
 |---|---|
-| Resting control | Transparent or `#242424`, based on whether its boundary must be visible |
+| Resting | Transparent or `#242424` when the boundary must remain visible |
 | Hover | 12–13% white fill, 100–150 ms ease-out |
-| Pressed | Slightly stronger fill; no dramatic scale change |
-| Selected/current | 24% white fill, or accent for durable active state |
-| Keyboard focus | Near-white/strong-border outline following the same silhouette |
+| Pressed | Slightly stronger fill without dramatic scale |
+| Selected | 24% white fill or accent for a durable active state |
+| Keyboard focus | Near-white/strong outline on the same silhouette |
 | Disabled | Reduced contrast without implying selection |
 | Attention | Small accent, badge, or purposeful motion |
-| Success | Brief check only when completion is authoritative |
-| Error | Warm error copy/icon and direct recovery action when available |
+| Error | Warm error copy/icon with a direct recovery action |
 
-Hover scale may reach roughly 1.06 for isolated panel icons. Do not combine scale,
+An isolated panel icon may scale to about 1.06 on hover. Do not combine scale,
 strong fill, outline, and color change for one ordinary hover.
 
-## Motion and animation
+## Motion
 
-Motion explains state, causality, spatial continuity, or completion. It should not
-decorate an idle interface or delay an action the system already understands.
-
-### Timing tiers
+Motion explains state, causality, continuity, or authoritative completion.
 
 | Tier | Duration | Use |
 |---|---:|---|
-| Immediate feedback | 80–120 ms | Press response, tiny color/opacity acknowledgement |
-| Micro transition | 120–160 ms | Hover, focus, toggle fill, icon state change |
-| State transition | 160–200 ms | Reveal/hide, popup opacity, compact content replacement |
-| Spatial transition | 220–280 ms | Drawer, card, sheet, responsive geometry, mode continuity |
-| Confirmation hold | 700–900 ms | Brief authoritative success/check state before removal |
+| Immediate | 80–120 ms | Press and tiny acknowledgement |
+| Micro | 120–160 ms | Hover, focus, toggle, icon state |
+| Local | 180–240 ms | Expand/collapse or content replacement |
+| Spatial | 240–360 ms | Popup, card entrance, edge travel |
+| Completion hold | 700–900 ms | Brief authoritative success before removal |
 
-Durations describe perceived motion. Use platform-scaled/Kirigami durations where
-they preserve these relationships and respect the user's animation settings.
+Use cubic ease-out for entrances and ease-in-out for reversible state changes.
+Avoid bounce or overshoot for factual state. Animate a container before decorating
+its children; keep control clusters together; keep stagger below about 60 ms.
 
-### Easing
+Every transition must be interruptible, reversible, or retargetable from its
+visible state. User input wins immediately. The state owner owns completion:
+presentation may interpolate known state but must not invent progress, success, or
+failure. Source loss removes stale activity without a false success animation, and
+stable identity updates an existing surface instead of replaying its entrance.
 
-- Use ease-out cubic for entrances and direct manipulation settling.
-- Use ease-in-out cubic for reversible geometry or state morphs.
-- Exits may be slightly faster than entrances; they must not feel abrupt.
-- Linear motion is reserved for continuous progress or a genuinely constant-rate
-  indicator.
-- Springs are reserved for physical or spatial continuity, such as an arriving
-  floating surface. Avoid springing routine hover, text, or status changes.
+Follow the platform animation scale. Under reduced motion, keep final geometry and
+state communication with short opacity or color changes; remove travel, overshoot,
+and stagger. Animation is never the only state signal.
 
-### Choreography
+## Type and casing
 
-- Animate the container or relationship before individually animating its details.
-- Keep related controls together during motion; never scatter a cluster to fill
-  changing width.
-- Responsive disclosure should fade/settle optional information without moving the
-  stable actionable core unnecessarily.
-- Small sequencing delays may clarify order, but repeated stagger should stay
-  subtle and normally below 60 ms.
-- A source-authoritative completed activity may become a check for 700–900 ms,
-  then leave. Filesystem quiet time alone cannot claim success.
-- Progress changes should remain legible and stable; do not bounce or overshoot a
-  factual value.
-
-### Interruption and ownership
-
-- Every transition must be safe to interrupt, reverse, or retarget from its current
-  visible state.
-- User input wins immediately over decorative or settling animation.
-- The owner of the state owns completion. Presentation may interpolate known state
-  but must not invent progress, success, or failure.
-- Source loss removes stale activity without playing a false success animation.
-- Repeated events update an existing surface when identity is stable instead of
-  replaying the full entrance.
-
-### Reduced motion
-
-- Follow the platform animation scale and accessibility preference where exposed.
-- Under reduced motion, preserve state communication with short opacity/color
-  changes and final geometry; remove travel, overshoot, and stagger.
-- Never make animation the only indication of state.
-
-## Type hierarchy and casing
-
-Use the system UI family. Create hierarchy with size, weight, opacity, and spacing.
+Use the system UI family and create hierarchy with size, weight, opacity, and
+spacing.
 
 | Role | Treatment |
 |---|---|
 | Primary content | 15–16 px, regular/medium, primary color |
-| Section/card title | 15–16 px, demi-bold only when needed |
-| Supporting metadata | 11–13 px, regular/medium, secondary color |
-| Compact panel content | Established panel size; restrained weight |
-| Large transition label | 20–24 px, demi-bold, short text only |
-| Tiny state tag | 10–11 px, bold, lightly tracked; rare |
+| Section/card title | 15–16 px, demi-bold only when useful |
+| Supporting metadata | 11–13 px, secondary color |
+| Compact panel content | Established panel size and restrained weight |
+| Large transition label | 20–24 px, demi-bold, short text |
+| Tiny state tag | 10–11 px, bold, lightly tracked, rare |
 
-### Casing
-
-- Use **sentence case** for headings, menus, buttons, settings, and descriptive
-  labels: `Open system settings`, `Keep for review`, `New folder`.
-- Use **lowercase** for quiet spatial invitations that act like environmental
-  hints: `browse everything`, `explore files`.
-- Use **ALL CAPS** only for a tiny established state tag such as `OPEN`; never for
-  headings or ordinary actions.
-- Preserve casing from people, applications, files, songs, artists, and sources.
-- Use title case only for proper names. Existing Title Case controls can migrate
-  to sentence case when their surface is next touched.
+Use sentence case for headings, menus, buttons, settings, and descriptions. Use
+lowercase for quiet environmental invitations such as `browse everything`. Use
+all caps only for a tiny established state tag. Preserve source casing for people,
+applications, files, songs, and artists; title case is for proper names.
 
 ## Icons
 
-**Lucide** is the canonical family for suite-owned action chrome. Repositories
-vendor a pinned subset of the SVGs they consume. The selected baseline is Lucide
-Static 1.46.0 under the ISC license, including its inherited Feather MIT notice.
+Lucide Static 1.46.0 is the canonical family for suite-owned action chrome.
+Repositories vendor only the pinned SVG subset they consume and retain the
+ISC/Feather MIT notice.
 
 - Use rounded, optically balanced geometry on a consistent grid.
 - Use monochrome/current-color SVGs for suite chrome.
-- Test optical size and stroke weight at actual panel scale.
-- Keep media transport ordered previous, play/pause, next.
-- Do not ship raw Unicode symbols as control icons.
-- Do not mix families inside one control cluster.
-- Draw custom glyphs only for genuine suite-specific gaps.
-- Keep KDE Breeze/provider lookup for application, file, weather, tray, and other
-  externally owned identity.
-- Use identical semantic names across repositories even when each repository
-  vendors only its required subset.
+- Test size and stroke at actual panel scale.
+- Do not ship Unicode symbols as control icons or mix families in one cluster.
+- Keep semantic asset names consistent across repositories.
+- Keep KDE/provider lookup for applications, files, weather, tray entries, and
+  other externally owned identity.
 
-Temperance's accepted bell uses Lucide Bell geometry, redrawn locally for its
-animated clapper and slash. It is the first documented suite-specific exception.
-
-### Protected custom icon work
-
-These established visuals are product identity or behavior, not migration targets:
-
-- Tette Dot / launcher identity.
-- Temperance's animated Bell.
-- Temperance's custom Weather glyph and behavior.
-- The suite's custom tray icon work.
-
-Lucide must not replace, redraw, simplify, or absorb these components. Preserve
-their geometry and behavior unless J explicitly opens a focused redesign.
+Temperance's animated bell uses Lucide Bell geometry but separates its clapper and
+slash for behavior. The Tette Dot, Temperance bell, Temperance weather treatment,
+and custom tray work are protected product components. Do not replace or redraw
+them as part of a general Lucide migration.
 
 ## Responsive composition
 
-Width reveals information, not capability.
+Width reveals information, not capability:
 
-- Measure the real available span.
-- Reserve the actionable core and the spacing that keeps it legible.
-- Add context in product-priority order at natural widths.
-- Use the exact remaining width before eliding.
-- Remove optional information only when its useful minimum cannot fit.
-- Keep activities compact and left-packed; place unused width afterward.
-- Concurrent activities retain recognizable cores.
+1. Measure the real available span.
+2. Reserve the actionable core and its spacing.
+3. Add context in product-priority order at natural widths.
+4. Use exact remaining width before eliding.
+5. Remove optional information only below its useful minimum.
+6. Keep complete activities or control groups together and place unused width
+   afterward.
 
-Ambient media is the reference:
+Ambient media is the reference composition:
 
 `[previous · play/pause · next]  Song  Artist  runtime`
 
-## Review checklist
+## Review
 
-1. Can shape alone distinguish controls from information?
-2. Are related controls grouped and aligned?
-3. Does spacing show which elements belong together?
-4. Does the layout use available space before truncating content?
-5. Are hover, selection, focus, and attention visibly different?
-6. Does copy follow the casing rule for its role?
-7. Do colors come from semantic roles rather than one-off decoration?
-8. Does the result remain coherent at tablet and monitor widths?
-9. Are icons from one approved family at a consistent optical size?
-10. Does motion explain state or continuity rather than decorate the interface?
-11. Can every animation be interrupted or retargeted without jumping or lying?
+Check that shape distinguishes controls from information; grouping and spacing
+show relationships; available space is used before truncation; hover, focus,
+pressed, and selected states differ; copy follows its casing role; color comes from
+semantic roles; panel and popup layouts survive target widths; icons share an
+approved family and optical scale; and motion remains truthful and interruptible.
 
-## Accepted decisions and remaining audit questions
-
-- Lucide is the canonical suite action family.
-- `#F8F8FF` is named **Ghost White** and remains the primary foreground.
-- The animated Temperance bell remains a documented Lucide-derived exception.
-- Tette Dot, Bell, Weather, and custom tray icon work remain protected exceptions.
-- Each repository owns its pinned Lucide subset; there is no runtime cross-repo
-  asset dependency.
-
-The audit may recommend whether soft primary (`#F2FFFFFF`) should remain a
-separate foreground level and whether app-specific outer silhouettes should
-converge. Those are review findings, not permission for broad repainting.
+Soft primary and app-specific outer silhouettes remain deliberate local choices.
+Changing either across the suite requires its own roadmap item.

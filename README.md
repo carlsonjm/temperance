@@ -76,6 +76,14 @@ add Temperance to the panel as a new widget after installing this release.
 Compiled widgets are distributed through source control and native package
 channels rather than as ordinary widget-store archives.
 
+## Documentation
+
+- [Current state](docs/CURRENT_STATE.md) describes the product as it exists.
+- [Next roadmap](docs/NEXT-ROADMAP.md) is the only execution plan.
+- [Decisions](docs/DECISIONS.md) records durable architecture and invariants.
+- [Documentation index](docs/README.md) classifies the remaining references and
+  archived evidence.
+
 ## Architecture and attribution
 
 The tray host is derived from KDE Plasma Workspace 6.7.4 (tag `v6.7.4`, commit

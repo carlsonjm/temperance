@@ -1,51 +1,45 @@
 # Temperance boundary with Ambient Tette
 
-Product boundary approved September 15, 2026. The mirrored responsive geometry
-was implemented in integrated commit `fb2d4aa` (accepted candidate `a56288e`)
-and physically accepted by J on September 15, 2026.
+This document defines the live ownership boundary between Temperance and Ambient
+Tette.
 
-Temperance answers **what changed**. Today it implements notification intake,
-the left-side notification ticker, priority banners, and notification history.
-It does not yet provide a general system-event or state-transition feed.
+Temperance answers **what changed**. It owns notification intake and presentation:
+the left-side ticker, priority banners, grouped history, dismissal, and producer
+actions. A future bounded source may report authoritative system transitions, but
+Temperance must not turn continuous status into synthetic events.
 
-Ambient Tette answers **what matters now**. It owns ongoing relevance and current
-context on the right side of the dock: media playback, file transfers, and other
-live activity. Temperance must not become the activity model or duplicate live
-progress.
+Ambient Tette answers **what matters now**. It owns ongoing context on the right
+side of the dock, including media sessions, transfers, their progress, and their
+live actions.
 
-Target examples after Temperance gains a separate event slice:
+Preserve these invariants:
 
-- A transfer begins: Temperance may announce the transition; Ambient Tette keeps
-  authoritative progress and Cancel visible.
-- A transfer completes, fails, or is canceled: Ambient removes the live item;
-  Temperance or the source's notification route communicates the outcome.
-- Media starts: Ambient keeps the session and actions visible. Temperance does
-  not continuously repeat media state.
-- Battery threshold, network change, or device event: Temperance communicates
-  the transition. Ambient does not retain static system status.
+- Source applications and services own underlying state and actions.
+- Temperance must not infer progress from notification text, become a second job
+  owner, or continuously repeat live media state.
+- Ambient removes an activity when its authoritative source ends. It must not
+  invent completion from filesystem quiet time or source loss.
+- A transition outcome may enter Temperance through the shared notification path,
+  but the same outcome must not be presented twice.
+- Temperance changes for Ambient integration are limited to a proven event handoff,
+  duplicate suppression, or shared geometry contract. Ambient implementation stays
+  in Tette.
 
-Source applications and services own underlying state and actions. Temperance
-must not infer live progress from notification text, run a second job owner, or
-duplicate an outcome already presented through the shared notification model.
+## Panel geometry
 
 The center application dock remains physically centered. Temperance measures and
-flexes inside its left-side allocation using event-driven panel geometry. On the
-right, the accepted order is `Tette launcher → responsive Ambient strip → task
-dock`. Ambient activity expansion uses one compact popup per activity; the
-combined full-screen activity view was removed before acceptance.
+flexes only inside its left-side allocation. On the right, Tette owns its launcher
+and Ambient strip before the task dock. Each side reacts to panel geometry without
+moving, sizing, or configuring the other side.
 
-The accepted compositor remains fixture-only through
-`TETTE_AMBIENT_FIXTURE=transfer-media`. Real activity providers and source action
-routing remain A2 work in Tette and are not part of this freeze.
+Temperance must preserve event-driven geometry updates and must not poll the panel,
+write spacer configuration, or claim the center allocation. Surplus width stays
+outside complete activity/control groups rather than being inserted between their
+children.
 
-## Future event-source slice
+## Event-source gate
 
-Before implementation, inventory supported authoritative sources for system
-transitions and activity outcomes. Define event identity, freshness, priority,
-deduplication against existing notifications, dismissal, and accessibility.
-Implement a small source set first. Do not turn periodic status polling into fake
-events or make this slice a dependency of the initial Ambient Tette release.
-
-Ambient implementation belongs in Tette. Temperance changes are limited to a
-later proven event handoff or duplicate-suppression need, reviewed as an
-independent packet.
+Before adding a non-notification source, define its authoritative provider, event
+identity, freshness, priority, deduplication, dismissal, and accessibility. Start
+with a small source set and keep the work independent of Ambient's initial provider
+support. Execution belongs in `NEXT-ROADMAP.md`.

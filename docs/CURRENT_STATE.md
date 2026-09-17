@@ -1,24 +1,24 @@
-# Current state — September 16, 2026
+# Current state
 
-J physically accepted T1 **8022fc6**: the ticker is back to normal with both
-stock spacers expanding. Base is **10fb70f**. The installed plugin matches the
-accepted source build byte for byte. This documentation freeze changes no
-production source and requires no further installation.
+Temperance is a native Plasma 6 containment replacing stock System Tray
+presentation. Its responsive left rail provides notifications, weather, battery,
+Control Center, and an organized tray. Other panel applets remain independent.
 
-`SystemTray::watchGeometryItem()` now observes the ancestors that Plasma moves,
-so scene-space adaptive width is invalidated even when root-local geometry is
-unchanged. Existing width policy, controls, clipping, scrolling and popup behavior
-remain intact. No Tette, shared-center or spacer-tooling changes are included.
+Adaptive width follows the live scene allocation and observes ancestor
+AppletContainers. Manual mode uses a fixed configured width. Temperance owns
+notification presentation while loaded: normal notices use ticker/history;
+critical and selected system alerts may use banners. History preserves producer
+actions, defaults, dismissal, grouping, expansion, and application fallback.
+External anchors own popup placement; content padding does not.
 
-Build, five existing CTests, real-panel tablet/monitor/DPR1.5 checks, source/diff
-and staged-package checks passed for the candidate; publication repeats the
-final-head build, full CTest and package checks. The real-panel test covers task
-growth/shrink, adaptive on/off, arrow states and long real notification scrolling.
-See `T1-TICKER-GEOMETRY.md` and `T1-TICKER-EVIDENCE.txt`.
+Checks cover source, notification, session, popup, and real-panel geometry
+contracts. The release target is x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE
+Frameworks 6.29 on a horizontal Wayland panel. Rebuild after incompatible native
+upgrades.
 
-Rollback: build/install **10fb70f** from a separate checkout and use the normal
-Plasma restart procedure. No branch reset or spacer configuration change.
+Known limitations:
 
-Next bounded work remains PM-assigned notification/visual polish: distinct recent
-cards, popup fit/clearance, lowercase labels, power glyph scale, and consistent
-Control Center/tray spacing. Ticker acceptance does not close those items.
+- Stock/Temperance presenter switching is not implemented.
+- There is no general system-event feed beyond notification sources.
+- Online weather fallback shares configured location data with Open-Meteo.
+- The latest presentation polish awaits one physical verification pass.
