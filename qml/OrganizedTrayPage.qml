@@ -13,11 +13,14 @@ import org.kde.plasma.core as PlasmaCore
 
 Item {
     id: page
+    readonly property int compactSpacing: 8
+    readonly property int standardSpacing: 12
+    readonly property int surfaceSpacing: 24
 
     implicitWidth: Kirigami.Units.gridUnit * 25
     // The popup heading already contributes half of the intended header gap.
     // Keep 12 px here and 24 px below so the visible rhythm is 24 px at both ends.
-    implicitHeight: trayContent.implicitHeight + 36
+    implicitHeight: trayContent.implicitHeight + standardSpacing + surfaceSpacing
 
     readonly property var sections: [
         {
@@ -45,11 +48,12 @@ Item {
         ColumnLayout {
             id: trayContent
             x: 16
-            y: Math.max(12, scrollView.availableHeight - implicitHeight - 24)
+            y: Math.max(page.standardSpacing,
+                scrollView.availableHeight - implicitHeight - page.surfaceSpacing)
             width: scrollView.availableWidth - 32
             // Layouts ignore invisible children, so this creates hierarchy
             // only between populated sections and fully collapses empty ones.
-            spacing: 24
+            spacing: page.surfaceSpacing
 
             Repeater {
                 model: page.sections
@@ -60,7 +64,7 @@ Item {
                     required property var modelData
                     Layout.fillWidth: true
                     visible: categoryModel.count > 0
-                    spacing: 12
+                    spacing: page.standardSpacing
 
                     KItemModels.KSortFilterProxyModel {
                         id: categoryModel
@@ -96,7 +100,7 @@ Item {
                             readonly property int columns: 2
                             readonly property int rows: Math.ceil(count / columns)
                             readonly property int tileHeight: Kirigami.Units.gridUnit * 2.4
-                            readonly property int rowGap: 8
+                            readonly property int rowGap: page.compactSpacing
                             implicitHeight: rows * tileHeight + Math.max(0, rows - 1) * rowGap
                             cellWidth: Math.floor(width / columns)
                             cellHeight: tileHeight + rowGap

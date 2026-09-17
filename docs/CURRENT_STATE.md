@@ -22,3 +22,13 @@ Known limitations:
 - There is no general system-event feed beyond notification sources.
 - Online weather fallback shares configured location data with Open-Meteo.
 - The latest presentation polish awaits one physical verification pass.
+
+The September 17 production candidate aligns notification actions with the kit:
+small text, 14 px horizontal padding, a one-pixel outline, hover fill, and the
+existing 44 px input target. Recent cards have a quiet outline and reserve their
+full action-row height plus an 8 px inter-card gap; natural popup height remains
+content-driven and capped by the existing screen/card-line allowance. A private
+NotificationManager integration check proves a producer-owned `snooze` action is
+kept in model state and emitted through the real `ActionInvoked` route. Temperance
+still does not invent Snooze. Control Center and organized tray geometry now name
+the accepted 8/12/24 px spacing tokens without changing their hierarchy.

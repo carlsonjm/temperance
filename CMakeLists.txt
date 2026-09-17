@@ -167,7 +167,7 @@ if(BUILD_TESTING)
     find_package(Qt6 REQUIRED COMPONENTS Test)
     add_executable(temperance-notification-interaction-test tests/NotificationInteractionTest.cpp)
     target_link_libraries(temperance-notification-interaction-test PRIVATE
-        Qt6::Widgets Qt6::Quick Qt6::Test KF6::I18n PW::LibNotificationManager)
+        Qt6::Widgets Qt6::Quick Qt6::Test Qt6::DBus KF6::I18n PW::LibNotificationManager)
     target_compile_definitions(temperance-notification-interaction-test PRIVATE
         HISTORY_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/NotificationHistoryPage.qml")
     add_test(NAME temperance_notification_interaction

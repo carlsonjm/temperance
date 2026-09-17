@@ -48,7 +48,7 @@ endif()
 if(NOT notification_history_qml MATCHES "id: notificationHeader"
    OR NOT notification_history_qml MATCHES "visible: applicationLabel.visible && summaryLabel.visible"
    OR NOT notification_history_qml MATCHES "anchors.topMargin: Kirigami.Units.mediumSpacing"
-   OR NOT notification_history_qml MATCHES "Layout.preferredHeight: childrenRect.height"
+   OR NOT notification_history_qml MATCHES "implicitHeight: Math.max\\(44, actionFlow.childrenRect.height\\)"
    OR NOT notification_history_qml MATCHES "color: pill.hovered \\|\\| pill.down"
    OR NOT notification_history_qml MATCHES "border.width: 1"
    OR NOT notification_history_qml MATCHES "border.color: \"#F8F8FF\""
@@ -151,7 +151,7 @@ if(NOT main_qml MATCHES "reservedForBanner")
 endif()
 
 string(FIND "${control_center_qml}"
-    "implicitHeight: contentLayout.implicitHeight + 36" control_height_position)
+    "implicitHeight: contentLayout.implicitHeight + standardSpacing + surfaceSpacing" control_height_position)
 if(control_height_position LESS 0)
     message(FATAL_ERROR "Control Center must retain the shared 24 px bottom rhythm")
 endif()
@@ -163,7 +163,7 @@ if(apps_position LESS 0 OR devices_position LESS apps_position OR system_positio
     message(FATAL_ERROR "Tray sections must remain ordered Apps, Devices, System")
 endif()
 
-if(NOT organized_tray_qml MATCHES "spacing: 24")
+if(NOT organized_tray_qml MATCHES "spacing: page.surfaceSpacing")
     message(FATAL_ERROR "Tray hierarchy must collapse around populated sections")
 endif()
 

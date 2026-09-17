@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 #include <QApplication>
 #include <QAbstractListModel>
+#include <QDBusConnection>
+#include <notification.h>
 #include <notifications.h>
+#include <server.h>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -9,6 +12,24 @@
 #include <QQuickWindow>
 #include <QTest>
 #include <KLocalizedContext>
+
+class SystemActionReceiver : public QObject {
+    Q_OBJECT
+public:
+    uint notificationId = 0;
+    QString actionId;
+public Q_SLOTS:
+    void actionInvoked(uint id, const QString &action) {
+        notificationId = id;
+        actionId = action;
+    }
+};
+
+class TestNotifications : public NotificationManager::Notifications {
+public:
+    using NotificationManager::Notifications::classBegin;
+    using NotificationManager::Notifications::componentComplete;
+};
 
 // Typed QStringList roles and QModelIndex calls match the installed API boundary.
 class HistoryFixture : public QAbstractListModel {
@@ -81,6 +102,49 @@ class NotificationInteractionTest : public QObject {
         return nullptr;
     }
 private Q_SLOTS:
+    void snoozeUsesSystemNotificationAction() {
+        auto &server = NotificationManager::Server::self();
+
+        TestNotifications notifications;
+        notifications.classBegin();
+        notifications.componentComplete();
+
+        SystemActionReceiver receiver;
+        auto bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.connect(QString(), QStringLiteral("/org/freedesktop/Notifications"),
+            QStringLiteral("org.freedesktop.Notifications"), QStringLiteral("ActionInvoked"),
+            &receiver, SLOT(actionInvoked(uint,QString))));
+
+        NotificationManager::Notification notification;
+        notification.setDBusService(bus.baseService());
+        notification.setApplicationName(QStringLiteral("Temperance action probe"));
+        notification.setSummary(QStringLiteral("System action probe"));
+        notification.setBody(QStringLiteral("Verify producer-owned Snooze"));
+        notification.setActions({QStringLiteral("snooze"), QStringLiteral("Snooze")});
+        const uint id = server.add(notification);
+
+        QModelIndex actionIndex;
+        QTRY_VERIFY_WITH_TIMEOUT(notifications.rowCount() > 0, 2000);
+        for (int row = 0; row < notifications.rowCount(); ++row) {
+            const QModelIndex candidate = notifications.index(row, 0);
+            if (notifications.data(candidate, NotificationManager::Notifications::IdRole).toUInt() == id) {
+                actionIndex = candidate;
+                break;
+            }
+        }
+        QVERIFY(actionIndex.isValid());
+        QCOMPARE(notifications.data(actionIndex,
+            NotificationManager::Notifications::ActionNamesRole).toStringList(),
+            QStringList{QStringLiteral("snooze")});
+        QCOMPARE(notifications.data(actionIndex,
+            NotificationManager::Notifications::ActionLabelsRole).toStringList(),
+            QStringList{QStringLiteral("Snooze")});
+
+        notifications.invokeAction(actionIndex, QStringLiteral("snooze"));
+        QTRY_COMPARE_WITH_TIMEOUT(receiver.notificationId, id, 2000);
+        QCOMPARE(receiver.actionId, QStringLiteral("snooze"));
+    }
+
     void history_data() {
         QTest::addColumn<bool>("grouped");
         QTest::addColumn<bool>("touch");
@@ -263,6 +327,9 @@ private Q_SLOTS:
         QCOMPARE(accept->property("visualOutlineWidth").toReal(), 1.0);
         QCOMPARE(accept->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#F8F8FF")));
         QCOMPARE(accept->property("visualFill").value<QColor>().alpha(), 0);
+        QCOMPARE(accept->property("leftPadding").toReal(), 14.0);
+        QCOMPARE(accept->property("rightPadding").toReal(), 14.0);
+        QTRY_COMPARE(actionBackground->width(), accept->width());
         auto *device = touch ? QTest::createTouchDevice() : nullptr;
         const auto click = [&](QQuickItem *target) {
             const auto point = target->mapToScene(QPointF(target->width()/2, target->height()/2)).toPoint();
@@ -345,6 +412,9 @@ private Q_SLOTS:
         model.append(true, false, true);
         model.append(false, false, true);
         QTRY_VERIFY(item->implicitHeight() > initialImplicitHeight);
+        QTRY_VERIFY(item->implicitHeight() <= 900);
+        item->setHeight(item->implicitHeight());
+        QTest::qWait(50);
         for (int index : {1, 2}) {
             QQuickItem *actionRow = nullptr;
             QTRY_VERIFY((actionRow = findItem(item, QStringLiteral("notificationRow%1").arg(index))));
@@ -353,7 +423,14 @@ private Q_SLOTS:
             auto *firstAction = findItem(actionRow, QStringLiteral("notificationAction-accept"));
             auto *secondAction = findItem(actionRow, QStringLiteral("notificationAction-reject"));
             QVERIFY(actionCard && actionFlow && firstAction && secondAction);
+            QCOMPARE(actionCard->property("visualOutlineWidth").toReal(), 1.0);
+            QCOMPARE(actionCard->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#333333")));
             QTRY_VERIFY(actionFlow->height() >= 44);
+            const QRectF cardRect = actionCard->mapRectToItem(item, actionCard->boundingRect());
+            QVERIFY2(cardRect.top() >= 0 && cardRect.bottom() <= item->height() + 0.5,
+                "Recent notification cards must fit inside the content-sized popup page");
+            QVERIFY2(actionRow->height() >= actionCard->height() + 8,
+                "Each recent notification row must reserve a distinct gap after its outlined card");
             for (auto *action : {firstAction, secondAction}) {
                 const QRectF actionRect = action->mapRectToItem(actionCard, action->boundingRect());
                 QVERIFY2(actionRect.top() >= 0 && actionRect.bottom() <= actionCard->height() + 0.5,

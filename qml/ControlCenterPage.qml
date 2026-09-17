@@ -20,12 +20,15 @@ Item {
     required property string activePerformancePreset
     required property var applyPerformancePreset
     required property color accentColor
+    readonly property int compactSpacing: 8
+    readonly property int standardSpacing: 12
+    readonly property int surfaceSpacing: 24
     readonly property color accentTextColor: (accentColor.r * 0.299 + accentColor.g * 0.587 + accentColor.b * 0.114) > 0.58
         ? "#102729" : "#FFFFFF"
 
     implicitWidth: Kirigami.Units.gridUnit * 24
     // Match the Tray page's 12 px upper rhythm and 24 px pill-to-edge floor.
-    implicitHeight: contentLayout.implicitHeight + 36
+    implicitHeight: contentLayout.implicitHeight + standardSpacing + surfaceSpacing
 
     property string displayName: ""
     property bool sessionActionError: false
@@ -265,13 +268,13 @@ Item {
         anchors.right: parent.right
         anchors.leftMargin: Kirigami.Units.largeSpacing
         anchors.rightMargin: Kirigami.Units.largeSpacing
-        anchors.topMargin: 12
+        anchors.topMargin: page.standardSpacing
         spacing: 0
 
         PlasmaComponents.Label {
             visible: page.sessionActionError
             Layout.fillWidth: true
-            Layout.bottomMargin: visible ? 12 : 0
+            Layout.bottomMargin: visible ? page.standardSpacing : 0
             text: i18n("The session action is unavailable or could not be started. Please try again.")
             wrapMode: Text.Wrap
         }
@@ -305,7 +308,7 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 12
+            Layout.topMargin: page.standardSpacing
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
                 icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sun.svg"
@@ -343,11 +346,11 @@ Item {
             implicitHeight: visibleRows > 0
                 ? visibleRows * tileHeight + (visibleRows - 1) * rowSpacing : 0
             Layout.fillWidth: true
-            Layout.topMargin: visibleRows > 0 ? 24 : 0
+            Layout.topMargin: visibleRows > 0 ? page.surfaceSpacing : 0
             Layout.preferredHeight: implicitHeight
             columns: 2
-            columnSpacing: 8
-            rowSpacing: 8
+            columnSpacing: page.compactSpacing
+            rowSpacing: page.compactSpacing
 
             Repeater {
                 id: controlRepeater
@@ -377,8 +380,8 @@ Item {
         RowLayout {
             visible: page.hasBattery || page.hasPerformanceProfiles
             Layout.fillWidth: true
-            Layout.topMargin: visible ? 8 : 0
-            spacing: 8
+            Layout.topMargin: visible ? page.compactSpacing : 0
+            spacing: page.compactSpacing
 
             Rectangle {
                 visible: page.hasBattery
@@ -388,7 +391,7 @@ Item {
                 color: Qt.rgba(1, 1, 1, 0.08)
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 12
+                    spacing: page.standardSpacing
                     BatteryGlyph { level: page.batteryPercent }
                     ColumnLayout {
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 6.6
@@ -421,7 +424,7 @@ Item {
                 color: Qt.rgba(1, 1, 1, 0.08)
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: 12
+                    spacing: page.standardSpacing
                     RowLayout {
                         spacing: Kirigami.Units.smallSpacing
                         SuiteIcon {

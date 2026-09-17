@@ -19,8 +19,12 @@ Item {
     required property var launchApplication
     required property bool demoNotificationVisible
     required property real maximumHeight
+    readonly property int compactSpacing: 8
+    readonly property int standardSpacing: 12
+    readonly property int surfaceSpacing: 24
 
-    implicitHeight: Math.min(maximumHeight, notificationContent.implicitHeight + 24)
+    readonly property real naturalHeight: notificationContent.implicitHeight + surfaceSpacing
+    implicitHeight: Math.min(maximumHeight, naturalHeight)
 
     component NotificationActionPill: PlasmaComponents.ToolButton {
         id: pill
@@ -30,8 +34,8 @@ Item {
         readonly property real visualOpacity: actionBackground.opacity
         display: PlasmaComponents.AbstractButton.TextOnly
         implicitHeight: 44
-        leftPadding: 10
-        rightPadding: 10
+        leftPadding: 14
+        rightPadding: 14
         Accessible.name: text
         // ToolButton handles Space; consume Enter here before the card's
         // default/open key handler can receive it through parent propagation.
@@ -41,6 +45,7 @@ Item {
             text: pill.text
             textFormat: Text.PlainText
             color: "#F8F8FF"
+            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.Wrap
@@ -50,7 +55,7 @@ Item {
                 id: actionBackground
                 objectName: "notificationActionBackground"
                 anchors.centerIn: parent
-                width: Math.max(32, parent.width - 8)
+                width: parent.width
                 height: 30
                 radius: height / 2
                 color: pill.hovered || pill.down
@@ -69,7 +74,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: Kirigami.Units.largeSpacing
         anchors.rightMargin: Kirigami.Units.largeSpacing
-        anchors.bottomMargin: 12
+        anchors.bottomMargin: page.standardSpacing
         spacing: Kirigami.Units.mediumSpacing
 
         Item { Layout.fillHeight: true }
@@ -84,6 +89,7 @@ Item {
                     ? i18np("%1 unread", "%1 unread", page.notificationModel.unreadNotificationsCount)
                     : i18n("Recent")
                 opacity: 0.72
+                font.weight: Font.DemiBold
             }
 
             PlasmaComponents.ToolButton {
@@ -136,6 +142,7 @@ Item {
 
         ListView {
             id: historyView
+            objectName: "notificationHistoryView"
             displaced: Transition {
                 NumberAnimation {
                     properties: "x,y"
@@ -204,7 +211,8 @@ Item {
                     }
                 }
                 width: historyView.width
-                height: isGroup ? 44 : notificationCard.height + 8
+                implicitHeight: isGroup ? 44 : notificationCard.height + 8
+                height: implicitHeight
 
                 RowLayout {
                     id: groupHeading
@@ -283,6 +291,8 @@ Item {
                 Rectangle {
                     id: notificationCard
                     objectName: "notificationCard"
+                    readonly property real visualOutlineWidth: border.width
+                    readonly property color visualOutline: border.color
                     activeFocusOnTab: historyItem.canOpen
                     Accessible.role: Accessible.Button
                     Accessible.name: historyItem.summary.length > 0 ? historyItem.summary
@@ -304,6 +314,8 @@ Item {
                         + Kirigami.Units.mediumSpacing * 2
                     radius: 18
                     color: Qt.rgba(1, 1, 1, 0.075)
+                    border.width: 1
+                    border.color: "#333333"
 
                     RowLayout {
                         id: notificationCardContent
@@ -407,35 +419,43 @@ Item {
                                 }
                             }
 
-                            Flow {
-                                id: actionFlow
-                                objectName: "notificationActionFlow"
+                            Item {
+                                implicitHeight: Math.max(44, actionFlow.childrenRect.height)
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: childrenRect.height
-                                Layout.minimumHeight: childrenRect.height
+                                Layout.preferredHeight: implicitHeight
+                                // Reserve the accepted touch row before repeater
+                                // delegates finish incubating so ListView never
+                                // positions the next recent card through it.
+                                Layout.minimumHeight: implicitHeight
                                 Layout.topMargin: 4
-                                spacing: 6
-                                // These controls stack above the card's earlier
-                                // MouseArea and accept their own pointer/key input.
-                                Repeater {
-                                    model: historyItem.producerActions
-                                    delegate: NotificationActionPill {
-                                        required property var modelData
-                                        objectName: "notificationAction-" + modelData.name
-                                        width: Math.min(implicitWidth, actionFlow.width)
-                                        text: modelData.label
-                                        onClicked: page.notificationModel.invokeAction(
-                                            page.notificationModel.index(historyItem.index, 0),
-                                            modelData.name)
+
+                                Flow {
+                                    id: actionFlow
+                                    objectName: "notificationActionFlow"
+                                    anchors.fill: parent
+                                    spacing: 6
+                                    // These controls stack above the card's earlier
+                                    // MouseArea and accept their own pointer/key input.
+                                    Repeater {
+                                        model: historyItem.producerActions
+                                        delegate: NotificationActionPill {
+                                            required property var modelData
+                                            objectName: "notificationAction-" + modelData.name
+                                            width: Math.min(implicitWidth, actionFlow.width)
+                                            text: modelData.label
+                                            onClicked: page.notificationModel.invokeAction(
+                                                page.notificationModel.index(historyItem.index, 0),
+                                                modelData.name)
+                                        }
                                     }
-                                }
-                                NotificationActionPill {
-                                    objectName: "notificationDismiss"
-                                    width: Math.min(implicitWidth, actionFlow.width)
-                                    text: i18n("Dismiss")
-                                    Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
-                                    onClicked: page.notificationModel.close(
-                                        page.notificationModel.index(historyItem.index, 0))
+                                    NotificationActionPill {
+                                        objectName: "notificationDismiss"
+                                        width: Math.min(implicitWidth, actionFlow.width)
+                                        text: i18n("Dismiss")
+                                        Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
+                                        onClicked: page.notificationModel.close(
+                                            page.notificationModel.index(historyItem.index, 0))
+                                    }
                                 }
                             }
                         }
