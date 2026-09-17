@@ -12,6 +12,10 @@ being changed. Load visual, boundary, packaging, or legal references when the ta
 touches them. Archive material is opt-in for regression diagnosis, provenance, or
 a failed-candidate comparison.
 
+Run `../verify.sh` for the repository build, tests, and documentation checks. The
+documentation guard enforces archive isolation, compact runtime handoffs,
+current-state hygiene, and index coverage.
+
 Update documents by role:
 
 - **Canonical** — current truth, execution plan, durable decisions, or operating

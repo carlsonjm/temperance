@@ -24,3 +24,13 @@ presentation work and `docs/archive/` only for regression or provenance.
 - Leave history to Git and `docs/archive/`; keep narration out of live docs/code.
 - Preserve licensing, ABI, packaging, ownership, geometry, and accessibility
   invariants unless a roadmap item changes them.
+
+## Work packets
+
+Keep assignments compact and ordered: repository and roadmap item; required
+outcome; task-relevant contracts; acceptance checks; stop conditions; permissions
+already granted. Omit history and unrelated reading. If another worker must act,
+reduce the dependency to one `SWARM.md` handoff and delete it when resolved.
+
+Run `./verify.sh` before treating a source, packaging, test, or documentation
+change as complete.
