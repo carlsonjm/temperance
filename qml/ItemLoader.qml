@@ -21,6 +21,12 @@ Loader {
     z: x + 1 // always be above what it's on top of, even for x==0
 
     readonly property url __url: {
+        // A delegate's model object is null while the delegate is torn down.
+        // Re-evaluating then is ordinary teardown, not the invalid state the
+        // warning below reports.
+        if (!model) {
+            return ""
+        }
         if (model.itemType === "Plasmoid" && model.hasApplet) {
             return Qt.resolvedUrl("PlasmoidItem.qml")
         } else if (model.itemType === "StatusNotifier") {
@@ -38,7 +44,7 @@ Loader {
     on__UrlChanged: {
         setSource(__url, {
             index: Qt.binding(() => index),
-            status: Qt.binding(() => model.status),
+            status: Qt.binding(() => model?.status ?? 0),
             effectiveStatus: Qt.binding(() => presentationStatus),
             model: Qt.binding(() => model),
             cardBackground: Qt.binding(() => cardBackground),
