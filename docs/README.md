@@ -32,9 +32,10 @@ Update documents by role:
 | Classification | Document | Purpose |
 |---|---|---|
 | Canonical | `AGENTS.md` | Startup and repository working rules |
+| Canonical | `CLAUDE.md` | Claude Code entry point; routes into the `AGENTS.md` startup set |
 | Canonical | `SWARM.md` | Current cross-agent runtime handoffs only |
 | Canonical | `docs/CURRENT_STATE.md` | Current product and limitations |
-| Canonical | `docs/NEXT-ROADMAP.md` | Sole execution plan |
+| Canonical | `docs/NEXT-ROADMAP.md` | This repository's execution plan and task detail; suite block order lives in Kadunce's `ROADMAP-CC.md` |
 | Canonical | `docs/DECISIONS.md` | Durable subsystem rationale and invariants |
 | Canonical | `docs/README.md` | Documentation policy and classification |
 | Reference | `README.md` | Product, compatibility, build, and configuration |
