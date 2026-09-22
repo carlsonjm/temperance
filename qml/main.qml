@@ -1032,7 +1032,10 @@ ContainmentItem {
         width: root.width
         height: Math.min(42, root.height)
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        // Held on the region's middle line rather than on its lower edge. Where
+        // the host is taller than this surface, bottom alignment leaves the
+        // contents sitting low in the region instead of centred in it.
+        anchors.verticalCenter: parent.verticalCenter
         onWheel: wheel => wheel.accepted = true
 
         SystemTrayState { id: systemTrayState }
