@@ -182,7 +182,8 @@ if(BUILD_TESTING)
     target_link_libraries(temperance-dock-extent-test PRIVATE
         Qt6::DBus Qt6::Gui Qt6::Test)
     add_test(NAME temperance_dock_extent COMMAND temperance-dock-extent-test)
-    set_tests_properties(temperance_dock_extent PROPERTIES TIMEOUT 30)
+    set_tests_properties(temperance_dock_extent PROPERTIES
+        TIMEOUT 30 SKIP_RETURN_CODE 77)
 
     add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
     target_include_directories(temperance-session-action-test PRIVATE src)

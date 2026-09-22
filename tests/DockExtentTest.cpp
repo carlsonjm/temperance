@@ -91,7 +91,11 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
     if (!bus.registerService(QString::fromLatin1(kService))) {
-        return EXIT_FAILURE;
+        // A real Bottom Surface is running and owns the name, so there is no
+        // way to stub it here. That is an environment this test cannot run
+        // in, not a failure of the code, and it says so rather than passing
+        // quietly or failing loudly.
+        return 77;
     }
 
     DockExtentReader reader;
