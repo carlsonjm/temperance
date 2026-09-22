@@ -5,14 +5,22 @@ presentation. Its responsive left rail provides notifications, weather, battery,
 Control Center, and an organized tray. Other panel applets remain independent.
 
 Adaptive width follows the live scene allocation and observes ancestor
-AppletContainers. Manual mode uses a fixed configured width. Temperance owns
+AppletContainers. It measures to the nearest applet on its left, and where a
+container publishes furniture it painted rather than hosted, it measures to
+that published edge instead: such furniture is absent from the applet list, so
+measuring to the nearest applet measures straight past it. The published path
+is discovered at run time, refuses a payload whose major version it does not
+know, and is simply absent on a plain panel, where every measurement is
+unchanged. Manual mode uses a fixed configured width. Temperance owns
 notification presentation while loaded: normal notices use ticker/history;
 critical and selected system alerts may use banners. History preserves producer
 actions, defaults, dismissal, grouping, expansion, and application fallback.
 External anchors own popup placement; content padding does not.
 
-Checks cover source, notification, session, popup, and real-panel geometry
-contracts. The release target is x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE
+Checks cover source, notification, session, popup, published-extent, and
+real-panel geometry contracts. The real-panel geometry fixture pairs Temperance
+with a separately built Tettegouche plugin and is therefore not part of the
+automatic run. The release target is x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE
 Frameworks 6.29 on a horizontal Wayland panel. Rebuild after incompatible native
 upgrades.
 

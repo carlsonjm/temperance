@@ -138,3 +138,25 @@ must contain the native plugin and required artwork and must match the intended
 build output. Automated tests protect source, notification, session, popup, and
 panel geometry contracts; physical tests remain required for compositor placement,
 real producers, touch behavior, and optical alignment.
+
+## Measure to a published edge rather than inferring one
+
+Adaptive width works out how much room this applet has by measuring from the
+nearest applet on its left. That is right on a panel, where everything
+occupying the row is an applet, and wrong where a container paints furniture
+of its own: painted furniture is not in the applet list, so the measurement
+runs past it and claims room that was never free.
+
+The applet keeps every measurement it makes about itself --- its content, its
+floor, the output it is on. It stops inferring the one number it cannot see,
+and reads it where a container offers it.
+
+The read is discovered at run time and never sampled on a timer: the change
+signal is what it acts on. An unknown major version is refused rather than
+guessed at, and a container that publishes nothing, or none at all, leaves
+every measurement exactly as it is on a plain panel. That is what keeps this
+applet independent of any particular container rather than adapted to one.
+
+Being clamped by a container is not a substitute for this and does not replace
+it. A clamp stops a wrong number mattering in that container; this stops the
+wrong number being computed anywhere.
