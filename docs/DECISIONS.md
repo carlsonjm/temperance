@@ -13,7 +13,7 @@ weather, and status rail in one native plugin. It is not a user-local QML-only
 plasmoid. Keep the root and native-plugin metadata identical, preserve the custom
 containment type, and rebuild for incompatible Qt or Plasma ABIs.
 
-The launcher, task manager, clock, stock panel spacers, and Ambient Tette are
+The launcher, task manager, stock panel spacers, and Ambient Tette are
 independent applets. Temperance may measure their geometry but must not configure
 or own them.
 
@@ -107,6 +107,20 @@ The tray keeps the Apps, Devices, System order and removes empty sections from t
 spacing hierarchy. Battery and performance controls remain capability gated:
 battery uses authoritative power state, and performance profiles appear only when
 the local helper is discovered.
+
+## Clock and calendar
+
+### The clock is Temperance's, and its minute deals like a card
+
+Settled by J on 24 September. Temperance shows the time and date at the right
+end of the Status Bar, and a Shuffle installation carries no separate clock
+applet. The clock uses the system UI font unless the person chooses another, and
+its digits never move the layout. The time is Ghost White and the date
+secondary. Each new minute arrives like a card dealt onto a stack; under reduced
+motion it fades. A tap opens the calendar as a small card in the corner, where
+people expect it, with holidays and the person's own events. Chosen over the
+calendar rising from the bottom edge as a card the Keyboard's size, which J
+shelved past 1.0 together with a timeline.
 
 ## Visual and interaction language
 
