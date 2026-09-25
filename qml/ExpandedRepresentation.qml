@@ -22,6 +22,11 @@ Item {
     readonly property int nativePagePadding: 12
     readonly property int contentSafety: 4
     readonly property int headerSafety: 4
+    // Every page lines up on one margin line 16 px in from each edge: the
+    // title, each page's content, and the header's controls, whose last one
+    // ends on it. Pages sit 4 px in, so they place content 12 px in.
+    readonly property int marginLine: 16
+    readonly property int pageInset: marginLine - contentSafety
     readonly property real notificationPageHeightLimit: Math.max(1,
         root.notificationPopupHeightLimit - heading.implicitHeight
         - headingBackground.bottomPadding - contentSafety * 2 - headerSafety)
@@ -214,7 +219,7 @@ Item {
             Layout.fillWidth: true
             Layout.leftMargin: popup.headerSafety
             // On the calendar the arrows end on the grid's 16 px margin line.
-            Layout.rightMargin: popup.calendarShown ? calendarPage.textInset : popup.headerSafety
+            Layout.rightMargin: popup.pageInset
             Layout.topMargin: popup.headerSafety
 
             Kirigami.Heading {

@@ -27,8 +27,13 @@ Item {
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
+    // The popup's margin line, 12 px into the page; a card's text sits 12 px
+    // inside the card and 8 px from its top and bottom.
+    readonly property int marginInset: 12
+    readonly property int cardPaddingH: 12
+    readonly property int cardPaddingV: 8
 
-    readonly property real naturalHeight: notificationContent.implicitHeight + surfaceSpacing
+    readonly property real naturalHeight: notificationContent.implicitHeight + standardSpacing + surfaceSpacing
     implicitHeight: Math.min(maximumHeight, naturalHeight)
 
     component NotificationActionPill: PlasmaComponents.ToolButton {
@@ -77,10 +82,11 @@ Item {
     ColumnLayout {
         id: notificationContent
         anchors.fill: parent
-        anchors.leftMargin: Kirigami.Units.largeSpacing
-        anchors.rightMargin: Kirigami.Units.largeSpacing
-        anchors.bottomMargin: page.standardSpacing
-        spacing: Kirigami.Units.mediumSpacing
+        anchors.leftMargin: page.marginInset
+        anchors.rightMargin: page.marginInset
+        anchors.topMargin: page.standardSpacing
+        anchors.bottomMargin: page.surfaceSpacing
+        spacing: page.compactSpacing
 
         Item { Layout.fillHeight: true }
 
@@ -96,8 +102,9 @@ Item {
             PlasmaComponents.Label {
                 Layout.fillWidth: true
                 text: i18nc("@title the day's calendar events", "Today")
-                opacity: 0.72
-                font.weight: Font.DemiBold
+                font.pixelSize: 13
+                font.weight: Font.Medium
+                color: "#A8FFFFFF"
             }
 
             Repeater {
@@ -107,24 +114,23 @@ Item {
                     required property var modelData
                     objectName: "notificationEventCard"
                     Layout.fillWidth: true
-                    implicitHeight: eventCardContent.implicitHeight + Kirigami.Units.mediumSpacing * 2
-                    radius: 18
-                    color: Qt.rgba(1, 1, 1, 0.075)
-                    border.width: 1
-                    border.color: "#333333"
+                    implicitHeight: eventCardContent.implicitHeight + page.cardPaddingV * 2
+                    radius: 16
+                    color: Qt.rgba(1, 1, 1, 0.07)
+                    border.width: 0
                     Accessible.role: Accessible.StaticText
                     Accessible.name: [eventCard.modelData.title, eventTimes.text].join(", ")
 
                     RowLayout {
                         id: eventCardContent
                         anchors.fill: parent
-                        anchors.leftMargin: Kirigami.Units.largeSpacing
-                        anchors.rightMargin: Kirigami.Units.largeSpacing
-                        anchors.topMargin: Kirigami.Units.mediumSpacing
-                        anchors.bottomMargin: Kirigami.Units.mediumSpacing
-                        spacing: Kirigami.Units.mediumSpacing
+                        anchors.leftMargin: page.cardPaddingH
+                        anchors.rightMargin: page.cardPaddingH
+                        anchors.topMargin: page.cardPaddingV
+                        anchors.bottomMargin: page.cardPaddingV
+                        spacing: 8
 
-                        Item { Layout.preferredWidth: Kirigami.Units.iconSizes.small }
+                        Item { Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium }
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -137,7 +143,9 @@ Item {
                                     Layout.maximumWidth: Kirigami.Units.gridUnit * 8
                                     visible: text.length > 0
                                     text: eventCard.modelData.calendar || ""
-                                    opacity: 0.68
+                                    font.pixelSize: 13
+                                    font.weight: Font.Medium
+                                    color: "#A8FFFFFF"
                                     elide: Text.ElideRight
                                 }
                                 PlasmaComponents.Label {
@@ -150,7 +158,8 @@ Item {
                                     Layout.fillWidth: true
                                     text: eventCard.modelData.title
                                     textFormat: Text.PlainText
-                                    font.weight: Font.DemiBold
+                                    font.pixelSize: 15
+                                    font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
                             }
@@ -159,7 +168,8 @@ Item {
                                 Layout.fillWidth: true
                                 text: page.formatTime(eventCard.modelData.start)
                                     + " – " + page.formatTime(eventCard.modelData.end)
-                                opacity: 0.68
+                                font.pixelSize: 13
+                                color: "#A8FFFFFF"
                             }
                             Item {
                                 implicitHeight: 44
@@ -180,8 +190,10 @@ Item {
             }
         }
 
+        // Notifications are a group of their own below the day's events.
         RowLayout {
             Layout.fillWidth: true
+            Layout.topMargin: page.events.length > 0 ? page.surfaceSpacing - page.compactSpacing : 0
             visible: page.notificationModel.count > 0 || page.demoNotificationVisible
 
             PlasmaComponents.Label {
@@ -189,8 +201,9 @@ Item {
                 text: page.notificationModel.unreadNotificationsCount > 0
                     ? i18np("%1 unread", "%1 unread", page.notificationModel.unreadNotificationsCount)
                     : i18n("Recent")
-                opacity: 0.72
-                font.weight: Font.DemiBold
+                font.pixelSize: 13
+                font.weight: Font.Medium
+                color: "#A8FFFFFF"
             }
 
             PlasmaComponents.ToolButton {
@@ -204,8 +217,8 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: demoContent.implicitHeight + Kirigami.Units.largeSpacing * 2
             visible: page.demoNotificationVisible
-            radius: 18
-            color: Qt.rgba(1, 1, 1, 0.075)
+            radius: 16
+            color: Qt.rgba(1, 1, 1, 0.07)
 
             RowLayout {
                 id: demoContent
@@ -225,7 +238,8 @@ Item {
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
                         text: i18n("Temperance")
-                        font.weight: Font.DemiBold
+                        font.pixelSize: 15
+                        font.weight: Font.Medium
                     }
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
@@ -234,7 +248,8 @@ Item {
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
                         text: i18n("The adaptive rail and notification history are working.")
-                        opacity: 0.68
+                        font.pixelSize: 13
+                        color: "#A8FFFFFF"
                         wrapMode: Text.Wrap
                     }
                 }
@@ -321,9 +336,11 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Kirigami.Units.smallSpacing
-                    anchors.rightMargin: Kirigami.Units.smallSpacing
-                    spacing: Kirigami.Units.smallSpacing
+                    // The icon stands where a card's padding ends, so the name
+                    // after it lines up with the cards' text below.
+                    anchors.leftMargin: page.cardPaddingH
+                    anchors.rightMargin: page.cardPaddingH
+                    spacing: 8
 
                     Kirigami.Icon {
                         source: page.resolveApplicationIcon(
@@ -412,26 +429,25 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     height: notificationCardContent.implicitHeight
-                        + Kirigami.Units.mediumSpacing * 2
-                    radius: 18
-                    color: Qt.rgba(1, 1, 1, 0.075)
-                    border.width: 1
-                    border.color: "#333333"
+                        + page.cardPaddingV * 2
+                    radius: 16
+                    color: Qt.rgba(1, 1, 1, 0.07)
+                    border.width: 0
 
                     RowLayout {
                         id: notificationCardContent
                         objectName: "notificationCardContent"
                         anchors.fill: parent
-                        anchors.leftMargin: Kirigami.Units.largeSpacing
-                        anchors.rightMargin: Kirigami.Units.largeSpacing
-                        anchors.topMargin: Kirigami.Units.mediumSpacing
-                        anchors.bottomMargin: Kirigami.Units.mediumSpacing
-                        spacing: Kirigami.Units.mediumSpacing
+                        anchors.leftMargin: page.cardPaddingH
+                        anchors.rightMargin: page.cardPaddingH
+                        anchors.topMargin: page.cardPaddingV
+                        anchors.bottomMargin: page.cardPaddingV
+                        spacing: 8
 
                         Item {
                             // Group headings own the app identity, keeping child
                             // alerts aligned like pills beneath a Tray section.
-                            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
                         }
 
                         ColumnLayout {
@@ -454,7 +470,9 @@ Item {
                                     visible: !historyItem.isInGroup
                                         && historyItem.applicationName.length > 0
                                     text: historyItem.applicationName
-                                    opacity: 0.68
+                                    font.pixelSize: 13
+                                    font.weight: Font.Medium
+                                    color: "#A8FFFFFF"
                                     elide: Text.ElideRight
                                 }
 
@@ -472,7 +490,8 @@ Item {
                                     visible: text.length > 0
                                     text: historyItem.summary
                                     textFormat: Text.PlainText
-                                    font.weight: Font.DemiBold
+                                    font.pixelSize: 15
+                                    font.weight: Font.Medium
                                     wrapMode: Text.Wrap
                                     maximumLineCount: historyItem.detailsExpanded ? 1000 : 1
                                     elide: historyItem.detailsExpanded
@@ -488,7 +507,8 @@ Item {
                                 // StyledText supports bounded lines/truncation;
                                 // AutoText may choose RichText, which does not.
                                 textFormat: Text.StyledText
-                                opacity: 0.68
+                                font.pixelSize: 13
+                                color: "#A8FFFFFF"
                                 wrapMode: Text.Wrap
                                 maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
                                 elide: historyItem.detailsExpanded
@@ -534,7 +554,7 @@ Item {
                                     id: actionFlow
                                     objectName: "notificationActionFlow"
                                     anchors.fill: parent
-                                    spacing: 6
+                                    spacing: 8
                                     // These controls stack above the card's earlier
                                     // MouseArea and accept their own pointer/key input.
                                     Repeater {

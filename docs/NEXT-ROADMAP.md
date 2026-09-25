@@ -5,11 +5,14 @@ This is the sole Temperance execution plan. Order across the suite is Kadunce's
 
 ## 1. September 17 presentation polish
 
-**Status:** Complete and physically accepted.
+**Status:** Complete and physically accepted; reopened by J on 25 September for
+the calendar's spacing, which passed the same day.
 
 Notification action padding and hover, producer-owned Snooze dispatch, distinct
 recent cards, popup fitting, and Control Center/System Tray spacing passed the
-September 17 physical review. Reopen only for a measured regression.
+September 17 physical review. On 25 September every page moved onto the
+calendar's margin line, rhythm, weights and chrome. Reopen only for a measured
+regression.
 
 ## 2. Decide on presenter switching
 

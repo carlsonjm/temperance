@@ -47,7 +47,7 @@ if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
 endif()
 if(NOT notification_history_qml MATCHES "id: notificationHeader"
    OR NOT notification_history_qml MATCHES "visible: applicationLabel.visible && summaryLabel.visible"
-   OR NOT notification_history_qml MATCHES "anchors.topMargin: Kirigami.Units.mediumSpacing"
+   OR NOT notification_history_qml MATCHES "anchors.topMargin: page.cardPaddingV"
    OR NOT notification_history_qml MATCHES "implicitHeight: Math.max\\(44, actionFlow.childrenRect.height\\)"
    OR NOT notification_history_qml MATCHES "color: pill.hovered \\|\\| pill.down"
    OR NOT notification_history_qml MATCHES "border.width: 1"

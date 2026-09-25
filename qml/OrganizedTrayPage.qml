@@ -16,6 +16,11 @@ Item {
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
+    // The popup's margin line, 12 px into the page. Tiles keep 4 px of their
+    // cell on each side, so the grid starts 4 px outside the line and the
+    // outer tiles' edges land on it, 8 px apart from one another.
+    readonly property int marginInset: 12
+    readonly property int tileInset: 4
 
     implicitWidth: Kirigami.Units.gridUnit * 25
     // The popup heading already contributes half of the intended header gap.
@@ -47,10 +52,10 @@ Item {
 
         ColumnLayout {
             id: trayContent
-            x: 16
+            x: page.marginInset
             y: Math.max(page.standardSpacing,
                 scrollView.availableHeight - implicitHeight - page.surfaceSpacing)
-            width: scrollView.availableWidth - 32
+            width: scrollView.availableWidth - page.marginInset * 2
             // Layouts ignore invisible children, so this creates hierarchy
             // only between populated sections and fully collapses empty ones.
             spacing: page.surfaceSpacing
@@ -64,7 +69,9 @@ Item {
                     required property var modelData
                     Layout.fillWidth: true
                     visible: categoryModel.count > 0
-                    spacing: page.standardSpacing
+                    // A label sits nearer its tiles than one section sits
+                    // to the next.
+                    spacing: page.compactSpacing
 
                     KItemModels.KSortFilterProxyModel {
                         id: categoryModel
@@ -77,21 +84,20 @@ Item {
                         Component.onCompleted: sourceModel = root.organizedTrayModel
                     }
 
-                    RowLayout {
+                    // A quiet label rather than a heading: the sections are
+                    // told apart by the space between them.
+                    PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        Layout.leftMargin: Kirigami.Units.smallSpacing
-                        Layout.rightMargin: Kirigami.Units.smallSpacing
-                        spacing: Kirigami.Units.smallSpacing
-
-                        Kirigami.Heading {
-                            Layout.fillWidth: true
-                            text: section.modelData.title
-                            level: 3
-                        }
+                        text: section.modelData.title
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        color: "#A8FFFFFF"
                     }
 
                     Item {
                         Layout.fillWidth: true
+                        Layout.leftMargin: -page.tileInset
+                        Layout.rightMargin: -page.tileInset
                         Layout.preferredHeight: categoryGrid.implicitHeight
 
                         GridView {
@@ -117,8 +123,8 @@ Item {
                                 ItemLoader {
                                     anchors.left: parent.left
                                     anchors.right: parent.right
-                                    anchors.leftMargin: 4
-                                    anchors.rightMargin: 4
+                                    anchors.leftMargin: page.tileInset
+                                    anchors.rightMargin: page.tileInset
                                     height: categoryGrid.tileHeight
                                     index: parent.index
                                     effectiveStatus: parent.effectiveStatus

@@ -266,8 +266,9 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.leftMargin: Kirigami.Units.largeSpacing
-        anchors.rightMargin: Kirigami.Units.largeSpacing
+        // On the popup's margin line, 12 px into the page.
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
         anchors.topMargin: page.standardSpacing
         spacing: 0
 
@@ -303,12 +304,15 @@ Item {
                 Layout.minimumWidth: Kirigami.Units.gridUnit * 2.4
                 horizontalAlignment: Text.AlignRight
                 text: Plasmoid.volumeAvailable ? Plasmoid.volumePercent + "%" : "—"
+                font.features: { "tnum": 1 }
             }
         }
 
+        // Volume and brightness are one group, nearer each other than the
+        // tiles below them.
         RowLayout {
             Layout.fillWidth: true
-            Layout.topMargin: page.standardSpacing
+            Layout.topMargin: page.compactSpacing
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
                 icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sun.svg"
@@ -336,6 +340,7 @@ Item {
                 Layout.minimumWidth: Kirigami.Units.gridUnit * 2.4
                 horizontalAlignment: Text.AlignRight
                 text: page.displayBrightnessMax ? Math.round(page.displayBrightness / page.displayBrightnessMax * 100) + "%" : "—"
+                font.features: { "tnum": 1 }
             }
         }
 
@@ -388,7 +393,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.08)
+                color: Qt.rgba(1, 1, 1, 0.07)
                 RowLayout {
                     anchors.centerIn: parent
                     spacing: page.standardSpacing
@@ -421,7 +426,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.08)
+                color: Qt.rgba(1, 1, 1, 0.07)
                 RowLayout {
                     anchors.centerIn: parent
                     spacing: page.standardSpacing

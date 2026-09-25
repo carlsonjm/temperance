@@ -197,7 +197,7 @@ PlasmaCore.ToolTipArea {
         visible: abstractItem.inlinePresentation
         anchors.centerIn: parent
         width: Math.min(implicitWidth, abstractItem.width - Kirigami.Units.largeSpacing * 2)
-        spacing: Kirigami.Units.smallSpacing
+        spacing: 8
 
         Kirigami.Icon {
             source: abstractItem.inlineIcon

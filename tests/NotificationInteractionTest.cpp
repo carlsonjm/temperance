@@ -423,8 +423,9 @@ private Q_SLOTS:
             auto *firstAction = findItem(actionRow, QStringLiteral("notificationAction-accept"));
             auto *secondAction = findItem(actionRow, QStringLiteral("notificationAction-reject"));
             QVERIFY(actionCard && actionFlow && firstAction && secondAction);
-            QCOMPARE(actionCard->property("visualOutlineWidth").toReal(), 1.0);
-            QCOMPARE(actionCard->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#333333")));
+            // A card is told apart by its fill and the space around it, with
+            // no outline.
+            QCOMPARE(actionCard->property("visualOutlineWidth").toReal(), 0.0);
             QTRY_VERIFY(actionFlow->height() >= 44);
             const QRectF cardRect = actionCard->mapRectToItem(item, actionCard->boundingRect());
             QVERIFY2(cardRect.top() >= 0 && cardRect.bottom() <= item->height() + 0.5,
