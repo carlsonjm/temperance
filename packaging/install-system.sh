@@ -38,5 +38,12 @@ if [[ ! -f "${plugin_target}" || ! -f "${icon_target}" ]]; then
     exit 1
 fi
 
-printf '%s\n' "Installed Temperance successfully."
-printf '%s\n' "Sign out and back in, then search Add Widgets for: Temperance"
+# The panel loads a widget's plugin once, so it restarts to pick up the new
+# build. Windows and the session stay as they are.
+if systemctl --user --quiet is-active plasma-plasmashell.service 2>/dev/null; then
+    systemctl --user restart plasma-plasmashell.service
+    printf '%s\n' "Installed Temperance and restarted the panel."
+else
+    printf '%s\n' "Installed Temperance successfully. Sign out and back in to load it."
+fi
+printf '%s\n' "The first time, add it to a panel from Add Widgets: Temperance"

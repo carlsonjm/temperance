@@ -13,6 +13,7 @@ import org.kde.draganddrop as DnD
 import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
 import org.kde.notificationmanager as NotificationManager
+import org.kde.plasma.clock as PlasmaClock
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
@@ -66,11 +67,17 @@ ContainmentItem {
         + (notificationsEnabled ? 34 : 0)
         + (weatherEnabled ? 26 : 0)
         + (hasBattery ? 26 : 0)
+        + (clockEnabled ? statusClock.implicitWidth
+            + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
         + Math.max(0, (2 + (notificationsEnabled ? 1 : 0)
-            + (weatherEnabled ? 1 : 0) + (hasBattery ? 1 : 0) - 1) * 2)
+            + (weatherEnabled ? 1 : 0) + (hasBattery ? 1 : 0)
+            + (clockEnabled ? 1 : 0) - 1) * 2)
     property int responsiveMeasuredWidth: responsiveMinimumWidth
     readonly property bool notificationsEnabled: Plasmoid.configuration.showNotifications !== false
     readonly property bool weatherEnabled: Plasmoid.configuration.showWeather !== false
+    readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
+    readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
+    readonly property bool clockEnabled: timeEnabled || dateEnabled
     readonly property int priorityAlertFreshnessMs: Math.max(5,
         Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20)) * 1000
     readonly property string temperatureUnit: {
@@ -810,6 +817,10 @@ ContainmentItem {
         iface: "org.freedesktop.UPower.Device"
     }
 
+    // Plasma's own clock source: it ticks on the minute and follows time zone
+    // changes and resume from suspend, which a local timer would not.
+    PlasmaClock.Clock { id: systemClock }
+
     NotificationManager.Notifications {
         id: notificationHistory
         showExpired: true
@@ -1464,54 +1475,6 @@ ContainmentItem {
             }
 
             Item {
-                id: batteryStatusButton
-                visible: root.hasBattery
-                Layout.preferredWidth: root.batteryOnAC ? 26 : Math.max(26, batteryPercentReadout.implicitWidth + 2)
-                Layout.minimumWidth: Layout.preferredWidth
-                Layout.maximumWidth: Layout.preferredWidth
-                Layout.fillHeight: true
-                Layout.topMargin: 4
-                Layout.bottomMargin: 4
-                Accessible.name: i18n("Battery and Control Center")
-                Accessible.role: Accessible.Button
-
-                PlasmaComponents.Label {
-                    id: batteryPercentReadout
-                    visible: !root.batteryOnAC
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.batteryLabel() || "—"
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    color: "#F8F8FF"
-                    scale: batteryStatusHover.hovered ? 1.06 : 1
-                    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                }
-                Canvas {
-                    anchors.centerIn: parent
-                    width: 18
-                    height: 18
-                    visible: root.batteryOnAC
-                    onPaint: {
-                        const ctx = getContext("2d");
-                        ctx.reset();
-                        ctx.fillStyle = "#F8F8FF";
-                        ctx.beginPath();
-                        ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
-                        ctx.lineTo(8, 10); ctx.lineTo(7, 17);
-                        ctx.lineTo(14.5, 7); ctx.lineTo(10, 7);
-                        ctx.closePath(); ctx.fill();
-                    }
-                }
-                HoverHandler { id: batteryStatusHover }
-                TapHandler { onTapped: root.openSurface("control") }
-                PlasmaComponents.ToolTip {
-                    text: root.batteryOnAC ? i18n("AC power · %1", root.batteryLabel())
-                        : i18n("Battery and Control Center")
-                }
-            }
-
-            Item {
                 id: trayButton
                 Layout.preferredWidth: 26
                 Layout.minimumWidth: 26
@@ -1604,6 +1567,70 @@ ContainmentItem {
                 HoverHandler { id: trayHover }
                 TapHandler { onTapped: root.openSurface("tray") }
                 PlasmaComponents.ToolTip { text: i18n("System tray") }
+            }
+
+            Item {
+                id: batteryStatusButton
+                visible: root.hasBattery
+                Layout.preferredWidth: root.batteryOnAC ? 26 : Math.max(26, batteryPercentReadout.implicitWidth + 2)
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
+                Layout.fillHeight: true
+                Layout.topMargin: 4
+                Layout.bottomMargin: 4
+                Accessible.name: i18n("Battery and Control Center")
+                Accessible.role: Accessible.Button
+
+                PlasmaComponents.Label {
+                    id: batteryPercentReadout
+                    visible: !root.batteryOnAC
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.batteryLabel() || "—"
+                    font.pixelSize: 12
+                    font.weight: Font.Medium
+                    color: "#F8F8FF"
+                    scale: batteryStatusHover.hovered ? 1.06 : 1
+                    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                }
+                Canvas {
+                    anchors.centerIn: parent
+                    width: 18
+                    height: 18
+                    visible: root.batteryOnAC
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        ctx.reset();
+                        ctx.fillStyle = "#F8F8FF";
+                        ctx.beginPath();
+                        ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
+                        ctx.lineTo(8, 10); ctx.lineTo(7, 17);
+                        ctx.lineTo(14.5, 7); ctx.lineTo(10, 7);
+                        ctx.closePath(); ctx.fill();
+                    }
+                }
+                HoverHandler { id: batteryStatusHover }
+                TapHandler { onTapped: root.openSurface("control") }
+                PlasmaComponents.ToolTip {
+                    text: root.batteryOnAC ? i18n("AC power · %1", root.batteryLabel())
+                        : i18n("Battery and Control Center")
+                }
+            }
+
+            StatusClock {
+                id: statusClock
+                objectName: "temperance-clock"
+                visible: root.clockEnabled
+                Layout.leftMargin: 6
+                Layout.rightMargin: 6
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
+                Layout.maximumWidth: implicitWidth
+                Layout.fillHeight: true
+                dateTime: systemClock.dateTime
+                showTime: root.timeEnabled
+                showDate: root.dateEnabled
+                fontFamily: Plasmoid.configuration.clockFontFamily || ""
             }
         }
 

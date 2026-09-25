@@ -122,6 +122,15 @@ people expect it, with holidays and the person's own events. Chosen over the
 calendar rising from the bottom edge as a card the Keyboard's size, which J
 shelved past 1.0 together with a timeline.
 
+The deal keeps its own pace whatever Plasma's animation speed (J, 25 September).
+That setting shortens what a person waits on, and nobody waits on the clock; at
+four times the default speed the deal lasted 50 ms and could not be seen. Instant
+still counts as reduced motion. The card drops in from above, nearer the eye, while
+the old glyph darkens and sinks; a small drop read as a bump, and a card from the
+side crossed the a.m. and failed. The day period reads a.m. and p.m., lowercase
+and light, smaller than the time and on its baseline, beside a time in the
+regular weight.
+
 Events come from a private calendar link the person pastes once, which Google,
 iCloud and Outlook all give out, read with KDE's calendar library (J, 24
 September). Read-only and a few minutes behind, and chosen over KDE's full

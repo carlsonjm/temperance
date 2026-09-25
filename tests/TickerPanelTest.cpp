@@ -194,7 +194,13 @@ private Q_SLOTS:
           qInfo() << "T1_DISCLOSURE" << adaptive << demand << revealed
                   << ticker->width() << controls->width() << used;
           // Fixed status controls consume the same span in both arrow states.
-          QVERIFY(used > 0 && used < 160);
+          // The clock's reserved slot, its two 6 px margins and one 2 px row
+          // gap come on top of them.
+          auto *statusClock =
+              findItem(rightFace, QStringLiteral("temperance-clock"));
+          const qreal clockSlot = statusClock && statusClock->isVisible()
+                                      ? statusClock->width() + 14 : 0;
+          QVERIFY(used > 0 && used - clockSlot < 160);
           auto ink = ticker->grabToImage();
           QVERIFY(ink);
           QSignalSpy inkReady(ink.get(), &QQuickItemGrabResult::ready);

@@ -89,6 +89,18 @@
       <label>Whether current weather is shown in the status area</label>
       <default>true</default>
     </entry>
+    <entry name="showTime" type="Bool">
+      <label>Whether the time is shown at the right end of the status area</label>
+      <default>true</default>
+    </entry>
+    <entry name="showDate" type="Bool">
+      <label>Whether the date is shown with the time</label>
+      <default>false</default>
+    </entry>
+    <entry name="clockFontFamily" type="String">
+      <label>Font family for the time and date; empty follows the system UI font</label>
+      <default></default>
+    </entry>
     <entry name="temperatureUnit" type="String">
       <label>Temperature unit shown in the compact weather readout</label>
       <default>fahrenheit</default>

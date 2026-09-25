@@ -7,8 +7,10 @@ and Kirigami 6.29.
 
 Double-click `install-system.sh` and choose **Execute**, or open this folder in a
 terminal and run `./install-system.sh`. A terminal remains open so authorization,
-success, or any error is visible. Then sign out and back in, open panel edit mode,
-choose **Add Widgets**, search for **Temperance**, and drop it into the panel.
+success, or any error is visible. The installer then restarts the panel to load
+the new build; windows and the session are untouched, so an update needs no sign
+out. The first time, open panel edit mode, choose **Add Widgets**, search for
+**Temperance**, and drop it into the panel.
 
 Right-click the widget and choose **Configure Temperance** to select the highlight
 color and promote tray entries into Control Center pills. Promoted entries are

@@ -126,6 +126,7 @@ plasma_add_applet(studio.warbler.temperance
         qml/PlasmoidItem.qml
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml
+        qml/StatusClock.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
@@ -176,6 +177,19 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_BINARY_DIR}/bin)
     set_tests_properties(temperance_notification_interaction PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 30)
+    add_executable(temperance-clock-test tests/ClockTest.cpp)
+    target_link_libraries(temperance-clock-test PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)
+    target_compile_definitions(temperance-clock-test PRIVATE
+        STATUS_CLOCK_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/StatusClock.qml")
+    add_test(NAME temperance_clock COMMAND temperance-clock-test)
+    set_tests_properties(temperance_clock PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fast-animation/kdeglobals
+        "[KDE]\nAnimationDurationFactor=0.25\n")
+    add_test(NAME temperance_clock_fast_animation COMMAND temperance-clock-test --fast-animation)
+    set_tests_properties(temperance_clock_fast_animation PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/fast-animation"
+        TIMEOUT 60)
     add_executable(temperance-dock-extent-test
         tests/DockExtentTest.cpp src/dockextentreader.cpp)
     target_include_directories(temperance-dock-extent-test PRIVATE src)

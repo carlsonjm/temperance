@@ -24,6 +24,9 @@ KCMUtils.ScrollViewKCM {
     property bool cfg_adaptiveWidth
     property bool cfg_showNotifications
     property bool cfg_showWeather
+    property bool cfg_showTime
+    property bool cfg_showDate
+    property string cfg_clockFontFamily
     property string cfg_temperatureUnit
     property bool cfg_useOnlineWeatherFallback
     property string cfg_weatherApplication
@@ -37,6 +40,12 @@ KCMUtils.ScrollViewKCM {
         "org.kde.plasma.battery",
         "org.kde.plasma.weather"
     ]
+
+    function typefaceName(family) {
+        return family.length > 0 ? family
+            : i18nc("@info the system font's family name follows", "System font (%1)",
+                    Kirigami.Theme.defaultFont.family);
+    }
 
     function setControlCenterItem(itemId, enabled) {
         const next = Array.from(cfg_controlCenterItems);
@@ -151,6 +160,37 @@ KCMUtils.ScrollViewKCM {
         }
 
         QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("Clock:")
+            text: i18n("Show the time")
+            checked: page.cfg_showTime
+            onToggled: page.cfg_showTime = checked
+        }
+
+        QQC2.CheckBox {
+            text: i18n("Show the date")
+            checked: page.cfg_showDate
+            onToggled: page.cfg_showDate = checked
+        }
+
+        // Only a typeface is chosen: the bar sets the clock's size and weights,
+        // so a chooser offering them would offer choices that do nothing.
+        RowLayout {
+            Kirigami.FormData.label: i18n("Clock font:")
+            enabled: page.cfg_showTime || page.cfg_showDate
+            spacing: Kirigami.Units.smallSpacing
+
+            QQC2.Label {
+                text: page.typefaceName(page.cfg_clockFontFamily)
+                font.family: page.cfg_clockFontFamily.length > 0
+                    ? page.cfg_clockFontFamily : Kirigami.Theme.defaultFont.family
+            }
+            QQC2.Button {
+                text: i18nc("@action:button", "Choose…")
+                onClicked: typefaceChooser.open()
+            }
+        }
+
+        QQC2.CheckBox {
             Kirigami.FormData.label: i18n("System alerts:")
             text: i18n("Show important notification banners")
             checked: page.cfg_showPriorityBanners
@@ -174,6 +214,50 @@ KCMUtils.ScrollViewKCM {
             text: i18n("Selected tray entries become pills and leave the organized tray.")
             wrapMode: Text.Wrap
             Layout.maximumWidth: Kirigami.Units.gridUnit * 22
+        }
+    }
+
+    // Each row names a typeface in the system font, so a symbol font stays
+    // readable, and shows the time in that typeface. The list builds only the
+    // rows on screen, so the installed families are never all drawn at once.
+    Kirigami.SearchDialog {
+        id: typefaceChooser
+        parent: QQC2.Overlay.overlay
+        searchFieldPlaceholderText: i18nc("@info:placeholder", "Search fonts")
+        emptyText: i18nc("@info", "No font matches")
+
+        readonly property string sample: new Date(2026, 0, 5, 10, 8).toLocaleTimeString(Qt.locale(), "hh:mm")
+
+        model: {
+            const query = text.trim().toLowerCase();
+            const matches = Qt.fontFamilies().filter(family => family.toLowerCase().includes(query));
+            return query.length > 0 ? matches : [""].concat(matches);
+        }
+        onAccepted: currentItem?.clicked()
+
+        delegate: QQC2.ItemDelegate {
+            id: typefaceRow
+            required property string modelData
+            width: ListView.view.width
+            highlighted: modelData === page.cfg_clockFontFamily
+            contentItem: RowLayout {
+                spacing: Kirigami.Units.largeSpacing
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: page.typefaceName(typefaceRow.modelData)
+                    elide: Text.ElideRight
+                }
+                QQC2.Label {
+                    text: typefaceChooser.sample
+                    font.family: typefaceRow.modelData.length > 0
+                        ? typefaceRow.modelData : Kirigami.Theme.defaultFont.family
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.3
+                }
+            }
+            onClicked: {
+                page.cfg_clockFontFamily = modelData;
+                typefaceChooser.close();
+            }
         }
     }
 

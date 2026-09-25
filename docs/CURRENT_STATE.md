@@ -4,6 +4,14 @@ Temperance is a native Plasma 6 containment replacing stock System Tray
 presentation. Its responsive left rail provides notifications, weather, battery,
 Control Center, and an organized tray. Other panel applets remain independent.
 
+The right end carries the time over an optional date, in the system UI font or a
+typeface chosen from a searchable list. Digits sit in fixed cells and the clock
+reserves the widest time and date its locale produces, so it never moves the
+layout. The day period reads a.m. or p.m., lowercase, light and smaller. Each new
+minute is dealt onto the old like a card at its own pace, whatever Plasma's
+animation speed, and only fades at Instant. Physically accepted on 25 September.
+The installer restarts the panel, so an update needs no sign-out.
+
 Adaptive width follows the live scene allocation and observes ancestor
 AppletContainers. It measures to the nearest applet on its left, and where a
 container publishes furniture it painted rather than hosted, it measures to

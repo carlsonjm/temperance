@@ -6,10 +6,11 @@
 
 Temperance is a Status Bar for KDE Plasma 6. It keeps system state and recent
 changes together in one panel widget: notifications, weather, battery, common
-controls, and the System Tray.
+controls, the System Tray, and the time and date.
 
-Temperance replaces Plasma's stock System Tray presentation. Your launcher, task
-manager, clock, and other panel widgets remain independent.
+Temperance replaces Plasma's stock System Tray presentation and brings its own
+clock, which can be turned off where a panel keeps Plasma's. Your launcher, task
+manager, and other panel widgets remain independent.
 
 ## Status Bar
 
@@ -20,6 +21,7 @@ The compact panel view can show:
 - Battery state
 - Volume and brightness
 - Network and other System Tray entries
+- The time over the date, at the right end, in the system font or one you choose
 
 Temperance adjusts its width to the space available in the panel. Optional modules
 can be turned off, and the remaining sections share the available space.

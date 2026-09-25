@@ -28,14 +28,17 @@ rollback criteria. Evidence belongs in `archive/`.
 
 ## 4. Clock and calendar
 
-**Status:** Next. Direction settled (`DECISIONS.md` § The clock is Temperance's,
-and its minute deals like a card); J approves each slice on the tablet.
+**Status:** Slices 1 and 2 passed on the tablet on 25 September; the calendar
+(3) is next. Direction settled (`DECISIONS.md` § The clock is Temperance's, and
+its minute deals like a card); J approves each slice on the tablet.
 
-1. Time and date at the Status Bar's right end: the system UI font or one the
-   person picks, digits of fixed width, 12 or 24 hours from the locale. The
-   README stops calling the clock an independent applet.
+1. Time and date at the Status Bar's right end: the system UI font or a
+   typeface the person picks, digits of fixed width, 12 or 24 hours from the
+   locale, the day period lowercase, light and smaller. The README stops
+   calling the clock an independent applet.
 2. The new minute deals onto the old like a card, within the state-transition
-   tier, interruptible, and a fade under reduced motion.
+   tier at its own pace whatever Plasma's animation speed, interruptible, and a
+   fade under reduced motion.
 3. A tap opens the calendar as a small card in the corner, built on Plasma's
    month grid (`org.kde.plasma.workspace.calendar`) and its holiday plugin,
    both installed on the tablet.
