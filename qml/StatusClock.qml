@@ -14,6 +14,11 @@ import org.kde.kirigami as Kirigami
 // as wide as the widest digit for fonts that have none. The item reserves the
 // widest time and date the locale can produce, so neither a new minute nor a
 // new day moves the layout.
+//
+// The block presentation is the same clock for a larger place, the lock: a bold
+// time over the long date, whose weekday is bold, with the date set to exactly
+// the time's width so the two lines make one shape. It is centred and follows
+// the time's width, which changes only with the number of hour digits.
 Item {
     id: clock
 
@@ -25,16 +30,21 @@ Item {
     property bool showDate: true
     // Plasma's animation speed set to instant stands in for reduced motion.
     property bool reducedMotion: Kirigami.Units.longDuration <= 1
+    // "bar", or "block" for the lock. The block shows both lines always.
+    property string presentation: "bar"
+    // The time's size; the bar's is 15.
+    property int timePixelSize: 15
 
+    readonly property bool block: presentation === "block"
     readonly property bool twoLines: showTime && showDate
     readonly property bool dateIsPrimary: showDate && !showTime
 
     readonly property string family: fontFamily.length > 0
         ? fontFamily : Kirigami.Theme.defaultFont.family
-    readonly property font primaryFont: Qt.font({ family: family, pixelSize: 15,
-        weight: Font.Normal, features: { "tnum": 1 } })
-    readonly property font periodFont: Qt.font({ family: family, pixelSize: 11,
-        weight: Font.Light })
+    readonly property font primaryFont: Qt.font({ family: family, pixelSize: timePixelSize,
+        weight: block ? Font.Bold : Font.Normal, features: { "tnum": 1 } })
+    readonly property font periodFont: Qt.font({ family: family,
+        pixelSize: block ? Math.round(timePixelSize * 0.36) : 11, weight: Font.Light })
     readonly property font secondaryFont: Qt.font({ family: family, pixelSize: 11,
         weight: Font.Normal, features: { "tnum": 1 } })
     readonly property color primaryColor: "#F8F8FF"
@@ -207,9 +217,33 @@ Item {
                          value.toLocaleDateString(clockLocale, "d"));
     }
 
-    implicitWidth: Math.ceil(Math.max(showTime ? reservedTimeWidth : 0,
-                                      showDate ? reservedDateWidth : 0))
-    implicitHeight: !showTime && !showDate ? 0
+    // The block's date: the long weekday, then the long month and the day in
+    // the locale's order.
+    readonly property string blockWeekday: clockLocale.dayName(dateTime.getDay(), Locale.LongFormat)
+    readonly property string blockDate: {
+        const month = clockLocale.monthName(dateTime.getMonth(), Locale.LongFormat);
+        const day = dateTime.toLocaleDateString(clockLocale, "d");
+        return dayFirst ? day + " " + month : month + " " + day;
+    }
+    // Measured at 100 px, and the date set at the size that makes it as wide as
+    // the time; the space between weekday and date takes up what whole pixels
+    // leave over, so the two widths match exactly.
+    readonly property int blockDateSize: {
+        const natural = weekdayProbe.advanceWidth + spaceProbe.advanceWidth + dateProbe.advanceWidth;
+        return natural > 0 ? Math.max(1, Math.floor(100 * blockTime.width / natural)) : 1;
+    }
+    readonly property font blockWeekdayFont: Qt.font({ family: family, pixelSize: blockDateSize,
+        weight: Font.Bold, features: { "tnum": 1 } })
+    readonly property font blockDateFont: Qt.font({ family: family, pixelSize: blockDateSize,
+        weight: Font.Medium, features: { "tnum": 1 } })
+    readonly property real blockGap: Math.round(timePixelSize * 0.3)
+    readonly property real blockDateCapHeight: { blockDateMetrics.font; return blockDateMetrics.tightBoundingRect("0").height; }
+
+    implicitWidth: block ? Math.ceil(blockTime.width)
+        : Math.ceil(Math.max(showTime ? reservedTimeWidth : 0,
+                             showDate ? reservedDateWidth : 0))
+    implicitHeight: block ? Math.ceil(primaryCapHeight + blockGap + blockDateCapHeight)
+        : !showTime && !showDate ? 0
         : Math.ceil(twoLines ? primaryCapHeight + lineGap + secondaryCapHeight : primaryCapHeight)
 
     Accessible.role: Accessible.StaticText
@@ -219,6 +253,24 @@ Item {
     FontMetrics { id: primaryMetrics; font: clock.primaryFont }
     FontMetrics { id: secondaryMetrics; font: clock.secondaryFont }
     FontMetrics { id: periodMetrics; font: clock.periodFont }
+    FontMetrics { id: blockDateMetrics; font: clock.blockDateFont }
+    TextMetrics {
+        id: weekdayProbe
+        text: clock.blockWeekday
+        font: Qt.font({ family: clock.family, pixelSize: 100, weight: Font.Bold, features: { "tnum": 1 } })
+    }
+    TextMetrics {
+        id: spaceProbe
+        text: " "
+        font: Qt.font({ family: clock.family, pixelSize: 100, weight: Font.Medium })
+    }
+    TextMetrics {
+        id: dateProbe
+        text: clock.blockDate
+        font: Qt.font({ family: clock.family, pixelSize: 100, weight: Font.Medium, features: { "tnum": 1 } })
+    }
+    TextMetrics { id: weekdayAtSize; text: clock.blockWeekday; font: clock.blockWeekdayFont }
+    TextMetrics { id: dateAtSize; text: clock.blockDate; font: clock.blockDateFont }
 
     component ClockLine: Row {
         id: line
@@ -330,6 +382,7 @@ Item {
 
     Item {
         id: lines
+        visible: !clock.block
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         width: parent.width
@@ -359,6 +412,49 @@ Item {
             metrics: clock.dateIsPrimary ? primaryMetrics : secondaryMetrics
             cell: clock.dateIsPrimary ? clock.primaryCell : clock.secondaryCell
             capHeight: clock.dateIsPrimary ? clock.primaryCapHeight : clock.secondaryCapHeight
+        }
+    }
+
+    Item {
+        id: blockLines
+        visible: clock.block
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        width: blockTime.width
+        height: clock.implicitHeight
+
+        ClockLine {
+            id: blockTime
+            objectName: "temperance-clock-block-time"
+            y: clock.primaryCapHeight - primaryMetrics.ascent
+            text: clock.timeText
+            lineFont: clock.primaryFont
+            lineColor: clock.primaryColor
+            metrics: primaryMetrics
+            cell: clock.primaryCell
+            capHeight: clock.primaryCapHeight
+            suffixWidth: clock.timeSuffixWidth
+        }
+        Row {
+            objectName: "temperance-clock-block-date"
+            y: clock.primaryCapHeight + clock.blockGap + clock.blockDateCapHeight - blockDateMetrics.ascent
+            spacing: Math.max(0, blockTime.width - weekdayAtSize.advanceWidth - dateAtSize.advanceWidth)
+
+            // Measured widths rather than the text's own, which round up, so
+            // the row comes out exactly as wide as the time.
+            Text {
+                objectName: "temperance-clock-block-weekday"
+                width: weekdayAtSize.advanceWidth
+                text: clock.blockWeekday
+                font: clock.blockWeekdayFont
+                color: clock.primaryColor
+            }
+            Text {
+                width: dateAtSize.advanceWidth
+                text: clock.blockDate
+                font: clock.blockDateFont
+                color: clock.secondaryColor
+            }
         }
     }
 }

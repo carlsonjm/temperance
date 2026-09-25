@@ -9,7 +9,9 @@ typeface chosen from a searchable list. Digits sit in fixed cells and the clock
 reserves the widest time and date its locale produces, so it never moves the
 layout. The day period reads a.m. or p.m., lowercase, light and smaller. Each
 new minute is dealt onto the old like a card at its own pace, whatever Plasma's
-animation speed, and only fades at Instant. A tap on the clock opens the month
+animation speed, and only fades at Instant. The same clock draws a block for a
+lock screen at a size the caller gives: a bold time over the long date, its
+weekday bold, the date set to exactly the time's width. A tap on the clock opens the month
 as a small card in the corner: the current day in the accent, a dot on any day
 with a holiday or event, and the chosen day's holidays and events beneath.
 Arrows, a sideways swipe or the wheel turn the month. Holidays come from

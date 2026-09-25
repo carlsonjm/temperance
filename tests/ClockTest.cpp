@@ -6,6 +6,7 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QThread>
 #include <QTimeZone>
 #include <cmath>
@@ -292,6 +293,61 @@ static void exerciseDeal(QQmlEngine &engine, QQmlComponent &component, const QSt
     qInfo().noquote() << "PASS:" << label;
 }
 
+// The lock's block: a bold time over the long date, the date exactly as wide as
+// the time on every day of the year, its weekday bold and the rest not, and
+// the bar's two lines out of the way.
+static void exerciseBlock(QQmlEngine &engine, QQmlComponent &component, const QString &family)
+{
+    const QString label = family + QStringLiteral(" / block");
+    std::unique_ptr<QObject> object = createClock(engine, component, family);
+    auto *clock = qobject_cast<QQuickItem *>(object.get());
+    if (!clock) { check(false, label + QStringLiteral(": clock did not load")); return; }
+    // Its lines are rows, which lay themselves out only in a window, and the
+    // block's width follows theirs.
+    QQuickWindow window;
+    window.resize(800, 300);
+    clock->setParentItem(window.contentItem());
+    window.show();
+    clock->setProperty("presentation", QStringLiteral("block"));
+    clock->setProperty("timePixelSize", 76);
+    const QTimeZone zone = QTimeZone::systemTimeZone();
+    clock->setProperty("dateTime", QDateTime(QDate(2026, 9, 25), QTime(13, 23), zone));
+    settle(500);
+
+    QQuickItem *time = findNamed(clock, QStringLiteral("temperance-clock-block-time"));
+    QQuickItem *date = findNamed(clock, QStringLiteral("temperance-clock-block-date"));
+    QQuickItem *weekday = findNamed(clock, QStringLiteral("temperance-clock-block-weekday"));
+    QQuickItem *barTime = findNamed(clock, QStringLiteral("temperance-clock-time"));
+    if (!time || !date || !weekday || !barTime) { check(false, label + QStringLiteral(": a line is missing")); return; }
+
+    check(time->isVisible() && date->isVisible() && !barTime->isVisible(),
+          label + QStringLiteral(": the block shows its own lines and not the bar's"));
+    check(weekday->property("text").toString() == QStringLiteral("Friday"),
+          label + QStringLiteral(": the weekday is written out (%1)").arg(weekday->property("text").toString()));
+    QQuickItem *digit = findNamed(time, QStringLiteral("temperance-clock-glyph"));
+    check(digit && digit->property("font").value<QFont>().weight() == QFont::Bold
+              && digit->property("font").value<QFont>().pixelSize() == 76,
+          label + QStringLiteral(": the time is bold at its own size"));
+    check(weekday->property("font").value<QFont>().weight() == QFont::Bold,
+          label + QStringLiteral(": the weekday is bold"));
+    const QList<QQuickItem *> dateParts = date->childItems();
+    check(dateParts.size() == 2 && dateParts.last()->property("font").value<QFont>().weight() < QFont::DemiBold,
+          label + QStringLiteral(": the rest of the date is not bold"));
+    check(clock->implicitWidth() == std::ceil(time->width()),
+          label + QStringLiteral(": the block is as wide as its time"));
+
+    for (QDate day(2026, 1, 1); day < QDate(2027, 1, 1); day = day.addDays(1)) {
+        clock->setProperty("dateTime", QDateTime(day, QTime(13, 23), zone));
+        settle(20);
+        if (std::abs(date->width() - time->width()) > 0.5) {
+            check(false, label + QStringLiteral(": %1 is %2 wide against the time's %3")
+                                     .arg(day.toString(Qt::ISODate)).arg(date->width()).arg(time->width()));
+            return;
+        }
+    }
+    qInfo().noquote() << "PASS:" << label << "at" << clock->implicitWidth() << "x" << clock->implicitHeight();
+}
+
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
@@ -339,6 +395,7 @@ int main(int argc, char **argv)
         exerciseLines(engine, component, family);
         exercisePeriod(engine, component, family);
         exerciseDeal(engine, component, family);
+        exerciseBlock(engine, component, family);
     }
     check(exercised > 0, QStringLiteral("no test font is installed"));
     return failures == 0 ? 0 : 1;

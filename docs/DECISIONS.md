@@ -131,6 +131,12 @@ side crossed the a.m. and failed. The day period reads a.m. and p.m., lowercase
 and light, smaller than the time and on its baseline, beside a time in the
 regular weight.
 
+Shuffle Lock shows this clock too, as a block of its own rather than the bar's
+two lines scaled up, which blurred (J, 25 September): a bold time over the long
+date with a bold weekday, the date sized to the time's width so the two lines
+make one shape. It is chosen by the caller and leaves the bar unchanged, so the
+lock and the bar stay one clock with one minute animation.
+
 Events come from a private calendar link the person pastes once, which Google,
 iCloud and Outlook all give out, read with KDE's calendar library (J, 24
 September). Read-only and a few minutes behind, and chosen over KDE's full
