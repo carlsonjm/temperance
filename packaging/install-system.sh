@@ -46,10 +46,34 @@ if [[ ! -f "${plugin_target}" || ! -f "${icon_target}" ]]; then
     exit 1
 fi
 
+# A restarted shell has sometimes come back not knowing the current activity,
+# and then shows no desktop on any screen, so no wallpaper, until the activity
+# is announced again. Once the shell answers, make sure it knows.
+announce_activity() {
+    command -v qdbus6 >/dev/null 2>&1 || return 0
+    local shell_activity="" tries=0
+    while (( tries < 40 )); do
+        if shell_activity="$(qdbus6 org.kde.plasmashell /PlasmaShell \
+                org.kde.PlasmaShell.evaluateScript 'print(currentActivity())' 2>/dev/null)"; then
+            break
+        fi
+        sleep 0.25
+        tries=$((tries + 1))
+    done
+    if [[ -z "${shell_activity}" ]]; then
+        local current
+        current="$(qdbus6 org.kde.ActivityManager /ActivityManager/Activities \
+            org.kde.ActivityManager.Activities.CurrentActivity 2>/dev/null || true)"
+        [[ -n "${current}" ]] && qdbus6 org.kde.ActivityManager /ActivityManager/Activities \
+            org.kde.ActivityManager.Activities.SetCurrentActivity "${current}" >/dev/null 2>&1 || true
+    fi
+}
+
 # The panel loads a widget's plugin once, so it restarts to pick up the new
 # build. Windows and the session stay as they are.
 if systemctl --user --quiet is-active plasma-plasmashell.service 2>/dev/null; then
     systemctl --user restart plasma-plasmashell.service
+    announce_activity
     printf '%s\n' "Installed Temperance and restarted the panel."
 else
     printf '%s\n' "Installed Temperance successfully. Sign out and back in to load it."
