@@ -34,7 +34,6 @@ namespace PulseAudioQt
 class Sink;
 }
 
-class DockExtentReader;
 
 class SystemTray : public Plasma::Containment
 {
@@ -160,8 +159,6 @@ private:
     QString m_performanceHelper;
     QPointer<PulseAudioQt::Sink> m_defaultAudioSink;
     QList<QPointer<QQuickItem>> m_watchedGeometryItems;
-    /// A dock a container painted rather than hosted, where one is published.
-    DockExtentReader *m_dockExtent = nullptr;
     CalendarFeeds *m_calendarFeeds = nullptr;
     bool m_watchingPanelGeometry = false;
 };

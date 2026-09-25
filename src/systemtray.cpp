@@ -11,7 +11,6 @@
 #include "debug.h"
 #include "systemtray.h"
 
-#include "dockextentreader.h"
 #include "calendarfeeds.h"
 
 #include <QScreen>
@@ -295,13 +294,6 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     : Plasma::Containment(parent, data, args)
 {
     m_sessionManagement = new SessionManagement(this);
-    // A container may paint furniture rather than host it as an applet. Where
-    // one publishes what it painted, this reports it, and the measurement
-    // below has a real neighbour instead of nothing to find. With nothing
-    // published it reports nothing and every measurement is unchanged.
-    m_dockExtent = new DockExtentReader(this);
-    connect(m_dockExtent, &DockExtentReader::extentChanged, this,
-            [this] { Q_EMIT panelGeometryChanged(); });
     m_calendarFeeds = new CalendarFeeds(this);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
@@ -722,21 +714,9 @@ int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, 
     const qreal ownRight = ownItem->mapToGlobal(QPointF(ownItem->width(), 0)).x();
     qreal nearestLeftEdge = -1;
 
-    // Furniture the container painted rather than hosted is invisible to the
-    // applet walk below, so measuring to the nearest applet measures straight
-    // past it and claims room that was never free. A published edge is a real
-    // neighbour and is taken when it is the nearer one.
-    if (QScreen *screen = visualParent->window()->screen()) {
-        const std::optional<qreal> published =
-            m_dockExtent ? m_dockExtent->rightEdgeFor(screen->name())
-                         : std::nullopt;
-        if (published.has_value()) {
-            const qreal edge = screen->geometry().x() + *published;
-            if (edge <= ownLeft + 1) {
-                nearestLeftEdge = edge;
-            }
-        }
-    }
+    // Furniture a container paints rather than hosts is not in this walk, so
+    // there the measurement runs past it. Such a container holds its components
+    // to their side, as Shuffle's band does, and that clamp decides the width.
 
     for (Plasma::Applet *applet : containment()->applets()) {
         if (!applet || applet == this || applet->destroyed()) {

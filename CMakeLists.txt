@@ -106,7 +106,7 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(studio.warbler.temperance
-    CPP_SOURCES src/systemtray.cpp src/dockextentreader.cpp src/calendarfeeds.cpp
+    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
@@ -213,15 +213,6 @@ if(BUILD_TESTING)
     set_tests_properties(temperance_clock_fast_animation PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/fast-animation"
         TIMEOUT 60)
-    add_executable(temperance-dock-extent-test
-        tests/DockExtentTest.cpp src/dockextentreader.cpp)
-    target_include_directories(temperance-dock-extent-test PRIVATE src)
-    target_link_libraries(temperance-dock-extent-test PRIVATE
-        Qt6::DBus Qt6::Gui Qt6::Test)
-    add_test(NAME temperance_dock_extent COMMAND temperance-dock-extent-test)
-    set_tests_properties(temperance_dock_extent PROPERTIES
-        TIMEOUT 30 SKIP_RETURN_CODE 77)
-
     add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
     target_include_directories(temperance-session-action-test PRIVATE src)
     target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)
