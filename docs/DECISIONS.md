@@ -122,6 +122,11 @@ people expect it, with holidays and the person's own events. Chosen over the
 calendar rising from the bottom edge as a card the Keyboard's size, which J
 shelved past 1.0 together with a timeline.
 
+Events come from a private calendar link the person pastes once, which Google,
+iCloud and Outlook all give out, read with KDE's calendar library (J, 24
+September). Read-only and a few minutes behind, and chosen over KDE's full
+calendar service, a background service with its own database on every install.
+
 ## Visual and interaction language
 
 The live visual contract is `ITASCA-VISUAL-LANGUAGE.md`. Ghost White

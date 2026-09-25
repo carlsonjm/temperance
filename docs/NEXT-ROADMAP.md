@@ -39,6 +39,7 @@ and its minute deals like a card); J approves each slice on the tablet.
 3. A tap opens the calendar as a small card in the corner, built on Plasma's
    month grid (`org.kde.plasma.workspace.calendar`) and its holiday plugin,
    both installed on the tablet.
-4. Events: no event source is installed on the tablet (no Akonadi, no
-   kdepim-addons). J picks the source; the calendar then shows events.
+4. Events from a pasted private calendar link (`DECISIONS.md`), read with
+   KCalendarCore, which is a small KF6 package not yet on the tablet and so
+   becomes a build and install dependency.
 5. Bring J the next event beside the time where there is room.
