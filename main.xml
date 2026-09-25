@@ -97,6 +97,10 @@
       <label>Whether the date is shown with the time</label>
       <default>false</default>
     </entry>
+    <entry name="calendarLinks" type="StringList">
+      <label>Private iCal addresses of the calendars whose events the calendar shows</label>
+      <default></default>
+    </entry>
     <entry name="clockFontFamily" type="String">
       <label>Font family for the time and date; empty follows the system UI font</label>
       <default></default>

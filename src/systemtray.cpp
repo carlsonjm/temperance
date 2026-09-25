@@ -12,6 +12,7 @@
 #include "systemtray.h"
 
 #include "dockextentreader.h"
+#include "calendarfeeds.h"
 
 #include <QScreen>
 #include <optional>
@@ -301,6 +302,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_dockExtent = new DockExtentReader(this);
     connect(m_dockExtent, &DockExtentReader::extentChanged, this,
             [this] { Q_EMIT panelGeometryChanged(); });
+    m_calendarFeeds = new CalendarFeeds(this);
     setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
 }
@@ -1065,6 +1067,11 @@ void SystemTray::scroll(const QString &service, int delta, const QString &direct
     }
 
     source->scroll(delta, direction);
+}
+
+CalendarFeeds *SystemTray::calendarFeeds() const
+{
+    return m_calendarFeeds;
 }
 
 K_PLUGIN_CLASS_WITH_JSON(SystemTray, "metadata.json")

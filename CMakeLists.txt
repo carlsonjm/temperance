@@ -13,9 +13,9 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMQtDeclareLoggingCategory)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui GuiPrivate Quick Widgets)
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui GuiPrivate Network Quick Widgets)
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
-    Config CoreAddons IconThemes I18n ItemModels JobWidgets KIO
+    CalendarCore Config CoreAddons IconThemes I18n ItemModels JobWidgets KIO
     Service StatusNotifierItem WindowSystem XmlGui
 )
 find_package(Plasma REQUIRED)
@@ -106,13 +106,15 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(studio.warbler.temperance
-    CPP_SOURCES src/systemtray.cpp src/dockextentreader.cpp
+    CPP_SOURCES src/systemtray.cpp src/dockextentreader.cpp src/calendarfeeds.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
         qml/BellGlyph.qml
+        qml/CalendarPage.qml
         qml/CompactApplet.qml
         qml/ConfigAppearance.qml
+        qml/ConfigCalendar.qml
         qml/ConfigGeneral.qml
         qml/ControlCenterPage.qml
         qml/CurrentItemHighLight.qml
@@ -141,6 +143,8 @@ plasma_add_applet(studio.warbler.temperance
         assets/icons/lucide/trash-2.svg
         assets/icons/lucide/chevron-up.svg
         assets/icons/lucide/chevron-down.svg
+        assets/icons/lucide/chevron-left.svg
+        assets/icons/lucide/chevron-right.svg
         assets/icons/lucide/log-out.svg
         assets/icons/lucide/rotate-cw.svg
         assets/icons/lucide/power.svg
@@ -157,7 +161,8 @@ target_compile_definitions(studio.warbler.temperance PRIVATE
 target_include_directories(studio.warbler.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(studio.warbler.temperance PRIVATE
-    temperance_core KF6::CoreAddons KF6::PulseAudioQt PW::LibNotificationManager PW::KWorkspace)
+    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt Qt6::Network
+    PW::LibNotificationManager PW::KWorkspace)
 
 add_test(NAME temperance_source_sanity
     COMMAND ${CMAKE_COMMAND}
@@ -183,6 +188,24 @@ if(BUILD_TESTING)
         STATUS_CLOCK_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/StatusClock.qml")
     add_test(NAME temperance_clock COMMAND temperance-clock-test)
     set_tests_properties(temperance_clock PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
+    add_executable(temperance-calendar-feeds-test tests/CalendarFeedsTest.cpp src/calendarfeeds.cpp)
+    target_include_directories(temperance-calendar-feeds-test PRIVATE src)
+    target_link_libraries(temperance-calendar-feeds-test PRIVATE
+        Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
+    target_compile_definitions(temperance-calendar-feeds-test PRIVATE
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+    add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
+    set_tests_properties(temperance_calendar_feeds PROPERTIES TIMEOUT 60)
+    add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
+    target_include_directories(temperance-calendar-test PRIVATE src)
+    target_link_libraries(temperance-calendar-test PRIVATE
+        Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
+    target_compile_definitions(temperance-calendar-test PRIVATE
+        CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+    add_test(NAME temperance_calendar COMMAND temperance-calendar-test)
+    set_tests_properties(temperance_calendar PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fast-animation/kdeglobals
         "[KDE]\nAnimationDurationFactor=0.25\n")

@@ -14,6 +14,8 @@
 
 #include <Plasma/Containment>
 
+#include "calendarfeeds.h"
+
 class QQuickItem;
 
 namespace Plasma
@@ -44,6 +46,9 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(int volumePercent READ volumePercent NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeMuted READ volumeMuted NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeAvailable READ volumeAvailable NOTIFY volumeChanged)
+    // The calendars linked in the settings, shared by the calendar card and
+    // the settings page that shows each link's state.
+    Q_PROPERTY(CalendarFeeds *calendarFeeds READ calendarFeeds CONSTANT)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -111,6 +116,7 @@ public:
     bool volumeMuted() const;
     bool volumeAvailable() const;
     Q_INVOKABLE void setVolumePercent(int percent);
+    CalendarFeeds *calendarFeeds() const;
 
 Q_SIGNALS:
     void sessionActionFailed();
@@ -156,5 +162,6 @@ private:
     QList<QPointer<QQuickItem>> m_watchedGeometryItems;
     /// A dock a container painted rather than hosted, where one is published.
     DockExtentReader *m_dockExtent = nullptr;
+    CalendarFeeds *m_calendarFeeds = nullptr;
     bool m_watchingPanelGeometry = false;
 };

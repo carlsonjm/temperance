@@ -135,6 +135,11 @@ Events come from a private calendar link the person pastes once, which Google,
 iCloud and Outlook all give out, read with KDE's calendar library (J, 24
 September). Read-only and a few minutes behind, and chosen over KDE's full
 calendar service, a background service with its own database on every install.
+Several calendars can be linked (J, 25 September). Each address is kept in the
+widget's settings in the person's home folder, and anyone holding it can read
+that calendar. The calendar stays read-only (J, 25 September): events are added
+in each service's own app. Writing would need a sign-in per service, and Google
+reviews apps that write to calendars.
 
 ## Visual and interaction language
 

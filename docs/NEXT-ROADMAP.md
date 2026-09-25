@@ -28,8 +28,8 @@ rollback criteria. Evidence belongs in `archive/`.
 
 ## 4. Clock and calendar
 
-**Status:** Slices 1 and 2 passed on the tablet on 25 September; the calendar
-(3) is next. Direction settled (`DECISIONS.md` § The clock is Temperance's, and
+**Status:** Slices 1 to 4 passed on the tablet on 25 September; the next event
+beside the time (5) is next. Direction settled (`DECISIONS.md` § The clock is Temperance's, and
 its minute deals like a card); J approves each slice on the tablet.
 
 1. Time and date at the Status Bar's right end: the system UI font or a

@@ -5,6 +5,9 @@ and Kirigami 6.29.
 
 ## Install
 
+Temperance needs KDE's calendar library, packaged as `kcalendarcore`. The
+installer stops and says so if it is missing.
+
 Double-click `install-system.sh` and choose **Execute**, or open this folder in a
 terminal and run `./install-system.sh`. A terminal remains open so authorization,
 success, or any error is visible. The installer then restarts the panel to load

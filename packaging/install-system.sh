@@ -29,6 +29,14 @@ if [[ ! -f "${package_dir}/${icon_name}" ]]; then
     exit 1
 fi
 
+# Linked calendars are read with KDE's calendar library, which a Plasma
+# desktop does not always carry.
+if ! ldconfig -p | grep -q 'libKF6CalendarCore\.so\.6'; then
+    printf '%s\n' "Temperance needs KDE's calendar library (the kcalendarcore package)." \
+        "On Arch and CachyOS: sudo pacman -S kcalendarcore" >&2
+    exit 1
+fi
+
 sudo install -Dm755 "${package_dir}/${plugin_name}" "${plugin_target}"
 sudo install -Dm644 "${package_dir}/${icon_name}" "${icon_target}"
 kbuildsycoca6

@@ -25,9 +25,13 @@ Item {
     readonly property real notificationPageHeightLimit: Math.max(1,
         root.notificationPopupHeightLimit - heading.implicitHeight
         - headingBackground.bottomPadding - contentSafety * 2 - headerSafety)
-    readonly property real desiredWidth: Kirigami.Units.gridUnit * 24
-        + (systemTrayState.activeApplet ? nativePagePadding * 2 : 0)
-        + contentSafety * 2
+    readonly property bool calendarShown: !systemTrayState.activeApplet
+        && systemTrayState.page === "calendar"
+    readonly property real desiredWidth: calendarShown
+        ? calendarPage.implicitWidth + contentSafety * 2
+        : Kirigami.Units.gridUnit * 24
+            + (systemTrayState.activeApplet ? nativePagePadding * 2 : 0)
+            + contentSafety * 2
     readonly property real desiredHeight: {
         if (systemTrayState.activeApplet) {
             return Kirigami.Units.gridUnit * 22 + nativePagePadding * 2
@@ -35,6 +39,7 @@ Item {
         }
         const pageHeight = systemTrayState.page === "control" ? controlPage.implicitHeight
             : systemTrayState.page === "notifications" ? notificationPage.implicitHeight
+            : systemTrayState.page === "calendar" ? calendarPage.implicitHeight
             : organizedPage.implicitHeight;
         return pageHeight + heading.implicitHeight + headingBackground.bottomPadding
             + contentSafety * 2 + headerSafety;
@@ -78,6 +83,10 @@ Item {
         target: systemTrayState
         function onExpandedChanged() {
             if (systemTrayState.expanded) Qt.callLater(popup.playEntrance);
+            if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
+        }
+        function onPageChanged() {
+            if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
         }
     }
 
@@ -114,6 +123,7 @@ Item {
         if (systemTrayState.activeApplet) return systemTrayState.activeApplet.plasmoid.title;
         if (systemTrayState.page === "tray") return i18n("System tray");
         if (systemTrayState.page === "notifications") return i18n("Notifications");
+        if (systemTrayState.page === "calendar") return calendarPage.title;
         return i18n("Control center");
     }
 
@@ -124,6 +134,32 @@ Item {
         x: parent ? Math.max(10 - anchorX,
             Math.min((parent.width - implicitWidth) / 2,
                 popup.width - 10 - anchorX - implicitWidth)) : 0
+    }
+
+    // The calendar's month arrows: no boundary at rest, since the chevron is
+    // the whole affordance, and the header family's 30 px height and radius.
+    component CalendarArrow: PlasmaComponents.ToolButton {
+        id: arrow
+        required property string glyph
+        Layout.preferredWidth: 30
+        Layout.preferredHeight: 30
+        padding: 6
+        display: PlasmaComponents.AbstractButton.IconOnly
+        Accessible.name: text
+        contentItem: SuiteIcon {
+            glyph: arrow.glyph
+            implicitWidth: 18
+            implicitHeight: 18
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: arrow.down ? Qt.rgba(1, 1, 1, 0.18)
+                : arrow.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            border.width: arrow.visualFocus ? 1 : 0
+            border.color: "#F8F8FF"
+            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+        }
+        HeaderToolTip { text: arrow.text }
     }
 
     component HeaderPowerPill: PlasmaComponents.ToolButton {
@@ -177,7 +213,8 @@ Item {
             id: heading
             Layout.fillWidth: true
             Layout.leftMargin: popup.headerSafety
-            Layout.rightMargin: popup.headerSafety
+            // On the calendar the arrows end on the grid's 16 px margin line.
+            Layout.rightMargin: popup.calendarShown ? calendarPage.textInset : popup.headerSafety
             Layout.topMargin: popup.headerSafety
 
             Kirigami.Heading {
@@ -187,6 +224,52 @@ Item {
                 text: popup.pageTitle()
                 maximumLineCount: 1
                 elide: Text.ElideRight
+            }
+
+            RowLayout {
+                id: calendarNavigation
+                visible: popup.calendarShown
+                spacing: 8
+
+                PlasmaComponents.ToolButton {
+                    id: calendarToday
+                    visible: !calendarPage.showingCurrentMonth
+                    Layout.preferredHeight: 30
+                    leftPadding: 12
+                    rightPadding: 12
+                    text: i18nc("@action:button go to the current month", "Today")
+                    contentItem: PlasmaComponents.Label {
+                        text: calendarToday.text
+                        font.pixelSize: 13
+                        font.weight: Font.Medium
+                        color: "#F8F8FF"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle {
+                        radius: height / 2
+                        color: calendarToday.down ? Qt.rgba(1, 1, 1, 0.18)
+                            : calendarToday.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                        border.width: 1
+                        border.color: calendarToday.visualFocus ? "#F8F8FF" : "#5a5a5a"
+                        Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                    }
+                    onClicked: calendarPage.reset()
+                }
+
+                RowLayout {
+                    spacing: 4
+                    CalendarArrow {
+                        glyph: "chevron-left"
+                        text: i18n("Previous month")
+                        onClicked: calendarPage.showMonth(-1)
+                    }
+                    CalendarArrow {
+                        glyph: "chevron-right"
+                        text: i18n("Next month")
+                        onClicked: calendarPage.showMonth(1)
+                    }
+                }
             }
 
             RowLayout {
@@ -434,6 +517,17 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: !systemTrayState.activeApplet && systemTrayState.page === "tray"
+        }
+
+        CalendarPage {
+            id: calendarPage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: popup.calendarShown
+            today: systemClock.dateTime
+            accentColor: root.accentColor
+            feeds: Plasmoid.calendarFeeds
+            formatTime: value => statusClock.timeString(value)
         }
 
         NotificationHistoryPage {

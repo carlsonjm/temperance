@@ -821,6 +821,13 @@ ContainmentItem {
     // changes and resume from suspend, which a local timer would not.
     PlasmaClock.Clock { id: systemClock }
 
+    // The calendars linked in the settings; a link is read when it is added.
+    Binding {
+        target: Plasmoid.calendarFeeds
+        property: "links"
+        value: Plasmoid.configuration.calendarLinks
+    }
+
     NotificationManager.Notifications {
         id: notificationHistory
         showExpired: true
@@ -1631,6 +1638,10 @@ ContainmentItem {
                 showTime: root.timeEnabled
                 showDate: root.dateEnabled
                 fontFamily: Plasmoid.configuration.clockFontFamily || ""
+                Accessible.role: Accessible.Button
+                Accessible.onPressAction: root.openSurface("calendar")
+
+                TapHandler { onTapped: root.openSurface("calendar") }
             }
         }
 
