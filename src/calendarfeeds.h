@@ -24,8 +24,11 @@ class CalendarFeeds : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QStringList links READ links WRITE setLinks NOTIFY linksChanged)
-    // One entry per link: link, name, state ("loading", "ready" or "failed"),
-    // message and updated.
+    // The colour the person picked for a calendar, keyed by its link. It wins
+    // over the colour the feed gives its calendar, not over an event's own.
+    Q_PROPERTY(QVariantMap colors READ colors WRITE setColors NOTIFY colorsChanged)
+    // One entry per link: link, name, color (the feed's own), state
+    // ("loading", "ready" or "failed"), message and updated.
     Q_PROPERTY(QVariantList feeds READ feeds NOTIFY feedsChanged)
     // Bumped whenever the events change, so bindings that read them re-read.
     Q_PROPERTY(int revision READ revision NOTIFY eventsChanged)
@@ -36,6 +39,8 @@ public:
 
     QStringList links() const;
     void setLinks(const QStringList &links);
+    QVariantMap colors() const;
+    void setColors(const QVariantMap &colors);
     QVariantList feeds() const;
     int revision() const;
 
@@ -44,8 +49,12 @@ public:
     Q_INVOKABLE static QString normalizedLink(const QString &link);
 
     // Events of every linked calendar that fall in the month, keyed by day of
-    // the month as a string. Each is a map of title, allDay, start and
-    // calendar, sorted all-day first and then by start.
+    // the month as a string. Each is a map of title, allDay, start, end,
+    // calendar, color and key, sorted all-day first and then by start. The key
+    // names one occurrence, so it survives a re-read of the feed. The colour is
+    // the event's own, else the one the person picked for its calendar, else
+    // the feed's, else empty: iCloud's feeds carry one, Google's and Outlook's
+    // do not.
     Q_INVOKABLE QVariantMap eventsForMonth(int year, int month) const;
 
     Q_INVOKABLE void refresh();
@@ -54,6 +63,7 @@ public:
 
 Q_SIGNALS:
     void linksChanged();
+    void colorsChanged();
     void feedsChanged();
     void eventsChanged();
 
@@ -61,6 +71,7 @@ private:
     struct Feed {
         QString link;
         QString name;
+        QString color;
         QString state;
         QString message;
         QDateTime updated;
@@ -73,6 +84,7 @@ private:
     Feed *feedFor(QNetworkReply *reply);
 
     QStringList m_links;
+    QVariantMap m_colors;
     QList<Feed> m_feeds;
     QNetworkAccessManager m_network;
     QTimer m_refresh;

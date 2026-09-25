@@ -122,7 +122,7 @@ Item {
     function pageTitle() {
         if (systemTrayState.activeApplet) return systemTrayState.activeApplet.plasmoid.title;
         if (systemTrayState.page === "tray") return i18n("System tray");
-        if (systemTrayState.page === "notifications") return i18n("Notifications");
+        if (systemTrayState.page === "notifications") return i18n("Notifications & events");
         if (systemTrayState.page === "calendar") return calendarPage.title;
         return i18n("Control center");
     }
@@ -542,6 +542,9 @@ Item {
             clearHistory: () => root.clearNotificationHistory()
             resolveApplicationIcon: (applicationName, desktopEntry, fallbackIcon) =>
                 Plasmoid.resolveApplicationIcon(applicationName, desktopEntry, fallbackIcon)
+            events: root.todayEvents
+            dismissEvent: key => root.dismissEvent(key)
+            formatTime: value => statusClock.timeString(value)
         }
 
         PlasmoidPopupsContainer {

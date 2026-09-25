@@ -19,6 +19,11 @@ Item {
     required property var launchApplication
     required property bool demoNotificationVisible
     required property real maximumHeight
+    // Today's calendar events, which head the history, and how one is
+    // dismissed and its times written.
+    property var events: []
+    property var dismissEvent: key => {}
+    property var formatTime: value => value.toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
@@ -78,6 +83,102 @@ Item {
         spacing: Kirigami.Units.mediumSpacing
 
         Item { Layout.fillHeight: true }
+
+        // Today's events, drawn as notification cards are: the calendar where
+        // an app's name goes, the event as the summary, its times as the body,
+        // and the same Dismiss.
+        ColumnLayout {
+            objectName: "notificationEvents"
+            Layout.fillWidth: true
+            visible: page.events.length > 0
+            spacing: 8
+
+            PlasmaComponents.Label {
+                Layout.fillWidth: true
+                text: i18nc("@title the day's calendar events", "Today")
+                opacity: 0.72
+                font.weight: Font.DemiBold
+            }
+
+            Repeater {
+                model: page.events
+                delegate: Rectangle {
+                    id: eventCard
+                    required property var modelData
+                    objectName: "notificationEventCard"
+                    Layout.fillWidth: true
+                    implicitHeight: eventCardContent.implicitHeight + Kirigami.Units.mediumSpacing * 2
+                    radius: 18
+                    color: Qt.rgba(1, 1, 1, 0.075)
+                    border.width: 1
+                    border.color: "#333333"
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: [eventCard.modelData.title, eventTimes.text].join(", ")
+
+                    RowLayout {
+                        id: eventCardContent
+                        anchors.fill: parent
+                        anchors.leftMargin: Kirigami.Units.largeSpacing
+                        anchors.rightMargin: Kirigami.Units.largeSpacing
+                        anchors.topMargin: Kirigami.Units.mediumSpacing
+                        anchors.bottomMargin: Kirigami.Units.mediumSpacing
+                        spacing: Kirigami.Units.mediumSpacing
+
+                        Item { Layout.preferredWidth: Kirigami.Units.iconSizes.small }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                PlasmaComponents.Label {
+                                    Layout.maximumWidth: Kirigami.Units.gridUnit * 8
+                                    visible: text.length > 0
+                                    text: eventCard.modelData.calendar || ""
+                                    opacity: 0.68
+                                    elide: Text.ElideRight
+                                }
+                                PlasmaComponents.Label {
+                                    visible: (eventCard.modelData.calendar || "").length > 0
+                                    text: "·"
+                                    opacity: 0.42
+                                }
+                                PlasmaComponents.Label {
+                                    objectName: "notificationEventTitle"
+                                    Layout.fillWidth: true
+                                    text: eventCard.modelData.title
+                                    textFormat: Text.PlainText
+                                    font.weight: Font.DemiBold
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            PlasmaComponents.Label {
+                                id: eventTimes
+                                Layout.fillWidth: true
+                                text: page.formatTime(eventCard.modelData.start)
+                                    + " – " + page.formatTime(eventCard.modelData.end)
+                                opacity: 0.68
+                            }
+                            Item {
+                                implicitHeight: 44
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: implicitHeight
+                                Layout.topMargin: 4
+                                NotificationActionPill {
+                                    objectName: "notificationEventDismiss"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: i18n("Dismiss")
+                                    Accessible.name: i18n("Dismiss event: %1", eventCard.modelData.title)
+                                    onClicked: page.dismissEvent(eventCard.modelData.key)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true
@@ -468,6 +569,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 10
             visible: page.notificationModel.count === 0 && !page.demoNotificationVisible
+                && page.events.length === 0
 
             ColumnLayout {
                 anchors.centerIn: parent

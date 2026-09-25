@@ -36,6 +36,30 @@ QString calendarName(const QByteArray &data, const QString &link)
     return QUrl(link).host();
 }
 
+// A feed's own colour: Apple's property, or the standard one on the calendar
+// itself (RFC 7986). Apple writes #RRGGBBAA, which is turned into the #AARRGGBB
+// order a QML colour reads.
+QString calendarColor(const QByteArray &data)
+{
+    const int events = data.indexOf("BEGIN:VEVENT");
+    const QByteArray head = events >= 0 ? data.left(events) : data;
+    for (const QByteArray &property : {QByteArrayLiteral("\nX-APPLE-CALENDAR-COLOR:"), QByteArrayLiteral("\nCOLOR:")}) {
+        const int start = head.indexOf(property);
+        if (start < 0)
+            continue;
+        const int from = start + property.size();
+        int end = head.indexOf('\n', from);
+        if (end < 0)
+            end = head.size();
+        QString color = QString::fromUtf8(head.mid(from, end - from)).trimmed();
+        if (color.size() == 9 && color.startsWith(QLatin1Char('#')))
+            color = QLatin1Char('#') + color.mid(7, 2) + color.mid(1, 6);
+        if (!color.isEmpty())
+            return color;
+    }
+    return {};
+}
+
 QString failureMessage(QNetworkReply::NetworkError error)
 {
     switch (error) {
@@ -68,6 +92,21 @@ CalendarFeeds::~CalendarFeeds()
 QStringList CalendarFeeds::links() const
 {
     return m_links;
+}
+
+QVariantMap CalendarFeeds::colors() const
+{
+    return m_colors;
+}
+
+void CalendarFeeds::setColors(const QVariantMap &colors)
+{
+    if (colors == m_colors)
+        return;
+    m_colors = colors;
+    ++m_revision;
+    Q_EMIT colorsChanged();
+    Q_EMIT eventsChanged();
 }
 
 QString CalendarFeeds::normalizedLink(const QString &link)
@@ -149,6 +188,7 @@ QVariantList CalendarFeeds::feeds() const
         result.append(QVariantMap{
             {QStringLiteral("link"), feed.link},
             {QStringLiteral("name"), feed.name},
+            {QStringLiteral("color"), feed.color},
             {QStringLiteral("state"), feed.state},
             {QStringLiteral("message"), feed.message},
             {QStringLiteral("updated"), feed.updated},
@@ -223,6 +263,7 @@ void CalendarFeeds::finished(QNetworkReply *reply)
 
     feed->calendar = calendar;
     feed->name = calendarName(data, feed->link);
+    feed->color = calendarColor(data);
     feed->state = QStringLiteral("ready");
     feed->message.clear();
     feed->updated = QDateTime::currentDateTime();
@@ -250,6 +291,8 @@ QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
     for (const Feed &feed : m_feeds) {
         if (!feed.calendar)
             continue;
+        const QString picked = m_colors.value(feed.link).toString();
+        const QString calendarColor = picked.isEmpty() ? feed.color : picked;
         // A long event that began before the month still shows on its days.
         const KCalendarCore::Event::List events = feed.calendar->rawEvents(first.addDays(-62), last, zone, false);
         for (const KCalendarCore::Event::Ptr &event : events) {
@@ -276,9 +319,12 @@ QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
                 occurrences.append(event->dtStart());
             }
 
+            const qint64 length = event->dtStart().secsTo(event->dtEnd());
             for (const QDateTime &occurrence : std::as_const(occurrences)) {
                 const QDateTime local = allDay ? occurrence : occurrence.toTimeZone(zone);
                 const QDate startDay = local.date();
+                const QString key = event->uid() + QLatin1Char('|')
+                    + occurrence.toUTC().toString(Qt::ISODate);
                 for (qint64 offset = 0; offset <= span; ++offset) {
                     const QDate day = startDay.addDays(offset);
                     if (day < first || day > last)
@@ -291,7 +337,10 @@ QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
                                              {QStringLiteral("title"), event->summary()},
                                              {QStringLiteral("allDay"), wholeDay},
                                              {QStringLiteral("start"), wholeDay ? QDateTime() : local},
+                                             {QStringLiteral("end"), wholeDay ? QDateTime() : local.addSecs(length)},
                                              {QStringLiteral("calendar"), feed.name},
+                                             {QStringLiteral("color"), event->color().isEmpty() ? calendarColor : event->color()},
+                                             {QStringLiteral("key"), key},
                                          },
                                          wholeDay,
                                          local});

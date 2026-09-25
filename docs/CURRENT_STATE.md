@@ -15,9 +15,13 @@ with a holiday or event, and the chosen day's holidays and events beneath.
 Arrows, a sideways swipe or the wheel turn the month. Holidays come from
 Plasma's holiday plugin; events from calendars linked by private iCal address in
 the Calendar settings, re-read every 10 minutes, keeping the last good copy when
-a read fails. Linked calendars are read-only. Physically accepted on 25
-September. The installer needs KDE's calendar library and restarts the panel, so
-an update needs no sign-out.
+a read fails. Linked calendars are read-only, and each can be given a colour.
+The day's next timed event joins the notifications: it reads into the ticker and
+holds with a dot in its calendar's colour until the ticker's arrow lands it in
+the history, titled Notifications & events, where the day's events head the list
+and Dismiss removes one for the day. Physically accepted on 25 September. The
+installer needs KDE's calendar library and restarts the panel, so an update
+needs no sign-out.
 
 Adaptive width follows the live scene allocation and observes ancestor
 AppletContainers. It measures to the nearest applet on its left, and where a

@@ -6,6 +6,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kcmutils as KCMUtils
 import org.kde.kirigami as Kirigami
+import org.kde.kquickcontrols as KQC
 import org.kde.plasma.plasmoid
 
 // The calendars whose events the clock's calendar shows. Each is linked by the
@@ -14,6 +15,8 @@ KCMUtils.SimpleKCM {
     id: page
 
     property list<string> cfg_calendarLinks: []
+    // Each as color|link.
+    property list<string> cfg_calendarColors: []
 
     readonly property var feeds: Plasmoid.calendarFeeds
 
@@ -37,6 +40,18 @@ KCMUtils.SimpleKCM {
         if (state.state === "failed")
             return state.message;
         return i18nc("@info %1 is a time", "Updated %1", timeText(state.updated));
+    }
+
+    function pickedColor(link) {
+        const entry = cfg_calendarColors.find(value => value.slice(value.indexOf("|") + 1) === link);
+        return entry ? entry.slice(0, entry.indexOf("|")) : "";
+    }
+
+    function setPickedColor(link, color) {
+        const next = cfg_calendarColors.filter(value => value.slice(value.indexOf("|") + 1) !== link);
+        if (color)
+            next.push(String(color) + "|" + link);
+        cfg_calendarColors = next;
     }
 
     function addLink() {
@@ -94,6 +109,15 @@ KCMUtils.SimpleKCM {
                             elide: Text.ElideRight
                         }
                     }
+                    // The colour of this calendar's events: the one picked
+                    // here, else the one its feed gives, else white.
+                    KQC.ColorButton {
+                        color: page.pickedColor(linkRow.modelData) || linkRow.feed?.color || "#F8F8FF"
+                        showAlphaChannel: false
+                        dialogTitle: i18n("Choose this calendar's color")
+                        Accessible.name: i18n("Color of %1", linkRow.feed?.name || new URL(linkRow.modelData).hostname)
+                        onAccepted: selectedColor => page.setPickedColor(linkRow.modelData, selectedColor)
+                    }
                     QQC2.Button {
                         icon.name: "list-remove-symbolic"
                         text: i18nc("@action:button", "Remove")
@@ -101,6 +125,7 @@ KCMUtils.SimpleKCM {
                         QQC2.ToolTip.text: text
                         QQC2.ToolTip.visible: hovered
                         onClicked: {
+                            page.setPickedColor(linkRow.modelData, "");
                             const next = Array.from(page.cfg_calendarLinks);
                             next.splice(linkRow.index, 1);
                             page.cfg_calendarLinks = next;

@@ -101,6 +101,18 @@
       <label>Private iCal addresses of the calendars whose events the calendar shows</label>
       <default></default>
     </entry>
+    <entry name="calendarColors" type="StringList">
+      <label>Colours picked for linked calendars, as color|link</label>
+      <default></default>
+    </entry>
+    <entry name="readEvents" type="StringList">
+      <label>Calendar events the ticker's arrow marked seen, as day|event key; only the current day's are kept</label>
+      <default></default>
+    </entry>
+    <entry name="dismissedEvents" type="StringList">
+      <label>Calendar events dismissed from the notification history, as day|event key; only the current day's are kept</label>
+      <default></default>
+    </entry>
     <entry name="clockFontFamily" type="String">
       <label>Font family for the time and date; empty follows the system UI font</label>
       <default></default>

@@ -54,6 +54,9 @@ ContainmentItem {
     property bool notificationCopyActive: false
     property bool notificationSequenceActive: false
     property bool notificationReviewComplete: false
+    // The arrow's run ends on the calendar's event, after any unread
+    // notifications; this is true while it rests there.
+    property bool eventPage: false
     property var minimizedPriorityNotifications: ({})
     readonly property int compactWidth: Math.max(320,
         Math.min(600, Number(Plasmoid.configuration.compactWidth) || 400))
@@ -94,7 +97,62 @@ ContainmentItem {
         i18n("Downloads: Transfer completed")
     ]
     readonly property bool hasAttention: notificationsEnabled
-        && (railNotifications.count > 0 || demoNotificationVisible)
+        && (railNotifications.count > 0 || demoNotificationVisible || tickerEvent !== null)
+    readonly property int notificationPages: railNotifications.count > 0 ? railNotifications.count
+        : demoNotificationVisible ? demoNotificationTexts.length : 0
+    readonly property int attentionPages: notificationPages + (tickerEvent !== null ? 1 : 0)
+
+    // Today's timed events from the linked calendars that have not ended and
+    // were not dismissed, soonest first; they head the notification history.
+    // Holidays and all-day events stay in the calendar. The arrow marks one
+    // seen, which takes it off the ticker and leaves it in the history; Dismiss
+    // there removes it. Both marks are kept per day, so a restart keeps them.
+    readonly property string eventDay: Qt.formatDate(systemClock.dateTime, "yyyy-MM-dd") + "|"
+    readonly property var seenEventKeys: dayKeys(Plasmoid.configuration.readEvents)
+    readonly property var dismissedEventKeys: dayKeys(Plasmoid.configuration.dismissedEvents)
+    readonly property var todayEvents: {
+        const feeds = Plasmoid.calendarFeeds;
+        if (!feeds || !notificationsEnabled)
+            return [];
+        feeds.revision;
+        const now = systemClock.dateTime;
+        const day = feeds.eventsForMonth(now.getFullYear(), now.getMonth() + 1)[String(now.getDate())] ?? [];
+        return day.filter(event => !event.allDay && event.end > now && !dismissedEventKeys.includes(event.key));
+    }
+    // The next of those not yet seen rides the ticker.
+    readonly property var tickerEvents: todayEvents.filter(event => !seenEventKeys.includes(event.key))
+    readonly property var tickerEvent: tickerEvents.length > 0 ? tickerEvents[0] : null
+    // At rest the event holds the ticker whenever a notification is not
+    // reading; while the controls are open it shows only as its own page.
+    readonly property bool eventShown: tickerEvent !== null
+        && (notificationControls.revealed
+            ? eventPage && !notificationReviewComplete
+            : !notificationCopyActive)
+
+    function dayKeys(entries) {
+        return (entries || []).filter(entry => entry.startsWith(eventDay))
+            .map(entry => entry.slice(eventDay.length));
+    }
+
+    // Adds today's mark for an event to a stored list, dropping other days'.
+    function withDayKey(entries, key) {
+        const kept = (entries || []).filter(entry => entry.startsWith(eventDay));
+        if (!kept.includes(eventDay + key))
+            kept.push(eventDay + key);
+        return kept;
+    }
+
+    function markEventSeen(key) {
+        Plasmoid.configuration.readEvents = withDayKey(Plasmoid.configuration.readEvents, key);
+    }
+
+    function dismissEvent(key) {
+        Plasmoid.configuration.dismissedEvents = withDayKey(Plasmoid.configuration.dismissedEvents, key);
+    }
+
+    function eventTimeText(event) {
+        return event ? statusClock.timeString(event.start) : "";
+    }
 
     function priorityNotificationKey(model, modelIndex) {
         const notificationId = model.data(modelIndex,
@@ -555,6 +613,8 @@ ContainmentItem {
 
     function revealNotificationText() {
         if (!hasAttention) return;
+        if (notificationPages === 0)
+            eventPage = true;
         notificationBatchTimer.stop();
         nextNotificationIntro.stop();
         notificationSequenceActive = false;
@@ -778,6 +838,8 @@ ContainmentItem {
             }
             if (railNotifications.count > 0) {
                 root.notificationReviewComplete = false;
+                // A new notification takes the ticker from the event.
+                if (railNotifications.count > root.lastLiveNotificationCount) root.eventPage = false;
                 if (!root.notificationSequenceActive) notificationBatchTimer.restart();
             } else if (railNotifications.count === 0 && !root.demoNotificationVisible) {
                 notificationBatchTimer.stop();
@@ -826,6 +888,19 @@ ContainmentItem {
         target: Plasmoid.calendarFeeds
         property: "links"
         value: Plasmoid.configuration.calendarLinks
+    }
+    Binding {
+        target: Plasmoid.calendarFeeds
+        property: "colors"
+        value: {
+            const colors = {};
+            for (const entry of Plasmoid.configuration.calendarColors || []) {
+                const split = entry.indexOf("|");
+                if (split > 0)
+                    colors[entry.slice(split + 1)] = entry.slice(0, split);
+            }
+            return colors;
+        }
     }
 
     NotificationManager.Notifications {
@@ -1119,6 +1194,7 @@ ContainmentItem {
                                 if (!root.notificationReviewComplete) root.revealNotificationText();
                             } else {
                                 root.hideNotificationText();
+                                root.eventPage = false;
                                 if (!active) controlsCollapseDelay.restart();
                             }
                         }
@@ -1166,17 +1242,38 @@ ContainmentItem {
                             enabled: notificationControls.revealed && root.hasAttention
                             property bool canPage: railNotifications.count > 0
                                 ? liveNotificationView.currentIndex < railNotifications.count - 1
-                                : root.demoNotificationIndex < root.demoNotificationTexts.length - 1
+                                : root.demoNotificationVisible
+                                    && root.demoNotificationIndex < root.demoNotificationTexts.length - 1
                             pointsLeft: true
                             Behavior on opacity { NumberAnimation { duration: 110; easing.type: Easing.InOutCubic } }
                             onClicked: {
+                                // The event is the run's last page. The arrow
+                                // lands it in the history as it ends the run.
+                                if (root.eventPage && root.tickerEvent !== null) {
+                                    const more = root.tickerEvents.length > 1;
+                                    root.markEventSeen(root.tickerEvent.key);
+                                    // The next of today's events takes its
+                                    // place; the run ends when none is left.
+                                    if (more)
+                                        return;
+                                    root.eventPage = false;
+                                    root.notificationReviewComplete = true;
+                                    notificationHide.restart();
+                                    return;
+                                }
                                 if (!canPage) {
                                     if (!root.notificationReviewComplete) {
+                                        if (root.tickerEvent !== null) {
+                                            root.eventPage = true;
+                                            root.revealNotificationText();
+                                            return;
+                                        }
                                         root.notificationReviewComplete = true;
                                         root.hideNotificationText();
                                         return;
                                     }
                                     root.notificationReviewComplete = false;
+                                    root.eventPage = false;
                                     if (railNotifications.count > 0) {
                                         liveNotificationView.currentIndex = 0;
                                         liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
@@ -1239,11 +1336,10 @@ ContainmentItem {
                                 y: -baselineOffset - countInk.tightBoundingRect.y
                                 text: root.notificationReviewComplete ? "✓"
                                     : notificationControls.revealed
-                                    ? (railNotifications.count > 0
-                                        ? (liveNotificationView.currentIndex + 1) + "/" + railNotifications.count
-                                        : (root.demoNotificationIndex + 1) + "/" + root.demoNotificationTexts.length)
-                                    : (railNotifications.count > 0
-                                        ? railNotifications.count : root.demoNotificationTexts.length)
+                                    ? (root.eventPage ? root.attentionPages
+                                        : railNotifications.count > 0 ? liveNotificationView.currentIndex + 1
+                                        : root.demoNotificationIndex + 1) + "/" + root.attentionPages
+                                    : root.attentionPages
                                 font.pointSize: 7
                                 font.weight: Font.Medium
                                 color: "#F8F8FF"
@@ -1273,7 +1369,7 @@ ContainmentItem {
                             id: liveNotificationView
                             anchors.fill: parent
                             anchors.rightMargin: Kirigami.Units.smallSpacing
-                            visible: railNotifications.count > 0
+                            visible: railNotifications.count > 0 && !root.eventPage
                             interactive: false
                             // The outer content area owns the physical dock
                             // boundary. This inner clip would cut off long text.
@@ -1309,6 +1405,7 @@ ContainmentItem {
                             anchors.fill: parent
                             anchors.rightMargin: Kirigami.Units.smallSpacing
                             visible: railNotifications.count === 0 && root.demoNotificationVisible
+                                && !root.eventPage
                             spacing: 0
                             RailTicker {
                                 id: demoNotificationTicker
@@ -1417,6 +1514,120 @@ ContainmentItem {
                         TapHandler {
                             enabled: root.notificationCopyActive
                             onTapped: root.openNotifications()
+                        }
+
+                        // The calendar's next event. It reads in from the right
+                        // as a notification does, at the same pace, but stops
+                        // where a notification rests instead of passing, and
+                        // holds until it is read, it ends, or a notification
+                        // needs the ticker.
+                        Item {
+                            id: eventLayer
+                            objectName: "temperance-ticker-event"
+                            anchors.fill: parent
+                            anchors.leftMargin: 2
+                            anchors.rightMargin: Kirigami.Units.smallSpacing
+                            opacity: 0
+                            visible: opacity > 0
+                            property real offset: 0
+                            readonly property string eventKey: root.tickerEvent ? root.tickerEvent.key : ""
+                            readonly property real restingX: Math.max(0, width - eventLine.width)
+
+                            Accessible.role: Accessible.StaticText
+                            Accessible.name: root.tickerEvent
+                                ? root.eventTimeText(root.tickerEvent) + ", " + root.tickerEvent.title : ""
+
+                            function enter(travel) {
+                                eventEntry.stop();
+                                eventExit.stop();
+                                if (!travel || !root.motionEnabled) {
+                                    offset = 0;
+                                    eventFade.restart();
+                                    return;
+                                }
+                                offset = width - restingX;
+                                opacity = 1;
+                                eventEntry.restart();
+                            }
+
+                            function leave() {
+                                eventEntry.stop();
+                                eventFade.stop();
+                                eventExit.restart();
+                            }
+
+                            readonly property bool shown: root.eventShown
+                            onShownChanged: shown ? enter(!notificationControls.revealed) : leave()
+                            onEventKeyChanged: if (shown) enter(!notificationControls.revealed)
+                            Component.onCompleted: if (shown) enter(false)
+
+                            RowLayout {
+                                id: eventLine
+                                x: eventLayer.restingX + eventLayer.offset
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth, eventLayer.width)
+                                spacing: 6
+
+                                PlasmaComponents.Label {
+                                    id: eventTimeLabel
+                                    text: root.eventTimeText(root.tickerEvent)
+                                    textFormat: Text.PlainText
+                                    color: "#A8FFFFFF"
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: Math.max(0, eventLayer.width
+                                        - eventTimeLabel.implicitWidth - eventDot.width - eventLine.spacing * 2)
+                                    text: root.tickerEvent ? root.tickerEvent.title : ""
+                                    textFormat: Text.PlainText
+                                    color: "#F8F8FF"
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                }
+                                // A notification passes; the dot says this one
+                                // stays. It takes the calendar's colour where the
+                                // feed gives one.
+                                Rectangle {
+                                    id: eventDot
+                                    objectName: "temperance-ticker-event-dot"
+                                    Layout.preferredWidth: 6
+                                    Layout.preferredHeight: 6
+                                    Layout.alignment: Qt.AlignVCenter
+                                    radius: 3
+                                    color: root.tickerEvent && root.tickerEvent.color
+                                        ? root.tickerEvent.color : "#A8FFFFFF"
+                                }
+                            }
+
+                            NumberAnimation {
+                                id: eventEntry
+                                target: eventLayer
+                                property: "offset"
+                                to: 0
+                                duration: Math.max(900, eventLayer.offset * 20)
+                                easing.type: Easing.OutQuad
+                            }
+                            NumberAnimation {
+                                id: eventFade
+                                target: eventLayer
+                                property: "opacity"
+                                to: 1
+                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
+                                easing.type: Easing.OutCubic
+                            }
+                            NumberAnimation {
+                                id: eventExit
+                                target: eventLayer
+                                property: "opacity"
+                                to: 0
+                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
+                                easing.type: Easing.InCubic
+                            }
+
+                            TapHandler {
+                                enabled: eventLayer.opacity > 0
+                                onTapped: root.openNotifications()
+                            }
                         }
                     }
                 }

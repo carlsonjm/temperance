@@ -28,8 +28,7 @@ rollback criteria. Evidence belongs in `archive/`.
 
 ## 4. Clock and calendar
 
-**Status:** Slices 1 to 4 passed on the tablet on 25 September; the next event
-beside the time (5) is next. Direction settled (`DECISIONS.md` § The clock is Temperance's, and
+**Status:** All five slices passed on the tablet on 25 September. Direction settled (`DECISIONS.md` § The clock is Temperance's, and
 its minute deals like a card); J approves each slice on the tablet.
 
 1. Time and date at the Status Bar's right end: the system UI font or a
@@ -45,4 +44,10 @@ its minute deals like a card); J approves each slice on the tablet.
 4. Events from a pasted private calendar link (`DECISIONS.md`), read with
    KCalendarCore, which is a small KF6 package not yet on the tablet and so
    becomes a build and install dependency.
-5. Bring J the next event beside the time where there is room.
+5. Today's next timed event from a linked calendar joins the notifications. It
+   enters the ticker reading left as a notification does, holds still with a
+   dot in its calendar's colour until the ticker's arrow lands it in the history
+   or a notification takes the ticker, and returns after one. The next unseen
+   one takes its place, and each leaves when it ends. Today's events head the
+   history, titled Notifications & events, where Dismiss removes one for the
+   day. No holidays or all-day events.

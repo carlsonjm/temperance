@@ -141,6 +141,16 @@ that calendar. The calendar stays read-only (J, 25 September): events are added
 in each service's own app. Writing would need a sign-in per service, and Google
 reviews apps that write to calendars.
 
+Today's next timed event rides the notification ticker (J, 25 September),
+chosen over a line beside the time. It reads in from the right as a notification
+does, then holds still instead of passing, with a dot at its end to say so,
+until the ticker's arrow lands it in the history or a notification needs the
+ticker. Events and notifications share the history, titled Notifications &
+events. The dot takes the calendar's colour: the one the person picks for it
+in the Calendar settings (J, 25 September), else the feed's, which iCloud's
+carries and Google's and Outlook's do not. Holidays and all-day events stay in
+the calendar card.
+
 ## Visual and interaction language
 
 The live visual contract is `ITASCA-VISUAL-LANGUAGE.md`. Ghost White

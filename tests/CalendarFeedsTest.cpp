@@ -76,8 +76,17 @@ int main(int argc, char **argv)
           QStringLiteral("the 25th lists breakfast then the dentist: %1").arg(titles(september, 25).join(QStringLiteral(", "))));
     const QVariantMap dentist = september.value(QStringLiteral("25")).toList().value(1).toMap();
     check(!dentist.value(QStringLiteral("allDay")).toBool()
-              && dentist.value(QStringLiteral("start")).toDateTime().time() == QTime(10, 0),
-          QStringLiteral("the dentist starts at 10:00"));
+              && dentist.value(QStringLiteral("start")).toDateTime().time() == QTime(10, 0)
+              && dentist.value(QStringLiteral("end")).toDateTime().time() == QTime(11, 0),
+          QStringLiteral("the dentist runs from 10:00 to 11:00"));
+    check(dentist.value(QStringLiteral("key")).toString().startsWith(QStringLiteral("dentist@test|")),
+          QStringLiteral("an occurrence carries a key naming it"));
+    const QVariantMap first = feeds.eventsForMonth(2026, 9).value(QStringLiteral("25")).toList().value(1).toMap();
+    check(first.value(QStringLiteral("key")) == dentist.value(QStringLiteral("key")),
+          QStringLiteral("the key is the same when read again"));
+    const QString standup7 = september.value(QStringLiteral("7")).toList().value(0).toMap().value(QStringLiteral("key")).toString();
+    const QString standup28 = september.value(QStringLiteral("28")).toList().value(1).toMap().value(QStringLiteral("key")).toString();
+    check(!standup7.isEmpty() && standup7 != standup28, QStringLiteral("each occurrence of a repeat has its own key"));
     check(titles(september, 26).isEmpty(), QStringLiteral("a cancelled event is left out"));
     check(titles(september, 28) == QStringList{QStringLiteral("Birthday"), QStringLiteral("Standup")},
           QStringLiteral("an all-day event comes before the day's timed ones: %1").arg(titles(september, 28).join(QStringLiteral(", "))));
@@ -93,6 +102,27 @@ int main(int argc, char **argv)
     const QVariantMap october = feeds.eventsForMonth(2026, 10);
     check(titles(october, 1) == QStringList{QStringLiteral("Trip")}, QStringLiteral("the trip's last day is in October"));
     check(titles(october, 5) == QStringList{QStringLiteral("Standup")}, QStringLiteral("the repeat continues into October"));
+
+    // An event's own colour wins, then its calendar's; Apple's #RRGGBBAA is
+    // reordered for QML. A feed with neither leaves the colour empty.
+    CalendarFeeds colored;
+    colored.setLinks({fixture(QStringLiteral("colored.ics"))});
+    check(waitFor([&] { return feedAt(colored, 0).value(QStringLiteral("state")) == QStringLiteral("ready"); }),
+          QStringLiteral("the coloured calendar is read"));
+    const QVariantList work = colored.eventsForMonth(2026, 9).value(QStringLiteral("25")).toList();
+    check(work.value(0).toMap().value(QStringLiteral("color")) == QStringLiteral("#FFFF2968"),
+          QStringLiteral("an event takes its calendar's colour: %1").arg(work.value(0).toMap().value(QStringLiteral("color")).toString()));
+    check(work.value(1).toMap().value(QStringLiteral("color")) == QStringLiteral("turquoise"),
+          QStringLiteral("an event's own colour wins"));
+    check(dentist.value(QStringLiteral("color")).toString().isEmpty(), QStringLiteral("a feed without colours gives none"));
+    // The person's pick for a calendar wins over the feed's, not over an
+    // event's own.
+    colored.setColors({{colored.links().value(0), QStringLiteral("#3DAEE9")}});
+    const QVariantList picked = colored.eventsForMonth(2026, 9).value(QStringLiteral("25")).toList();
+    check(picked.value(0).toMap().value(QStringLiteral("color")) == QStringLiteral("#3DAEE9"),
+          QStringLiteral("a picked colour replaces the calendar's"));
+    check(picked.value(1).toMap().value(QStringLiteral("color")) == QStringLiteral("turquoise"),
+          QStringLiteral("an event's own colour still wins over a pick"));
 
     // A link that fails reports it; a file that is not a calendar says so.
     CalendarFeeds broken;
