@@ -124,3 +124,6 @@ in `qml/`; the inherited native tray implementation lives in `src/` and
 See the SPDX headers, [LICENSES](LICENSES), and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for licensing and required
 third-party attribution.
+
+The project names and marks are not covered by that licence. See
+[TRADEMARKS.md](TRADEMARKS.md).
