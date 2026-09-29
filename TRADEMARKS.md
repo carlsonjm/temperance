@@ -1,0 +1,51 @@
+# Trademarks and marks
+
+## The code is free
+
+Temperance is licensed under GPL-2.0-or-later, with LGPL-2.0-or-later
+components. This file does not change or restrict that licence in any way. You
+may use, study, modify, fork and redistribute the source under its terms.
+
+## The names and marks are not part of that licence
+
+The following are not licensed under the GPL and remain the property of the
+copyright holder, Jared Carlson:
+
+- The names **Shuffle**, **Kadunce**, **Tettegouche** and **Temperance**
+- The Temperance logo and the animated Temperance Bell mark
+
+This is the ordinary arrangement for free software: the code is free to
+redistribute, the identity is not free to reuse.
+
+## What this means in practice
+
+You may:
+
+- fork, modify and redistribute the code under the GPL
+- state truthfully that your work is derived from, compatible with, or a fork of
+  this project
+- pass along an unmodified official build with its marks intact
+
+You may not:
+
+- use these names or marks as the identity of a modified or unofficial build
+- present a build as official, endorsed by, or released by this project when it
+  is not
+
+A fork is welcome. It needs its own name.
+
+## Not covered by this file
+
+The action glyphs in `assets/icons/lucide/` are a third-party subset of Lucide,
+licensed under ISC, with inherited Feather icons under MIT. They are not project
+marks and nothing here claims any right in them. See
+`assets/icons/THIRD_PARTY.md`.
+
+The Temperance Bell's outline is adapted from Lucide's `bell` icon under ISC
+(see `THIRD_PARTY_NOTICES.md`). Only its animation and its presentation as
+Temperance's mark are claimed here, never the outline itself.
+
+## Permission
+
+To use a name or mark in a way this file does not allow, ask first by opening an
+issue.

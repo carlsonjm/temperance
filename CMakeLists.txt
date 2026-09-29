@@ -1,0 +1,239 @@
+cmake_minimum_required(VERSION 3.24)
+
+project(temperance VERSION 1.1.0 LANGUAGES CXX)
+
+set(QT_MIN_VERSION "6.9.0")
+set(KF6_MIN_VERSION "6.20.0")
+
+find_package(ECM ${KF6_MIN_VERSION} REQUIRED NO_MODULE)
+list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+
+include(KDEInstallDirs6)
+include(KDECMakeSettings)
+include(KDECompilerSettings NO_POLICY_SCOPE)
+include(ECMQtDeclareLoggingCategory)
+
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui GuiPrivate Network Quick Widgets)
+find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
+    CalendarCore Config CoreAddons IconThemes I18n ItemModels JobWidgets KIO
+    Service StatusNotifierItem WindowSystem XmlGui
+)
+find_package(Plasma REQUIRED)
+find_package(PlasmaQuick REQUIRED)
+find_package(LibNotificationManager REQUIRED)
+find_package(LibKWorkspace REQUIRED)
+find_package(KF6PulseAudioQt REQUIRED)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+
+# This first target is explicitly KDE Wayland-only. Keeping the switch local
+# makes the inherited tray code build without depending on workspace internals.
+configure_file(config-X11.h.in config-X11.h)
+
+set(libdbusmenu_SRCS
+    libdbusmenuqt/dbusmenuimporter.cpp
+    libdbusmenuqt/dbusmenushortcut_p.cpp
+    libdbusmenuqt/dbusmenutypes_p.cpp
+    libdbusmenuqt/utils.cpp
+)
+
+ecm_qt_declare_logging_category(libdbusmenu_SRCS
+    HEADER libdbusmenuqt/debug.h
+    IDENTIFIER DBUSMENUQT
+    CATEGORY_NAME studio.warbler.temperance.dbusmenu
+    DEFAULT_SEVERITY Info
+)
+
+set_source_files_properties(libdbusmenuqt/com.canonical.dbusmenu.xml PROPERTIES
+    NO_NAMESPACE true
+    INCLUDE "dbusmenutypes_p.h"
+    CLASSNAME DBusMenuInterface
+)
+qt_add_dbus_interface(libdbusmenu_SRCS
+    libdbusmenuqt/com.canonical.dbusmenu.xml dbusmenu_interface)
+
+add_library(temperance_dbusmenu STATIC ${libdbusmenu_SRCS})
+set_property(TARGET temperance_dbusmenu PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(temperance_dbusmenu PUBLIC
+    libdbusmenuqt ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/libdbusmenuqt)
+target_link_libraries(temperance_dbusmenu PRIVATE Qt6::DBus Qt6::Widgets)
+
+set(statusarea_SRCS
+    src/dbusserviceobserver.cpp
+    src/plasmoidregistry.cpp
+    src/statusnotifieritemhost.cpp
+    src/statusnotifieritemsource.cpp
+    src/systemtraysettings.cpp
+    src/systemtraytypes.cpp
+    src/systemtraymodel.cpp
+    src/sortedsystemtraymodel.cpp
+)
+
+qt_add_dbus_interface(statusarea_SRCS
+    ${KSTATUSNOTIFIERITEM_DBUS_INTERFACES_DIR}/kf6_org.kde.StatusNotifierWatcher.xml
+    statusnotifierwatcher_interface)
+qt_add_dbus_interface(statusarea_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/dbus/org.freedesktop.DBus.Properties.xml
+    dbusproperties)
+
+set(statusnotifieritem_xml
+    ${KSTATUSNOTIFIERITEM_DBUS_INTERFACES_DIR}/kf6_org.kde.StatusNotifierItem.xml)
+set_source_files_properties(${statusnotifieritem_xml} PROPERTIES
+    NO_NAMESPACE false
+    INCLUDE "systemtraytypes.h"
+    CLASSNAME OrgKdeStatusNotifierItem
+)
+qt_add_dbus_interface(statusarea_SRCS ${statusnotifieritem_xml} statusnotifieritem_interface)
+
+ecm_qt_declare_logging_category(statusarea_SRCS
+    HEADER src/debug.h
+    IDENTIFIER SYSTEM_TRAY
+    CATEGORY_NAME studio.warbler.temperance
+    DEFAULT_SEVERITY Info
+)
+
+add_library(temperance_core STATIC ${statusarea_SRCS})
+set_property(TARGET temperance_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(temperance_core PUBLIC
+    src libdbusmenuqt ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
+target_link_libraries(temperance_core PUBLIC
+    Qt6::DBus Qt6::Gui Qt6::GuiPrivate Qt6::Quick
+    KF6::ConfigCore KF6::IconThemes KF6::I18n KF6::ItemModels
+    KF6::JobWidgets KF6::KIOGui KF6::Service KF6::WindowSystem KF6::XmlGui
+    Plasma::Plasma Plasma::PlasmaQuick temperance_dbusmenu
+)
+
+plasma_add_applet(studio.warbler.temperance
+    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp
+    QML_SOURCES
+        qml/AbstractItem.qml
+        qml/BackgroundAppItem.qml
+        qml/BellGlyph.qml
+        qml/CalendarPage.qml
+        qml/CompactApplet.qml
+        qml/ConfigAppearance.qml
+        qml/ConfigCalendar.qml
+        qml/ConfigGeneral.qml
+        qml/ControlCenterPage.qml
+        qml/CurrentItemHighLight.qml
+        qml/ExpandedRepresentation.qml
+        qml/ExpanderArrow.qml
+        qml/HiddenItemsView.qml
+        qml/ItemLoader.qml
+        qml/NotificationHistoryPage.qml
+        qml/OrganizedTrayPage.qml
+        qml/PanelPopupAnchor.qml
+        qml/PlasmoidItem.qml
+        qml/PlasmoidPopupsContainer.qml
+        qml/PulseAnimation.qml
+        qml/StatusClock.qml
+        qml/StatusNotifierItem.qml
+        qml/SuiteIcon.qml
+        qml/SystemTrayState.qml
+        qml/config.qml
+        qml/main.qml
+    RESOURCES
+        main.xml
+        assets/icons/lucide/ellipsis.svg
+        assets/icons/lucide/settings.svg
+        assets/icons/lucide/plus.svg
+        assets/icons/lucide/pin.svg
+        assets/icons/lucide/trash-2.svg
+        assets/icons/lucide/chevron-up.svg
+        assets/icons/lucide/chevron-down.svg
+        assets/icons/lucide/chevron-left.svg
+        assets/icons/lucide/chevron-right.svg
+        assets/icons/lucide/log-out.svg
+        assets/icons/lucide/rotate-cw.svg
+        assets/icons/lucide/power.svg
+        assets/icons/lucide/sliders-horizontal.svg
+        assets/icons/lucide/sun.svg
+        assets/icons/lucide/gauge.svg
+)
+
+install(FILES assets/studio.warbler.temperance.png
+    DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/512x512/apps)
+
+target_compile_definitions(studio.warbler.temperance PRIVATE
+    TRANSLATION_DOMAIN="temperance")
+target_include_directories(studio.warbler.temperance PRIVATE
+    src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
+target_link_libraries(studio.warbler.temperance PRIVATE
+    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt Qt6::Network
+    PW::LibNotificationManager PW::KWorkspace)
+
+add_test(NAME temperance_source_sanity
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/source_sanity.cmake)
+
+if(BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    add_executable(temperance-notification-interaction-test tests/NotificationInteractionTest.cpp)
+    target_link_libraries(temperance-notification-interaction-test PRIVATE
+        Qt6::Widgets Qt6::Quick Qt6::Test Qt6::DBus KF6::I18n PW::LibNotificationManager)
+    target_compile_definitions(temperance-notification-interaction-test PRIVATE
+        HISTORY_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/NotificationHistoryPage.qml")
+    add_test(NAME temperance_notification_interaction
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+            $<TARGET_FILE:temperance-notification-interaction-test>
+            ${CMAKE_CURRENT_BINARY_DIR}/bin)
+    set_tests_properties(temperance_notification_interaction PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 30)
+    add_executable(temperance-clock-test tests/ClockTest.cpp)
+    target_link_libraries(temperance-clock-test PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)
+    target_compile_definitions(temperance-clock-test PRIVATE
+        STATUS_CLOCK_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/StatusClock.qml")
+    add_test(NAME temperance_clock COMMAND temperance-clock-test)
+    set_tests_properties(temperance_clock PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
+    add_executable(temperance-calendar-feeds-test tests/CalendarFeedsTest.cpp src/calendarfeeds.cpp)
+    target_include_directories(temperance-calendar-feeds-test PRIVATE src)
+    target_link_libraries(temperance-calendar-feeds-test PRIVATE
+        Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
+    target_compile_definitions(temperance-calendar-feeds-test PRIVATE
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+    add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
+    set_tests_properties(temperance_calendar_feeds PROPERTIES TIMEOUT 60)
+    add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
+    target_include_directories(temperance-calendar-test PRIVATE src)
+    target_link_libraries(temperance-calendar-test PRIVATE
+        Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
+    target_compile_definitions(temperance-calendar-test PRIVATE
+        CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+    add_test(NAME temperance_calendar COMMAND temperance-calendar-test)
+    set_tests_properties(temperance_calendar PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/fast-animation/kdeglobals
+        "[KDE]\nAnimationDurationFactor=0.25\n")
+    add_test(NAME temperance_clock_fast_animation COMMAND temperance-clock-test --fast-animation)
+    set_tests_properties(temperance_clock_fast_animation PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/fast-animation"
+        TIMEOUT 60)
+    add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
+    target_include_directories(temperance-session-action-test PRIVATE src)
+    target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)
+    add_test(NAME temperance_session_actions COMMAND temperance-session-action-test)
+    find_package(KF6Package REQUIRED)
+    add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
+    target_link_libraries(temperance-panel-load-test PRIVATE
+        Qt6::Widgets Qt6::Quick Plasma::Plasma Plasma::PlasmaQuick KF6::Package)
+    add_dependencies(temperance-panel-load-test studio.warbler.temperance)
+    add_test(NAME temperance_panel_load
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+            $<TARGET_FILE:temperance-panel-load-test>
+            ${CMAKE_CURRENT_BINARY_DIR}/bin)
+    set_tests_properties(temperance_panel_load PROPERTIES TIMEOUT 30)
+endif()
+
+if(BUILD_TESTING)
+    find_package(LayerShellQt REQUIRED)
+    add_executable(temperance-ticker-panel-test tests/TickerPanelTest.cpp)
+    target_link_libraries(temperance-ticker-panel-test PRIVATE Qt6::Widgets Qt6::Quick Qt6::Test
+        Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface)
+    add_dependencies(temperance-ticker-panel-test studio.warbler.temperance)
+    # The real-panel fixture pairs Temperance with a separately built Tette plugin.
+endif()

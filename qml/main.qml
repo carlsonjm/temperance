@@ -1,0 +1,2319 @@
+/*
+    SPDX-FileCopyrightText: 2011 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2020 Konrad Materka <materka@gmail.com>
+    SPDX-FileCopyrightText: 2026 carlsonjm
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Window
+import org.kde.draganddrop as DnD
+import org.kde.kirigami as Kirigami
+import org.kde.kitemmodels as KItemModels
+import org.kde.notificationmanager as NotificationManager
+import org.kde.plasma.clock as PlasmaClock
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
+import org.kde.plasma.workspace.dbus as DBus
+
+ContainmentItem {
+    id: root
+
+    readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+    readonly property int itemSize: Kirigami.Units.iconSizes.smallMedium
+    // The status icons are drawn a third larger than the panel's small icons
+    // and set one pitch apart with no gap, so the row reads as one group. The
+    // pitch is narrower than a fingertip wants, so each icon also answers a
+    // touch anywhere in the panel's height above or below it.
+    readonly property int statusPitch: 34
+    readonly property int bellSize: 24
+    readonly property real bellStroke: 2
+    // The status control a touch outside every control's own box is on.
+    property Item reachedControl: null
+    readonly property bool oneRowOrColumn: true
+    readonly property alias systemTrayState: systemTrayState
+    readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
+    readonly property alias hiddenModel: hiddenModel
+    readonly property alias organizedTrayModel: organizedTrayModel
+    readonly property alias controlCenterModel: controlCenterModel
+    readonly property alias notificationHistoryModel: groupedNotificationHistory
+    property var appletsById: ({})
+    readonly property bool previewMode: Qt.application.name === "plasmawindowed"
+    readonly property color accentColor: Plasmoid.configuration.accentColor || "#00F2BA"
+    readonly property bool motionEnabled: Kirigami.Units.longDuration > 0
+    property bool demoNotificationVisible: false
+    property int demoNotificationIndex: 0
+    property int lastLiveNotificationCount: 0
+    property real notificationPopupHeightLimit: 600
+    property var presentedNotificationKeys: ({})
+
+    function nextUnpresentedNotification() {
+        for (let row = 0; row < railNotifications.count; ++row) {
+            const idx = railNotifications.index(row, 0);
+            if (!presentedNotificationKeys[priorityNotificationKey(railNotifications, idx)])
+                return row;
+        }
+        return -1;
+    }
+    property int pendingNotificationCount: 0
+    property int notificationAutoBatchSize: 0
+    property bool notificationCopyActive: false
+    property bool notificationSequenceActive: false
+    property bool notificationReviewComplete: false
+    // The arrow's run ends on the calendar's event, after any unread
+    // notifications; this is true while it rests there.
+    property bool eventPage: false
+    property var minimizedPriorityNotifications: ({})
+    readonly property int compactWidth: Math.max(320,
+        Math.min(600, Number(Plasmoid.configuration.compactWidth) || 400))
+    readonly property bool adaptiveWidth: Plasmoid.configuration.adaptiveWidth !== false
+    // Only the controls establish a floor. On the right side of the centered
+    // dock, the ticker receives the gap from the nearest real panel item on
+    // its left to this applet's fixed right edge.
+    readonly property int responsiveMinimumWidth: 10
+        + statusPitch // network
+        + statusPitch // tray
+        + (notificationsEnabled ? notificationRail.Layout.minimumWidth : 0)
+        + (weatherEnabled ? statusPitch : 0)
+        + (hasBattery ? batteryStatusButton.Layout.preferredWidth : 0)
+        + (clockEnabled ? statusClock.implicitWidth
+            + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
+    property int responsiveMeasuredWidth: responsiveMinimumWidth
+    readonly property bool notificationsEnabled: Plasmoid.configuration.showNotifications !== false
+    readonly property bool weatherEnabled: Plasmoid.configuration.showWeather !== false
+    readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
+    readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
+    readonly property bool clockEnabled: timeEnabled || dateEnabled
+    readonly property int priorityAlertFreshnessMs: Math.max(5,
+        Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20)) * 1000
+    readonly property string temperatureUnit: {
+        const configured = String(Plasmoid.configuration.temperatureUnit || "fahrenheit");
+        return ["weather", "fahrenheit", "celsius"].includes(configured)
+            ? configured : "fahrenheit";
+    }
+    property string currentTemperature: ""
+    property bool weatherRequestPending: false
+    readonly property bool hasBattery: Boolean(compactBattery.properties.IsPresent)
+    readonly property var demoNotificationTexts: [
+        i18n("FINAL SCROLL TEST: This message is intentionally much longer than the notification rail can display at once. Hover the paging arrows and keep reading while the remaining sentence glides cleanly into view."),
+        i18n("System Update: Packages are ready"),
+        i18n("Downloads: Transfer completed")
+    ]
+    readonly property bool hasAttention: notificationsEnabled
+        && (railNotifications.count > 0 || demoNotificationVisible || tickerEvent !== null)
+    readonly property int notificationPages: railNotifications.count > 0 ? railNotifications.count
+        : demoNotificationVisible ? demoNotificationTexts.length : 0
+    readonly property int attentionPages: notificationPages + (tickerEvent !== null ? 1 : 0)
+
+    // Today's timed events from the linked calendars that have not ended and
+    // were not dismissed, soonest first; they head the notification history.
+    // Holidays and all-day events stay in the calendar. The arrow marks one
+    // seen, which takes it off the ticker and leaves it in the history; Dismiss
+    // there removes it. Both marks are kept per day, so a restart keeps them.
+    readonly property string eventDay: Qt.formatDate(systemClock.dateTime, "yyyy-MM-dd") + "|"
+    readonly property var seenEventKeys: dayKeys(Plasmoid.configuration.readEvents)
+    readonly property var dismissedEventKeys: dayKeys(Plasmoid.configuration.dismissedEvents)
+    readonly property var todayEvents: {
+        const feeds = Plasmoid.calendarFeeds;
+        if (!feeds || !notificationsEnabled)
+            return [];
+        feeds.revision;
+        const now = systemClock.dateTime;
+        const day = feeds.eventsForMonth(now.getFullYear(), now.getMonth() + 1)[String(now.getDate())] ?? [];
+        return day.filter(event => !event.allDay && event.end > now && !dismissedEventKeys.includes(event.key));
+    }
+    // The next of those not yet seen rides the ticker.
+    readonly property var tickerEvents: todayEvents.filter(event => !seenEventKeys.includes(event.key))
+    readonly property var tickerEvent: tickerEvents.length > 0 ? tickerEvents[0] : null
+    // At rest the event holds the ticker whenever a notification is not
+    // reading; while the controls are open it shows only as its own page.
+    readonly property bool eventShown: tickerEvent !== null
+        && (notificationControls.revealed
+            ? eventPage && !notificationReviewComplete
+            : !notificationCopyActive)
+
+    function dayKeys(entries) {
+        return (entries || []).filter(entry => entry.startsWith(eventDay))
+            .map(entry => entry.slice(eventDay.length));
+    }
+
+    // Adds today's mark for an event to a stored list, dropping other days'.
+    function withDayKey(entries, key) {
+        const kept = (entries || []).filter(entry => entry.startsWith(eventDay));
+        if (!kept.includes(eventDay + key))
+            kept.push(eventDay + key);
+        return kept;
+    }
+
+    function markEventSeen(key) {
+        Plasmoid.configuration.readEvents = withDayKey(Plasmoid.configuration.readEvents, key);
+    }
+
+    function dismissEvent(key) {
+        Plasmoid.configuration.dismissedEvents = withDayKey(Plasmoid.configuration.dismissedEvents, key);
+    }
+
+    // What the ticker says of an event's time: that it is under way, how soon
+    // it starts within the hour, or its start in the clock's own form. A start
+    // time beside the clock read as a second clock, and one already passed
+    // said nothing.
+    function eventTimeText(event) {
+        if (!event) return "";
+        const now = systemClock.dateTime;
+        if (event.start <= now) return i18nc("@info an event under way", "Now");
+        const minutes = Math.ceil((event.start - now) / 60000);
+        if (minutes < 60)
+            return i18ncp("@info an event starting soon", "In %1 min", "In %1 min", minutes);
+        return statusClock.timeString(event.start);
+    }
+
+    // The day period ending a clock-form time, which the ticker draws smaller
+    // and lighter as the clock does; empty for any other lead.
+    function eventTimePeriod(text) {
+        for (const label of [statusClock.amLabel, statusClock.pmLabel]) {
+            if (label && text.endsWith(" " + label)) return label;
+        }
+        return "";
+    }
+
+    function priorityNotificationKey(model, modelIndex) {
+        const notificationId = model.data(modelIndex,
+            NotificationManager.Notifications.IdRole);
+        const created = model.data(modelIndex,
+            NotificationManager.Notifications.CreatedRole);
+        return String(notificationId) + "|" + String(created);
+    }
+
+    function isPriorityNotificationMinimized(model, modelIndex) {
+        return Boolean(minimizedPriorityNotifications[
+            priorityNotificationKey(model, modelIndex)]);
+    }
+
+    function isPriorityNotificationCandidate(model, modelIndex) {
+        const urgency = model.data(modelIndex,
+            NotificationManager.Notifications.UrgencyRole);
+        // An action makes a message interactive, not urgent.
+        return urgency === NotificationManager.Notifications.CriticalUrgency
+            || isFreshLogoutCancellation(model, modelIndex);
+    }
+
+    function minimizePriorityNotification(modelIndex) {
+        const minimized = Object.assign({}, minimizedPriorityNotifications);
+        minimized[priorityNotificationKey(notificationHistory, modelIndex)] = true;
+        minimizedPriorityNotifications = minimized;
+        priorityNotifications.invalidateFilter();
+        railNotifications.invalidateFilter();
+    }
+
+    component RailTicker: Item {
+        id: ticker
+        required property string text
+        // Styled text carries its own colours; what a reader hears is plain.
+        property bool styled: false
+        property string accessibleText: text
+        property bool scrollingEnabled: true
+        property bool alignRight: false
+        property bool exposeOverflow: false
+        implicitWidth: tickerLabel.implicitWidth
+        implicitHeight: tickerLabel.implicitHeight
+        Layout.preferredWidth: implicitWidth
+        Layout.minimumWidth: 0
+        clip: !exposeOverflow
+
+        readonly property real overflow: Math.max(0, tickerLabel.implicitWidth - width)
+        readonly property real contentWidth: tickerLabel.implicitWidth
+        readonly property real restingX: alignRight ? Math.max(0, width - tickerLabel.implicitWidth) : 0
+
+        function syncScroll() {
+            scrollDelay.stop();
+            tickerScroll.stop();
+            tickerLabel.x = restingX;
+            if (root.motionEnabled && scrollingEnabled && overflow > 2) scrollDelay.restart();
+        }
+
+        PlasmaComponents.Label {
+            id: tickerLabel
+            objectName: "temperance-ticker-label"
+            x: 0
+            anchors.verticalCenter: parent.verticalCenter
+            text: ticker.text
+            textFormat: ticker.styled ? Text.StyledText : Text.PlainText
+            maximumLineCount: 1
+            Accessible.name: ticker.accessibleText
+            // A line too long for the ticker ends in an ellipsis while it
+            // stands still, and is whole while it flies in or scrolls.
+            width: !ticker.exposeOverflow && !tickerScroll.running
+                ? Math.min(implicitWidth, ticker.width) : implicitWidth
+            elide: Text.ElideRight
+            Behavior on opacity {
+                enabled: root.motionEnabled
+                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+            }
+        }
+
+        onTextChanged: {
+            tickerLabel.x = restingX;
+            tickerLabel.opacity = 0;
+            tickerReveal.restart();
+            Qt.callLater(ticker.syncScroll);
+        }
+        onScrollingEnabledChanged: syncScroll()
+        onOverflowChanged: resizeSettle.restart()
+        SequentialAnimation {
+            id: tickerReveal
+            PauseAnimation { duration: root.motionEnabled ? 30 : 0 }
+            NumberAnimation {
+                target: tickerLabel
+                property: "opacity"
+                to: 1
+                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Timer {
+            id: scrollDelay
+            interval: 1800
+            repeat: false
+            onTriggered: {
+                if (root.motionEnabled && ticker.scrollingEnabled && ticker.overflow > 2)
+                    tickerScroll.restart();
+            }
+        }
+
+        Timer {
+            id: resizeSettle
+            interval: 230
+            repeat: false
+            onTriggered: ticker.syncScroll()
+        }
+
+        SequentialAnimation {
+            id: tickerScroll
+            NumberAnimation {
+                target: tickerLabel
+                property: "x"
+                from: ticker.restingX
+                to: -ticker.overflow
+                duration: Math.max(1450, ticker.overflow * 20)
+                easing.type: Easing.Linear
+            }
+            PauseAnimation { duration: 1400 }
+            NumberAnimation {
+                target: tickerLabel
+                property: "x"
+                from: -ticker.overflow
+                to: ticker.restingX
+                duration: 420
+                easing.type: Easing.OutCubic
+            }
+            // One deliberate read per reveal. Leaving and returning to the
+            // control is the explicit gesture that makes it readable again.
+        }
+    }
+
+    component RailControlButton: PlasmaComponents.ToolButton {
+        id: railControlButton
+        property color glyphColor: railControlButton.pressed ? Qt.lighter(root.accentColor, 1.18)
+            : railControlButton.hovered ? root.accentColor : "#F8F8FF"
+        implicitWidth: root.statusPitch
+        implicitHeight: 32
+        display: PlasmaComponents.AbstractButton.IconOnly
+        Behavior on glyphColor { ColorAnimation { duration: 120 } }
+        background: null
+        function activate() { clicked(); }
+        contentItem: StatusFace {
+            touched: railControlButton.pressed || root.reachedControl === railControlButton
+            BellGlyph {
+                width: root.bellSize
+                height: root.bellSize
+                anchors.centerIn: parent
+                // Keep the same optical baseline when the clapper returns.
+                anchors.verticalCenterOffset: root.bellSize * 0.1
+                strokeWidth: root.bellStroke
+                glyphColor: railControlButton.glyphColor
+                clapperProgress: root.hasAttention ? 0 : 1
+            }
+        }
+    }
+
+    component RailChevronButton: PlasmaComponents.ToolButton {
+        id: railChevronButton
+        required property bool pointsLeft
+        property color glyphColor: railChevronButton.pressed ? Qt.lighter(root.accentColor, 1.18)
+            : railChevronButton.hovered ? root.accentColor : "#F8F8FF"
+        implicitWidth: 26
+        implicitHeight: 26
+        background: null
+        Behavior on glyphColor { ColorAnimation { duration: 120 } }
+        contentItem: Canvas {
+            id: chevronGlyphCanvas
+            implicitWidth: 10
+            implicitHeight: 14
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.reset();
+                ctx.strokeStyle = railChevronButton.glyphColor;
+                ctx.lineWidth = 1.8;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.beginPath();
+                if (railChevronButton.pointsLeft) {
+                    ctx.moveTo(width * 0.65, height * 0.2);
+                    ctx.lineTo(width * 0.35, height * 0.5);
+                    ctx.lineTo(width * 0.65, height * 0.8);
+                } else {
+                    ctx.moveTo(width * 0.35, height * 0.2);
+                    ctx.lineTo(width * 0.65, height * 0.5);
+                    ctx.lineTo(width * 0.35, height * 0.8);
+                }
+                ctx.stroke();
+            }
+            Connections {
+                target: railChevronButton
+                function onGlyphColorChanged() { chevronGlyphCanvas.requestPaint(); }
+            }
+        }
+    }
+
+    component BannerActionButton: Item {
+        id: bannerActionButton
+        property bool closeGlyph: false
+        property string text: ""
+        signal clicked()
+        readonly property bool hovered: bannerActionHover.hovered
+        readonly property bool pressed: bannerActionTap.pressed
+        implicitWidth: 44
+        implicitHeight: 40
+        Layout.preferredWidth: 44
+        Layout.minimumWidth: 44
+        Layout.maximumWidth: 44
+        Layout.preferredHeight: 40
+        Layout.minimumHeight: 40
+        Layout.maximumHeight: 40
+        activeFocusOnTab: true
+        Accessible.role: Accessible.Button
+        Accessible.name: text
+
+        Rectangle {
+            id: bannerActionVisual
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: 28
+            height: 28
+            radius: height / 2
+            color: bannerActionButton.hovered || bannerActionButton.pressed
+                ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            border.width: bannerActionButton.activeFocus ? 1 : 0
+            border.color: "#F8F8FF"
+            Behavior on color { ColorAnimation { duration: 120 } }
+
+            Canvas {
+                id: bannerActionGlyph
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                antialiasing: true
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#F8F8FF";
+                    ctx.lineWidth = 2.2;
+                    ctx.lineCap = "round";
+                    if (bannerActionButton.closeGlyph) {
+                        ctx.moveTo(5, 5);
+                        ctx.lineTo(13, 13);
+                        ctx.moveTo(13, 5);
+                        ctx.lineTo(5, 13);
+                    } else {
+                        ctx.moveTo(5, 9);
+                        ctx.lineTo(13, 9);
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+
+        HoverHandler {
+            id: bannerActionHover
+        }
+        TapHandler {
+            id: bannerActionTap
+            onTapped: {
+                bannerActionButton.forceActiveFocus();
+                bannerActionButton.clicked();
+            }
+        }
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_Return
+                    || event.key === Qt.Key_Enter
+                    || event.key === Qt.Key_Space) {
+                bannerActionButton.clicked();
+                event.accepted = true;
+            }
+        }
+        Accessible.onPressAction: bannerActionButton.clicked()
+    }
+
+    component StatusIconButton: Item {
+        id: statusIconButton
+        required property var statusIcon
+        required property string accessibleName
+        property bool active: false
+        // A single-colour symbolic drawing fills its box, so it is asked for
+        // smaller than a theme's padded 24 px status icon to draw the same mark.
+        readonly property bool symbolic: String(statusIcon).endsWith("-symbolic")
+        signal triggered()
+        function activate() { triggered(); }
+        Layout.preferredWidth: root.statusPitch
+        Layout.minimumWidth: root.statusPitch
+        Layout.maximumWidth: root.statusPitch
+        Layout.fillHeight: true
+        Accessible.name: accessibleName
+        Accessible.role: Accessible.Button
+
+        StatusFace {
+            anchors.fill: parent
+            touched: statusIconButtonTap.pressed || root.reachedControl === statusIconButton
+            hovered: statusIconButtonHover.hovered
+            Kirigami.Icon {
+                anchors.centerIn: parent
+                source: statusIconButton.statusIcon
+                // 24 is a size themes draw status icons at, so the theme's
+                // own drawing is used rather than one scaled from another
+                // size; Kirigami would otherwise round either size down.
+                implicitWidth: statusIconButton.symbolic ? 21 : 24
+                implicitHeight: implicitWidth
+                roundToIconSize: false
+                // Some themes' symbolic drawings carry a fixed colour rather
+                // than the text colour Kirigami replaces.
+                isMask: statusIconButton.symbolic
+                color: "#F8F8FF"
+            }
+        }
+        HoverHandler { id: statusIconButtonHover }
+        TapHandler { id: statusIconButtonTap; onTapped: statusIconButton.activate() }
+        PlasmaComponents.ToolTip { text: statusIconButton.accessibleName }
+    }
+
+    // What a status icon draws: lifted while a finger is on it, as a touched
+    // piece lifts elsewhere in the suite, and grown a little under a pointer.
+    component StatusFace: Item {
+        property bool touched: false
+        property bool hovered: false
+        scale: touched ? 1.12 : hovered ? 1.06 : 1
+        Behavior on scale {
+            id: statusFaceScale
+            enabled: root.motionEnabled
+            NumberAnimation {
+                duration: statusFaceScale.targetValue > 1.1 ? 180 : 140
+                easing.type: Easing.OutCubic
+            }
+        }
+    }
+
+    implicitWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    implicitHeight: 42
+    Layout.fillWidth: false
+    Layout.minimumWidth: adaptiveWidth ? responsiveMinimumWidth : compactWidth
+    // Responsive mode follows actual neighboring applet geometry. It has no
+    // configured, display-derived, or percentage-based width target.
+    Layout.preferredWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    Layout.maximumWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    Layout.minimumHeight: 42
+    Layout.preferredHeight: 42
+    Layout.maximumHeight: 42
+
+    function refreshResponsiveWidth() {
+        notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
+        if (!adaptiveWidth) return;
+        Plasmoid.watchPanelGeometry(root);
+        const measured = Plasmoid.availablePanelWidth(root, responsiveMinimumWidth, 6);
+        if (Math.abs(measured - responsiveMeasuredWidth) > 1)
+            responsiveMeasuredWidth = measured;
+    }
+
+    onAdaptiveWidthChanged: Qt.callLater(refreshResponsiveWidth)
+    onResponsiveMinimumWidthChanged: Qt.callLater(refreshResponsiveWidth)
+    Connections {
+        target: Plasmoid
+        function onPanelGeometryChanged() { Qt.callLater(root.refreshResponsiveWidth); }
+    }
+
+    function registerApplet(itemId, applet) {
+        if (!itemId || !applet) return;
+        const next = Object.assign({}, appletsById);
+        next[itemId] = applet;
+        appletsById = next;
+    }
+
+    function unregisterApplet(itemId, applet) {
+        if (!itemId || appletsById[itemId] !== applet) return;
+        const next = Object.assign({}, appletsById);
+        delete next[itemId];
+        appletsById = next;
+    }
+
+    function activateAppletById(itemId) {
+        const applet = appletsById[itemId];
+        if (applet && systemTrayState.expanded && systemTrayState.activeApplet === applet) {
+            systemTrayState.expanded = false;
+            return;
+        }
+        if (applet) systemTrayState.setActiveApplet(applet);
+    }
+
+    function openSurface(page) {
+        if (systemTrayState.expanded && !systemTrayState.activeApplet
+                && systemTrayState.page === page) {
+            systemTrayState.expanded = false;
+            return;
+        }
+        systemTrayState.setActiveApplet(null);
+        systemTrayState.page = page;
+        systemTrayState.expanded = true;
+    }
+
+    function openNotifications() {
+        notificationHistory.lastRead = new Date();
+        openSurface("notifications");
+    }
+
+    function plainNotificationText(value) {
+        return String(value || "")
+            .replace(/<br\s*\/?\s*>/gi, " ")
+            .replace(/<[^>]*>/g, " ")
+            .replace(/&nbsp;/gi, " ")
+            .replace(/&amp;/gi, "&")
+            .replace(/&lt;/gi, "<")
+            .replace(/&gt;/gi, ">")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    // The ticker's line for a notification: the application in the secondary
+    // white as a lead-in, as an event's time is, then the title, then the body
+    // in the secondary white. The colour separates them, so no colon.
+    function notificationTickerMarkup(applicationName, summary, body) {
+        const escape = value => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const secondary = value => "<font color=\"#A8FFFFFF\">" + value + "</font>";
+        const app = plainNotificationText(applicationName);
+        const title = plainNotificationText(summary);
+        const detail = plainNotificationText(body);
+        let line = escape(title);
+        if (detail && detail.toLowerCase() !== title.toLowerCase())
+            line += (line ? " " : "") + secondary((line ? "· " : "") + escape(detail));
+        return app ? secondary(escape(app)) + (line ? "&nbsp;&nbsp;" + line : "") : line;
+    }
+
+    function notificationDisplayText(applicationName, summary, body) {
+        const app = plainNotificationText(applicationName);
+        const title = plainNotificationText(summary);
+        const detail = plainNotificationText(body);
+        let message = title;
+        if (detail && detail.toLowerCase() !== title.toLowerCase()) {
+            message += (message ? " · " : "") + detail;
+        }
+        return app ? app + (message ? ": " + message : "") : message;
+    }
+
+    function isFreshNotification(model, modelIndex) {
+        const occurred = model.data(modelIndex, NotificationManager.Notifications.UpdatedRole)
+            || model.data(modelIndex, NotificationManager.Notifications.CreatedRole);
+        const occurredMs = occurred && occurred.getTime
+            ? occurred.getTime() : Date.parse(String(occurred));
+        if (!Number.isFinite(occurredMs)) return false;
+        const age = Date.now() - occurredMs;
+        return age >= -5000 && age < priorityAlertFreshnessMs;
+    }
+
+    function isFreshLogoutCancellation(model, modelIndex) {
+        if (!isFreshNotification(model, modelIndex)) return false;
+        const alertText = (String(model.data(modelIndex,
+            NotificationManager.Notifications.SummaryRole) || "") + " "
+            + String(model.data(modelIndex,
+                NotificationManager.Notifications.BodyRole) || "")).toLowerCase();
+        return alertText.includes("logout canceled")
+            || alertText.includes("logout cancelled")
+            || (alertText.includes("logout") && alertText.includes("cancel"));
+    }
+
+    function clearNotificationHistory() {
+        demoNotificationVisible = false;
+        notificationBatchTimer.stop();
+        nextNotificationIntro.stop();
+        notificationSequenceActive = false;
+        pendingNotificationCount = 0;
+        notificationAutoBatchSize = 0;
+        notificationReviewComplete = false;
+        notificationIntro.stop();
+        notificationReveal.stop();
+        notificationHide.stop();
+        notificationCopyActive = false;
+        notificationMessageLayer.opacity = 0;
+        // Clear is an explicit dismissal, including active/persistent alerts.
+        // Use the ungrouped model and walk backward as removals shift rows.
+        for (let row = notificationHistory.count - 1; row >= 0; --row) {
+            notificationHistory.close(notificationHistory.index(row, 0));
+        }
+    }
+
+    function acknowledgeNotifications() {
+        if (railNotifications.count > 0) {
+            // "Seen" removes alerts from the quiet rail while retaining them in
+            // notification history. Clearing history remains a separate action.
+            notificationHistory.lastRead = new Date();
+        } else {
+            demoNotificationVisible = false;
+        }
+        notificationBatchTimer.stop();
+        nextNotificationIntro.stop();
+        notificationSequenceActive = false;
+        pendingNotificationCount = 0;
+        notificationAutoBatchSize = 0;
+        notificationReviewComplete = false;
+        notificationIntro.stop();
+        notificationReveal.stop();
+        notificationHide.stop();
+        notificationCopyActive = false;
+        notificationMessageLayer.opacity = 0;
+    }
+
+    function playNotificationIntro() {
+        if (!hasAttention) return;
+        notificationReveal.stop();
+        notificationHide.stop();
+        notificationIntro.restart();
+    }
+
+    function revealNotificationText() {
+        if (!hasAttention) return;
+        if (notificationPages === 0)
+            eventPage = true;
+        notificationBatchTimer.stop();
+        nextNotificationIntro.stop();
+        notificationSequenceActive = false;
+        notificationIntro.stop();
+        notificationHide.stop();
+        notificationReveal.restart();
+    }
+
+    function hideNotificationText() {
+        if (!hasAttention) return;
+        notificationIntro.stop();
+        notificationReveal.stop();
+        notificationHide.restart();
+    }
+
+    function acHoldingCharge(onBattery, state) {
+        // UPower: fully charged (4) or pending charge (5), with AC confirmed.
+        return onBattery === false && (Number(state) === 4 || Number(state) === 5);
+    }
+
+    readonly property bool batteryOnAC: acHoldingCharge(compactPower.properties.OnBattery,
+        compactBattery.properties.State)
+
+    function batteryLabel() {
+        if (!hasBattery) return "";
+        const rawPercentage = compactBattery.properties.Percentage;
+        if (rawPercentage !== undefined && rawPercentage !== null && rawPercentage !== "") {
+            const percentage = Number(rawPercentage);
+            if (Number.isFinite(percentage) && percentage >= 0 && percentage <= 100)
+                return Math.round(percentage) + "%";
+        }
+        const batteryApplet = appletsById["org.kde.plasma.battery"];
+        if (batteryApplet) {
+            const tooltip = String(batteryApplet.toolTipMainText || "") + " "
+                + String(batteryApplet.toolTipSubText || "");
+            const displayedPercentage = tooltip.match(/([0-9]{1,3})\s*%/);
+            if (displayedPercentage) return displayedPercentage[1] + "%";
+        }
+        return "—";
+    }
+
+    function networkIcon() {
+        const network = appletsById["org.kde.plasma.networkmanagement"];
+        return network && network.Plasmoid && network.Plasmoid.icon
+            ? symbolicNetworkIcon(network.Plasmoid.icon) : "network-wireless-signal-excellent-symbolic";
+    }
+
+    // Plasma's network widget names its icons its own way, such as
+    // network-wireless-60-locked, and adds -symbolic to the name in a panel.
+    // The freedesktop symbolic names carry the same states, and themes draw
+    // them as bold single-colour marks that sit with the other status icons.
+    // A name with no counterpart is kept.
+    function symbolicNetworkIcon(icon) {
+        const name = String(icon).replace(/-symbolic$/, "");
+        const strength = { "100": "excellent", "80": "excellent", "60": "good",
+            "40": "ok", "20": "weak", "0": "none", "00": "none" };
+        const wireless = /^network-wireless-(?:connected-)?([0-9]+)(-locked)?$/.exec(name);
+        if (wireless && strength[wireless[1]] !== undefined)
+            return "network-wireless-signal-" + strength[wireless[1]]
+                + (wireless[2] ? "-secure" : "") + "-symbolic";
+        const named = {
+            "network-wireless": "network-wireless-symbolic",
+            "network-wireless-disconnected": "network-wireless-disconnected-symbolic",
+            "network-wireless-off": "network-wireless-disabled-symbolic",
+            "network-wireless-hotspot": "network-wireless-hotspot-symbolic",
+            "network-wired": "network-wired-symbolic",
+            "network-wired-activated": "network-wired-symbolic",
+            "network-wired-disconnected": "network-wired-disconnected-symbolic",
+            "network-vpn": "network-vpn-symbolic",
+            "network-flightmode-on": "airplane-mode-symbolic",
+            "network-unavailable": "network-offline-symbolic"
+        };
+        return named[name] || icon;
+    }
+
+    function appletIcon(itemId, fallback) {
+        const applet = appletsById[itemId];
+        return applet && applet.Plasmoid && applet.Plasmoid.icon
+            ? applet.Plasmoid.icon : fallback;
+    }
+
+    function weatherText() {
+        if (currentTemperature) return currentTemperature;
+        const weather = appletsById["org.kde.plasma.weather"];
+        if (!weather) return "—°";
+        const observation = weather.fullRepresentationItem
+            ? weather.fullRepresentationItem.lastObservation : null;
+        const nativeTemperature = observation ? Number(observation.temperature) : NaN;
+        if (Number.isFinite(nativeTemperature)) return Math.round(nativeTemperature) + "°";
+        const tooltip = String(weather.toolTipSubText || "").replace(/<[^>]*>/g, " ");
+        const match = tooltip.match(/-?[0-9]+(?:\.[0-9]+)?\s*°/);
+        return match ? match[0].replace(/\s+/g, "") : "—°";
+    }
+
+    function fetchCurrentTemperature(latitude, longitude) {
+        const request = new XMLHttpRequest();
+        request.onreadystatechange = function() {
+            if (request.readyState !== XMLHttpRequest.DONE) return;
+            root.weatherRequestPending = false;
+            if (request.status < 200 || request.status >= 300) return;
+            try {
+                const payload = JSON.parse(request.responseText);
+                const temperature = Number(payload.current.temperature_2m);
+                if (Number.isFinite(temperature)) root.currentTemperature = Math.round(temperature) + "°";
+            } catch (error) {
+                console.warn("Temperance: unable to parse current weather", error);
+            }
+        };
+        const apiTemperatureUnit = temperatureUnit === "celsius" ? "celsius" : "fahrenheit";
+        request.open("GET", "https://api.open-meteo.com/v1/forecast?latitude="
+            + encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude)
+            + "&current=temperature_2m&temperature_unit=" + apiTemperatureUnit, true);
+        request.send();
+    }
+
+    function requestCurrentTemperature() {
+        if (weatherRequestPending) return;
+        const weather = appletsById["org.kde.plasma.weather"];
+        if (!weather) return;
+        const page = weather.fullRepresentationItem;
+        const observation = page ? page.lastObservation : null;
+        const nativeTemperature = observation ? Number(observation.temperature) : NaN;
+        if (temperatureUnit === "weather" && Number.isFinite(nativeTemperature)) {
+            currentTemperature = Math.round(nativeTemperature) + "°";
+            return;
+        }
+        if (!Plasmoid.configuration.useOnlineWeatherFallback) return;
+
+        const station = page ? page.station : null;
+        const latitude = station ? Number(station.latitude) : NaN;
+        const longitude = station ? Number(station.longitude) : NaN;
+        weatherRequestPending = true;
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            fetchCurrentTemperature(latitude, longitude);
+            return;
+        }
+
+        // Some providers expose only a display location. Resolve that once,
+        // then use the same lightweight current-temperature request.
+        const location = String(weather.toolTipMainText || "").trim();
+        if (!location) {
+            weatherRequestPending = false;
+            return;
+        }
+        const geocode = new XMLHttpRequest();
+        geocode.onreadystatechange = function() {
+            if (geocode.readyState !== XMLHttpRequest.DONE) return;
+            if (geocode.status < 200 || geocode.status >= 300) {
+                root.weatherRequestPending = false;
+                return;
+            }
+            try {
+                const payload = JSON.parse(geocode.responseText);
+                const result = payload.results && payload.results.length ? payload.results[0] : null;
+                if (result) {
+                    root.fetchCurrentTemperature(Number(result.latitude), Number(result.longitude));
+                    return;
+                }
+            } catch (error) {
+                console.warn("Temperance: unable to resolve weather location", error);
+            }
+            root.weatherRequestPending = false;
+        };
+        geocode.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name="
+            + encodeURIComponent(location), true);
+        geocode.send();
+    }
+
+    Timer {
+        interval: root.currentTemperature ? 600000 : 5000
+        running: root.weatherEnabled
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: root.requestCurrentTemperature()
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+        function onTemperatureUnitChanged() {
+            root.currentTemperature = "";
+            root.weatherRequestPending = false;
+            Qt.callLater(root.requestCurrentTemperature);
+        }
+        function onUseOnlineWeatherFallbackChanged() {
+            root.currentTemperature = "";
+            root.weatherRequestPending = false;
+            Qt.callLater(root.requestCurrentTemperature);
+        }
+    }
+
+    function weatherIcon() {
+        return appletIcon("org.kde.plasma.weather", "weather-clear-symbolic");
+    }
+
+    // The visible status control whose column holds a scene x, for a touch
+    // that lands above or below the controls' own boxes.
+    function statusControlAt(sceneX) {
+        if (vertical) return null;
+        const controls = [reviewNotificationsButton, weatherStatusButton, controlCenterButton,
+            trayButton, batteryStatusButton, statusClock];
+        for (const control of controls) {
+            if (!control.visible) continue;
+            const x = control.mapFromItem(null, sceneX, 0).x;
+            if (x >= 0 && x < control.width) return control;
+        }
+        return null;
+    }
+
+    // The control a touch outside the row's own surface reaches. Inside the
+    // surface the controls answer for themselves: a pointer's press reaches
+    // this handler as well as the control's, and acting on both opened a page
+    // and closed it again in one click.
+    function reachedControlAt(scenePoint) {
+        const local = compactSurface.mapFromItem(null, scenePoint.x, scenePoint.y);
+        if (compactSurface.contains(local)) return null;
+        return statusControlAt(scenePoint.x);
+    }
+
+    // Everything a control's own box and the compact surface do not take:
+    // the panel's height above and below the row.
+    TapHandler {
+        id: statusReach
+        onPressedChanged: root.reachedControl = pressed
+            ? root.reachedControlAt(point.scenePressPosition) : null
+        onTapped: eventPoint => {
+            const control = root.reachedControlAt(eventPoint.scenePosition);
+            if (control) control.activate();
+        }
+    }
+
+    Component.onCompleted: {
+        activeInstantiator.active = true;
+        hiddenInstantiator.active = true;
+        Qt.callLater(refreshResponsiveWidth);
+    }
+
+    Timer {
+        interval: 3000
+        running: root.previewMode
+        repeat: false
+        onTriggered: {
+            root.demoNotificationVisible = true;
+            Qt.callLater(root.playNotificationIntro);
+        }
+    }
+
+    // Coalesce notifications that arrive together, then read the settled batch
+    // from 1/n onward instead of repeatedly restarting on the same item.
+    Timer {
+        id: notificationBatchTimer
+        interval: 320
+        repeat: false
+        onTriggered: {
+            const row = root.nextUnpresentedNotification();
+            if (row < 0) return;
+            root.notificationReviewComplete = false;
+            root.pendingNotificationCount = 0;
+            liveNotificationView.currentIndex = row;
+            liveNotificationView.positionViewAtIndex(row, ListView.Contain);
+            // Claim the identity before animation starts. Model resets or an
+            // interrupted pass must not enqueue the same notification again.
+            const presented = Object.assign({}, root.presentedNotificationKeys);
+            presented[root.priorityNotificationKey(railNotifications,
+                railNotifications.index(row, 0))] = true;
+            root.presentedNotificationKeys = presented;
+            root.notificationSequenceActive = true;
+            root.playNotificationIntro();
+        }
+    }
+
+    Timer {
+        id: nextNotificationIntro
+        interval: 260
+        repeat: false
+        onTriggered: root.playNotificationIntro()
+    }
+
+    Connections {
+        target: railNotifications
+        function onCountChanged() {
+            if (!root.notificationsEnabled) {
+                root.lastLiveNotificationCount = railNotifications.count;
+                root.pendingNotificationCount = 0;
+                return;
+            }
+            if (railNotifications.count > 0) {
+                root.notificationReviewComplete = false;
+                // A new notification takes the ticker from the event.
+                if (railNotifications.count > root.lastLiveNotificationCount) root.eventPage = false;
+                if (!root.notificationSequenceActive) notificationBatchTimer.restart();
+            } else if (railNotifications.count === 0 && !root.demoNotificationVisible) {
+                notificationBatchTimer.stop();
+                nextNotificationIntro.stop();
+                root.notificationSequenceActive = false;
+                notificationIntro.stop();
+                notificationReveal.stop();
+                notificationHide.stop();
+                root.notificationCopyActive = false;
+                root.pendingNotificationCount = 0;
+                root.notificationAutoBatchSize = 0;
+                notificationMessageLayer.opacity = 0;
+                notificationMessageLayer.x = 2;
+            }
+            root.lastLiveNotificationCount = railNotifications.count;
+        }
+    }
+
+    Connections {
+        target: Plasmoid
+        function onActivated() { root.openSurface("control"); }
+    }
+
+    DBus.Properties {
+        id: compactPower
+        busType: DBus.BusType.System
+        service: "org.freedesktop.UPower"
+        path: "/org/freedesktop/UPower"
+        iface: "org.freedesktop.UPower"
+    }
+
+    DBus.Properties {
+        id: compactBattery
+        busType: DBus.BusType.System
+        service: "org.freedesktop.UPower"
+        path: "/org/freedesktop/UPower/devices/DisplayDevice"
+        iface: "org.freedesktop.UPower.Device"
+    }
+
+    // Plasma's own clock source: it ticks on the minute and follows time zone
+    // changes and resume from suspend, which a local timer would not.
+    PlasmaClock.Clock { id: systemClock }
+
+    // The calendars linked in the settings; a link is read when it is added.
+    Binding {
+        target: Plasmoid.calendarFeeds
+        property: "links"
+        value: Plasmoid.configuration.calendarLinks
+    }
+    Binding {
+        target: Plasmoid.calendarFeeds
+        property: "colors"
+        value: {
+            const colors = {};
+            for (const entry of Plasmoid.configuration.calendarColors || []) {
+                const split = entry.indexOf("|");
+                if (split > 0)
+                    colors[entry.slice(split + 1)] = entry.slice(0, split);
+            }
+            return colors;
+        }
+    }
+
+    NotificationManager.Notifications {
+        id: notificationHistory
+        showExpired: true
+        showDismissed: true
+        showAddedDuringInhibition: true
+        showJobs: false
+        showNotifications: true
+        sortMode: NotificationManager.Notifications.SortByDate
+        sortOrder: Qt.DescendingOrder
+        groupMode: NotificationManager.Notifications.GroupDisabled
+        urgencies: NotificationManager.Notifications.LowUrgency
+            | NotificationManager.Notifications.NormalUrgency
+            | NotificationManager.Notifications.CriticalUrgency
+    }
+
+    // The dock rail remains a strict chronological stream. The review window
+    // gets a separate view of the same notification store, grouped by app in
+    // a sectioned dashboard.
+    NotificationManager.Notifications {
+        id: groupedNotificationHistory
+        showExpired: true
+        showDismissed: true
+        showAddedDuringInhibition: true
+        showJobs: false
+        showNotifications: true
+        sortMode: NotificationManager.Notifications.SortByDate
+        sortOrder: Qt.DescendingOrder
+        groupMode: NotificationManager.Notifications.GroupApplicationsFlat
+        groupLimit: 1
+        expandUnread: false
+        urgencies: NotificationManager.Notifications.LowUrgency
+            | NotificationManager.Notifications.NormalUrgency
+            | NotificationManager.Notifications.CriticalUrgency
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: priorityNotifications
+        filterRowCallback: (sourceRow, sourceParent) => {
+            if (!root.notificationsEnabled || !Plasmoid.configuration.showPriorityBanners)
+                return false;
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            const expired = Boolean(sourceModel.data(idx,
+                NotificationManager.Notifications.ExpiredRole));
+            const isFresh = root.isFreshNotification(sourceModel, idx);
+            return !expired && isFresh
+                && root.isPriorityNotificationCandidate(sourceModel, idx)
+                && !root.isPriorityNotificationMinimized(sourceModel, idx);
+        }
+        Component.onCompleted: sourceModel = notificationHistory
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: railNotifications
+        filterRoleName: "read"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            const unread = !sourceModel.data(idx, filterRole)
+                || root.isFreshLogoutCancellation(sourceModel, idx);
+            const reservedForBanner = root.notificationsEnabled
+                && Plasmoid.configuration.showPriorityBanners
+                && root.isPriorityNotificationCandidate(sourceModel, idx);
+            // A minimized banner remains in history, but has already had its
+            // presentation. Do not queue another automatic readout.
+            return unread && !reservedForBanner
+                && !root.isPriorityNotificationMinimized(sourceModel, idx);
+        }
+        Component.onCompleted: sourceModel = notificationHistory
+    }
+
+    // Logout cancellation entries are short-lived by design. Refresh the two
+    // live surfaces so the exception expires even if the history model itself
+    // does not emit another change after the event arrives.
+    Timer {
+        interval: 1000
+        repeat: true
+        running: priorityNotifications.count > 0
+        onTriggered: {
+            priorityNotifications.invalidateFilter();
+            railNotifications.invalidateFilter();
+        }
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: activeModel
+        filterRoleName: "effectiveStatus"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            return sourceModel.data(idx, filterRole) === PlasmaCore.Types.ActiveStatus;
+        }
+        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: hiddenModel
+        filterRoleName: "effectiveStatus"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            return sourceModel.data(idx, filterRole) === PlasmaCore.Types.PassiveStatus;
+        }
+        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: organizedTrayModel
+        filterRoleName: "effectiveStatus"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            const state = sourceModel.data(idx, filterRole);
+            const itemId = sourceModel.data(idx, Qt.UserRole + 2);
+            const frontDoorItems = [
+                "org.kde.plasma.volume", "org.kde.plasma.brightness",
+                "org.kde.plasma.battery"
+            ];
+            if (root.notificationsEnabled)
+                frontDoorItems.push("org.kde.plasma.notifications");
+            if (root.weatherEnabled)
+                frontDoorItems.push("org.kde.plasma.weather");
+            frontDoorItems.push(...(Plasmoid.configuration.controlCenterItems || []));
+            return state !== PlasmaCore.Types.HiddenStatus && frontDoorItems.indexOf(itemId) === -1;
+        }
+        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: controlCenterModel
+        filterRoleName: "itemId"
+        sortRoleName: "controlCenterOrder"
+        sortOrder: Qt.AscendingOrder
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            const itemId = sourceModel.data(idx, filterRole);
+            return (Plasmoid.configuration.controlCenterItems || []).indexOf(itemId) !== -1;
+        }
+        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+        function onControlCenterItemsChanged() {
+            controlCenterModel.invalidateFilter();
+            organizedTrayModel.invalidateFilter();
+        }
+        function onShowPriorityBannersChanged() {
+            priorityNotifications.invalidateFilter();
+        }
+        function onShowNotificationsChanged() {
+            priorityNotifications.invalidateFilter();
+            organizedTrayModel.invalidateFilter();
+        }
+        function onShowWeatherChanged() {
+            organizedTrayModel.invalidateFilter();
+        }
+        function onPriorityAlertDurationChanged() {
+            priorityNotifications.invalidateFilter();
+            railNotifications.invalidateFilter();
+        }
+    }
+
+    KItemModels.KSortFilterProxyModel {
+        id: frontDoorModel
+        filterRoleName: "hasApplet"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            const hasApplet = sourceModel.data(idx, filterRole);
+            const itemId = sourceModel.data(idx, Qt.UserRole + 2);
+            return hasApplet && [
+                "org.kde.plasma.volume", "org.kde.plasma.brightness", "org.kde.plasma.networkmanagement",
+                "org.kde.plasma.battery", "org.kde.plasma.weather"
+            ].indexOf(itemId) !== -1;
+        }
+        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
+    }
+
+    Instantiator {
+        id: hiddenInstantiator
+        active: false
+        model: hiddenModel
+        delegate: Connections {
+            required property QtObject applet
+            required property string itemId
+            required property int row
+            target: applet
+            Component.onCompleted: root.registerApplet(itemId, applet)
+            Component.onDestruction: root.unregisterApplet(itemId, applet)
+        }
+    }
+
+    Instantiator {
+        id: activeInstantiator
+        active: false
+        model: activeModel
+        delegate: Connections {
+            required property QtObject applet
+            required property string itemId
+            required property int row
+            target: applet
+            Component.onCompleted: root.registerApplet(itemId, applet)
+            Component.onDestruction: root.unregisterApplet(itemId, applet)
+        }
+    }
+
+    // Native detail pages need a visual parent even though their stock compact
+    // icons are replaced by our combined controls.
+    Item {
+        visible: false
+        width: root.itemSize
+        height: root.itemSize
+        Repeater {
+            model: frontDoorModel
+            delegate: ItemLoader {
+                width: root.itemSize
+                height: root.itemSize
+            }
+        }
+    }
+
+    MouseArea {
+        id: compactSurface
+        objectName: "temperance-compact-surface"
+        width: root.width
+        height: Math.min(42, root.height)
+        anchors.right: parent.right
+        // Held on the region's middle line rather than on its lower edge. Where
+        // the host is taller than this surface, bottom alignment leaves the
+        // contents sitting low in the region instead of centred in it.
+        anchors.verticalCenter: parent.verticalCenter
+        onWheel: wheel => wheel.accepted = true
+
+        SystemTrayState { id: systemTrayState }
+        DnD.DropArea { anchors.fill: parent; preventStealing: true }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: Kirigami.Units.smallSpacing
+            anchors.rightMargin: 4
+            // The status controls touch, so every point along the row is
+            // one control's.
+            spacing: 0
+
+            Rectangle {
+                id: notificationRail
+                objectName: "temperance-notification-rail"
+                Layout.fillWidth: true
+                Layout.minimumWidth: root.statusPitch + 8
+                Layout.fillHeight: true
+                radius: height / 2
+                color: "transparent"
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 4
+                    layoutDirection: Qt.RightToLeft
+
+                    Rectangle {
+                        id: notificationControls
+                        objectName: "temperance-ticker-controls"
+                        visible: root.notificationsEnabled
+                        readonly property real expandedWidth: root.hasAttention
+                            ? root.statusPitch + 30 : root.statusPitch
+                        property bool layoutOpen: active || revealed
+                        // The notification control is a permanent live icon beside the
+                        // status group. Paging expands left into ticker space.
+                        Layout.preferredWidth: layoutOpen ? expandedWidth : root.statusPitch
+                        Layout.minimumWidth: Layout.preferredWidth
+                        Layout.maximumWidth: Layout.preferredWidth
+                        Layout.fillHeight: true
+                        property bool revealed: false
+                        readonly property bool active: systemTrayState.activeApplet === null
+                            && systemTrayState.page === "notifications"
+                            && systemTrayState.expanded
+                        color: "transparent"
+                        clip: true
+                        HoverHandler {
+                            id: sharedControlsHover
+                            onHoveredChanged: notificationControls.syncSharedHover()
+                        }
+                        function syncSharedHover() {
+                            const pointerInside = reviewNotificationsButton.hovered
+                                || nextNotificationButton.hovered || sharedControlsHover.hovered;
+                            if (pointerInside) {
+                                sharedHoverRelease.stop();
+                                revealed = true;
+                            } else {
+                                sharedHoverRelease.restart();
+                            }
+                        }
+                        onRevealedChanged: {
+                            if (revealed) {
+                                controlsCollapseDelay.stop();
+                                layoutOpen = true;
+                                if (!root.notificationReviewComplete) root.revealNotificationText();
+                            } else {
+                                root.hideNotificationText();
+                                root.eventPage = false;
+                                if (!active) controlsCollapseDelay.restart();
+                            }
+                        }
+                        onActiveChanged: {
+                            if (active) {
+                                controlsCollapseDelay.stop();
+                                layoutOpen = true;
+                            } else if (!revealed) {
+                                controlsCollapseDelay.restart();
+                            }
+                        }
+                        Timer {
+                            id: sharedHoverRelease
+                            interval: 280
+                            repeat: false
+                            onTriggered: {
+                                const pointerInside = reviewNotificationsButton.hovered
+                                    || nextNotificationButton.hovered || sharedControlsHover.hovered;
+                                if (!pointerInside) notificationControls.revealed = false;
+                            }
+                        }
+                        Timer {
+                            id: controlsCollapseDelay
+                            interval: 130
+                            repeat: false
+                            onTriggered: {
+                                if (!notificationControls.revealed && !notificationControls.active)
+                                    notificationControls.layoutOpen = false;
+                            }
+                        }
+                        Connections {
+                            target: reviewNotificationsButton
+                            function onHoveredChanged() { notificationControls.syncSharedHover(); }
+                        }
+                        Connections {
+                            target: nextNotificationButton
+                            function onHoveredChanged() { notificationControls.syncSharedHover(); }
+                        }
+                        RailChevronButton {
+                            id: nextNotificationButton
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            opacity: notificationControls.revealed && root.hasAttention
+                                ? (root.notificationReviewComplete ? 0.58 : 1) : 0
+                            enabled: notificationControls.revealed && root.hasAttention
+                            property bool canPage: railNotifications.count > 0
+                                ? liveNotificationView.currentIndex < railNotifications.count - 1
+                                : root.demoNotificationVisible
+                                    && root.demoNotificationIndex < root.demoNotificationTexts.length - 1
+                            pointsLeft: true
+                            Behavior on opacity { NumberAnimation { duration: 110; easing.type: Easing.InOutCubic } }
+                            onClicked: {
+                                // The event is the run's last page. The arrow
+                                // lands it in the history as it ends the run.
+                                if (root.eventPage && root.tickerEvent !== null) {
+                                    const more = root.tickerEvents.length > 1;
+                                    root.markEventSeen(root.tickerEvent.key);
+                                    // The next of today's events takes its
+                                    // place; the run ends when none is left.
+                                    if (more)
+                                        return;
+                                    root.eventPage = false;
+                                    root.notificationReviewComplete = true;
+                                    notificationHide.restart();
+                                    return;
+                                }
+                                if (!canPage) {
+                                    if (!root.notificationReviewComplete) {
+                                        if (root.tickerEvent !== null) {
+                                            root.eventPage = true;
+                                            root.revealNotificationText();
+                                            return;
+                                        }
+                                        root.notificationReviewComplete = true;
+                                        root.hideNotificationText();
+                                        return;
+                                    }
+                                    root.notificationReviewComplete = false;
+                                    root.eventPage = false;
+                                    if (railNotifications.count > 0) {
+                                        liveNotificationView.currentIndex = 0;
+                                        liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
+                                    } else {
+                                        root.demoNotificationIndex = 0;
+                                    }
+                                    root.revealNotificationText();
+                                    return;
+                                }
+                                root.notificationReviewComplete = false;
+                                if (railNotifications.count > 0) {
+                                    liveNotificationView.currentIndex++;
+                                    liveNotificationView.positionViewAtIndex(liveNotificationView.currentIndex, ListView.Contain);
+                                } else {
+                                    root.demoNotificationIndex++;
+                                }
+                                root.revealNotificationText();
+                            }
+                        }
+
+                        RailControlButton {
+                            id: reviewNotificationsButton
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            z: 30
+                            text: i18n("Review all notifications")
+                            onClicked: root.openNotifications()
+                        }
+
+                        Item {
+                            id: notificationCountBadge
+                            anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
+                            // Bell rim: centered canvas, its optical offset,
+                            // 0.708 normalized rim, half the stroke. Keep one
+                            // logical pixel below that painted rim.
+                            y: Math.min(notificationControls.height - height,
+                                notificationControls.height / 2 - root.bellSize / 2
+                                + root.bellSize * 0.1 + root.bellSize * 0.708
+                                + root.bellStroke / 2 + 1)
+                            visible: opacity > 0
+                            opacity: root.hasAttention ? 1 : 0
+                            scale: root.hasAttention ? 1 : 0.72
+                            width: Math.max(18, notificationCountLabel.implicitWidth + 6)
+                            height: countInk.tightBoundingRect.height
+                            z: 40
+                            Behavior on opacity {
+                                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on scale {
+                                NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+                            }
+
+                            TextMetrics {
+                                id: countInk
+                                font: notificationCountLabel.font
+                                text: notificationCountLabel.text
+                            }
+                            PlasmaComponents.Label {
+                                id: notificationCountLabel
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                y: -baselineOffset - countInk.tightBoundingRect.y
+                                text: root.notificationReviewComplete ? "✓"
+                                    : notificationControls.revealed
+                                    ? (root.eventPage ? root.attentionPages
+                                        : railNotifications.count > 0 ? liveNotificationView.currentIndex + 1
+                                        : root.demoNotificationIndex + 1) + "/" + root.attentionPages
+                                    : root.attentionPages
+                                // The clock's date size, the smallest text on the
+                                // panel, so the count reads at arm's length.
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: "#F8F8FF"
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: notificationContentArea
+                        objectName: "temperance-ticker-content"
+                        visible: root.notificationsEnabled
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.topMargin: 4
+                        Layout.bottomMargin: 4
+                        clip: true
+
+                        Item {
+                            id: notificationMessageLayer
+                            width: parent.width
+                            height: parent.height
+                            x: 2
+                            opacity: 0
+                            readonly property real flybyWidth: railNotifications.count > 0 && liveNotificationView.currentItem
+                                ? liveNotificationView.currentItem.flybyWidth
+                                : demoNotificationTicker.contentWidth
+
+                        ListView {
+                            id: liveNotificationView
+                            anchors.fill: parent
+                            anchors.rightMargin: Kirigami.Units.smallSpacing
+                            visible: railNotifications.count > 0 && !root.eventPage
+                            interactive: false
+                            // The outer content area owns the physical dock
+                            // boundary. This inner clip would cut off long text.
+                            clip: false
+                            orientation: ListView.Horizontal
+                            model: railNotifications
+                            delegate: RowLayout {
+                                id: notificationDelegate
+                                visible: ListView.isCurrentItem
+                                required property string summary
+                                required property string body
+                                required property string applicationName
+                                required property string applicationIconName
+                                width: liveNotificationView.width
+                                height: liveNotificationView.height
+                                readonly property real flybyWidth: notificationTicker.contentWidth
+                                spacing: 0
+                                RailTicker {
+                                    id: notificationTicker
+                                    objectName: "temperance-live-ticker"
+                                    Layout.fillWidth: true
+                                    alignRight: true
+                                    exposeOverflow: notificationIntro.running
+                                    styled: true
+                                    text: root.notificationTickerMarkup(notificationDelegate.applicationName,
+                                        notificationDelegate.summary, notificationDelegate.body)
+                                    accessibleText: root.notificationDisplayText(notificationDelegate.applicationName,
+                                        notificationDelegate.summary, notificationDelegate.body)
+                                    scrollingEnabled: notificationControls.revealed
+                                        && !notificationReveal.running && !root.notificationReviewComplete
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.rightMargin: Kirigami.Units.smallSpacing
+                            visible: railNotifications.count === 0 && root.demoNotificationVisible
+                                && !root.eventPage
+                            spacing: 0
+                            RailTicker {
+                                id: demoNotificationTicker
+                                objectName: "temperance-demo-ticker"
+                                Layout.fillWidth: true
+                                alignRight: true
+                                exposeOverflow: notificationIntro.running
+                                text: root.demoNotificationTexts[root.demoNotificationIndex]
+                                scrollingEnabled: notificationControls.revealed
+                                    && !notificationReveal.running && !root.notificationReviewComplete
+                            }
+                        }
+                        }
+
+                        SequentialAnimation {
+                            id: notificationIntro
+                            ScriptAction {
+                                script: {
+                                    root.notificationCopyActive = true;
+                                    notificationMessageLayer.x = root.motionEnabled
+                                        ? notificationContentArea.width : 2;
+                                    notificationMessageLayer.opacity = 0;
+                                }
+                            }
+                            PauseAnimation { duration: root.motionEnabled ? 210 : 0 }
+                            ScriptAction {
+                                script: {
+                                    notificationMessageLayer.opacity = 1;
+                                }
+                            }
+                            NumberAnimation {
+                                target: notificationMessageLayer
+                                property: "x"
+                                to: root.motionEnabled
+                                    ? -Math.max(notificationMessageLayer.width,
+                                        notificationMessageLayer.flybyWidth) : 2
+                                duration: root.motionEnabled ? Math.max(3000,
+                                    (notificationContentArea.width
+                                        + notificationMessageLayer.flybyWidth) * 20) : 1800
+                                easing.type: Easing.Linear
+                            }
+                            ScriptAction {
+                                script: {
+                                    notificationMessageLayer.opacity = 0;
+                                    notificationMessageLayer.x = 2;
+                                    // Keep weather suppressed between items while a
+                                    // collected batch is still reading itself out.
+                                    if (!root.notificationSequenceActive) {
+                                        root.notificationCopyActive = false;
+                                    }
+                                }
+                            }
+                            onFinished: {
+                                if (!root.notificationSequenceActive
+                                        || notificationControls.revealed
+                                        || railNotifications.count === 0) {
+                                    root.notificationSequenceActive = false;
+                                    root.notificationCopyActive = false;
+                                    return;
+                                }
+                                liveNotificationView.currentIndex = 0;
+                                liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
+                                root.notificationSequenceActive = false;
+                                root.notificationCopyActive = false;
+                                root.notificationAutoBatchSize = 0;
+                                notificationBatchTimer.restart();
+                            }
+                        }
+
+                        SequentialAnimation {
+                            id: notificationReveal
+                            ScriptAction {
+                                script: {
+                                    root.notificationCopyActive = true;
+                                    notificationMessageLayer.x = 2;
+                                    notificationMessageLayer.opacity = 0;
+                                }
+                            }
+                            PauseAnimation { duration: root.motionEnabled ? 60 : 0 }
+                            NumberAnimation {
+                                target: notificationMessageLayer
+                                property: "opacity"
+                                to: 1
+                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
+                        SequentialAnimation {
+                            id: notificationHide
+                            NumberAnimation {
+                                target: notificationMessageLayer
+                                property: "opacity"
+                                to: 0
+                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
+                                easing.type: Easing.InCubic
+                            }
+                            ScriptAction {
+                                script: {
+                                    notificationMessageLayer.x = 2;
+                                    root.notificationCopyActive = false;
+                                }
+                            }
+                        }
+
+                        TapHandler {
+                            enabled: root.notificationCopyActive
+                            onTapped: root.openNotifications()
+                        }
+
+                        // The calendar's next event. It reads in from the right
+                        // as a notification does, at the same pace, but stops
+                        // where a notification rests instead of passing, and
+                        // holds until it is read, it ends, or a notification
+                        // needs the ticker.
+                        Item {
+                            id: eventLayer
+                            objectName: "temperance-ticker-event"
+                            anchors.fill: parent
+                            anchors.leftMargin: 2
+                            anchors.rightMargin: Kirigami.Units.smallSpacing
+                            opacity: 0
+                            visible: opacity > 0
+                            property real offset: 0
+                            readonly property string eventKey: root.tickerEvent ? root.tickerEvent.key : ""
+                            readonly property real restingX: Math.max(0, width - eventLine.width)
+
+                            Accessible.role: Accessible.StaticText
+                            Accessible.name: root.tickerEvent
+                                ? root.eventTimeText(root.tickerEvent) + ", " + root.tickerEvent.title : ""
+
+                            function enter(travel) {
+                                eventEntry.stop();
+                                eventExit.stop();
+                                if (!travel || !root.motionEnabled) {
+                                    offset = 0;
+                                    eventFade.restart();
+                                    return;
+                                }
+                                offset = width - restingX;
+                                opacity = 1;
+                                eventEntry.restart();
+                            }
+
+                            function leave() {
+                                eventEntry.stop();
+                                eventFade.stop();
+                                eventExit.restart();
+                            }
+
+                            readonly property bool shown: root.eventShown
+                            onShownChanged: shown ? enter(!notificationControls.revealed) : leave()
+                            onEventKeyChanged: if (shown) enter(!notificationControls.revealed)
+                            Component.onCompleted: if (shown) enter(false)
+
+                            RowLayout {
+                                id: eventLine
+                                x: eventLayer.restingX + eventLayer.offset
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: Math.min(implicitWidth, eventLayer.width)
+                                spacing: 6
+
+                                PlasmaComponents.Label {
+                                    id: eventTimeLabel
+                                    readonly property string lead: root.eventTimeText(root.tickerEvent)
+                                    readonly property string period: root.eventTimePeriod(lead)
+                                    Layout.alignment: Qt.AlignBaseline
+                                    text: period ? lead.slice(0, lead.length - period.length - 1) : lead
+                                    textFormat: Text.PlainText
+                                    color: "#A8FFFFFF"
+                                }
+                                PlasmaComponents.Label {
+                                    id: eventPeriodLabel
+                                    visible: eventTimeLabel.period.length > 0
+                                    Layout.alignment: Qt.AlignBaseline
+                                    Layout.leftMargin: -eventLine.spacing / 2
+                                    text: eventTimeLabel.period
+                                    textFormat: Text.PlainText
+                                    font: Kirigami.Theme.smallFont
+                                    color: "#A8FFFFFF"
+                                }
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignBaseline
+                                    Layout.maximumWidth: Math.max(0, eventLayer.width
+                                        - eventTimeLabel.implicitWidth - eventDot.width - eventLine.spacing * 2
+                                        - (eventPeriodLabel.visible ? eventPeriodLabel.implicitWidth
+                                            + eventLine.spacing / 2 : 0))
+                                    text: root.tickerEvent ? root.tickerEvent.title : ""
+                                    textFormat: Text.PlainText
+                                    color: "#F8F8FF"
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                }
+                                // A notification passes; the dot says this one
+                                // stays. It takes the calendar's colour where the
+                                // feed gives one.
+                                Rectangle {
+                                    id: eventDot
+                                    objectName: "temperance-ticker-event-dot"
+                                    Layout.preferredWidth: 6
+                                    Layout.preferredHeight: 6
+                                    Layout.alignment: Qt.AlignVCenter
+                                    radius: 3
+                                    color: root.tickerEvent && root.tickerEvent.color
+                                        ? root.tickerEvent.color : "#A8FFFFFF"
+                                }
+                            }
+
+                            NumberAnimation {
+                                id: eventEntry
+                                target: eventLayer
+                                property: "offset"
+                                to: 0
+                                duration: Math.max(900, eventLayer.offset * 20)
+                                easing.type: Easing.OutQuad
+                            }
+                            NumberAnimation {
+                                id: eventFade
+                                target: eventLayer
+                                property: "opacity"
+                                to: 1
+                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
+                                easing.type: Easing.OutCubic
+                            }
+                            NumberAnimation {
+                                id: eventExit
+                                target: eventLayer
+                                property: "opacity"
+                                to: 0
+                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
+                                easing.type: Easing.InCubic
+                            }
+
+                            TapHandler {
+                                enabled: eventLayer.opacity > 0
+                                onTapped: root.openNotifications()
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            Item {
+                id: weatherStatusButton
+                visible: root.weatherEnabled
+                Layout.preferredWidth: root.statusPitch
+                Layout.minimumWidth: root.statusPitch
+                Layout.maximumWidth: root.statusPitch
+                Layout.fillHeight: true
+                Accessible.name: i18n("Weather")
+                Accessible.role: Accessible.Button
+                function activate() { root.activateAppletById("org.kde.plasma.weather"); }
+
+                StatusFace {
+                    anchors.fill: parent
+                    touched: weatherStatusTap.pressed || root.reachedControl === weatherStatusButton
+                    hovered: weatherStatusHover.hovered
+
+                    Kirigami.Icon {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.horizontalCenterOffset: -1
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 21
+                        height: 21
+                        // Kirigami would round 21 down to 16.
+                        roundToIconSize: false
+                        source: root.weatherIcon()
+                        color: "#F8F8FF"
+                    }
+
+                    // Below the icon, and inside the panel where the panel is
+                    // too thin to hold it lower.
+                    Item {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: Math.min(parent.height / 2 + 8, (parent.height + root.height) / 2 - height)
+                        width: Math.max(22, weatherTemperatureLabel.implicitWidth + 8)
+                        height: 15
+                        z: 2
+
+                        PlasmaComponents.Label {
+                            id: weatherTemperatureLabel
+                            anchors.centerIn: parent
+                            text: root.weatherText()
+                            font.pixelSize: 10
+                            font.weight: Font.Medium
+                            color: "#F8F8FF"
+                        }
+                    }
+                }
+                HoverHandler { id: weatherStatusHover }
+                TapHandler { id: weatherStatusTap; onTapped: weatherStatusButton.activate() }
+                PlasmaComponents.ToolTip { text: i18n("Weather") }
+            }
+
+            StatusIconButton {
+                id: controlCenterButton
+                objectName: "temperance-control-center"
+                statusIcon: root.networkIcon()
+                accessibleName: i18n("Control Center")
+                active: systemTrayState.activeApplet === null
+                    && systemTrayState.page === "control"
+                    && systemTrayState.expanded
+                onTriggered: root.openSurface("control")
+            }
+
+            Item {
+                id: trayButton
+                objectName: "temperance-tray"
+                Layout.preferredWidth: root.statusPitch
+                Layout.minimumWidth: root.statusPitch
+                Layout.maximumWidth: root.statusPitch
+                Layout.fillHeight: true
+                Accessible.name: i18n("System tray")
+                Accessible.role: Accessible.Button
+                function activate() { root.openSurface("tray"); }
+                readonly property bool active: systemTrayState.activeApplet === null
+                    && systemTrayState.page === "tray" && systemTrayState.expanded
+                property real rippleProgress: 0
+                onActiveChanged: {
+                    if (active) trayRipple.restart();
+                    else { trayRipple.stop(); rippleProgress = 0; }
+                }
+                NumberAnimation {
+                    id: trayRipple
+                    target: trayButton
+                    property: "rippleProgress"
+                    from: 0
+                    to: 1
+                    duration: 320
+                    easing.type: Easing.OutCubic
+                }
+                StatusFace {
+                    anchors.fill: parent
+                    touched: trayTap.pressed || root.reachedControl === trayButton
+                    hovered: trayHover.hovered
+                    Canvas {
+                        id: trayGlyph
+                        // The mark's size; the canvas leaves room around it for
+                        // the ring drawn while the tray is open.
+                        readonly property real mark: 12
+                        anchors.centerIn: parent
+                        anchors.verticalCenterOffset: 1
+                        width: Math.round(mark * 28 / 9)
+                        height: width
+                        Connections {
+                            target: trayButton
+                            function onRippleProgressChanged() { trayGlyph.requestPaint(); }
+                            function onActiveChanged() { trayGlyph.requestPaint(); }
+                        }
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.reset();
+                            function triangle(size) {
+                                const cx = width / 2;
+                                const cy = height / 2;
+                                const vertices = [[cx, cy - size * 0.55],
+                                    [cx + size * 0.6, cy + size * 0.4],
+                                    [cx - size * 0.6, cy + size * 0.4]];
+                                // Round the path itself, not just the stroke join.
+                                const inset = size * 0.16;
+                                ctx.beginPath();
+                                for (let i = 0; i < 3; ++i) {
+                                    const v = vertices[i];
+                                    const prev = vertices[(i + 2) % 3];
+                                    const next = vertices[(i + 1) % 3];
+                                    const a = inset / Math.hypot(prev[0] - v[0], prev[1] - v[1]);
+                                    const b = inset / Math.hypot(next[0] - v[0], next[1] - v[1]);
+                                    const x = v[0] + (prev[0] - v[0]) * a;
+                                    const y = v[1] + (prev[1] - v[1]) * a;
+                                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                                    ctx.quadraticCurveTo(v[0], v[1],
+                                        v[0] + (next[0] - v[0]) * b,
+                                        v[1] + (next[1] - v[1]) * b);
+                                }
+                                ctx.closePath();
+                            }
+                            ctx.lineJoin = "round";
+                            ctx.fillStyle = "#F8F8FF";
+                            ctx.strokeStyle = "#F8F8FF";
+                            if (trayButton.active) {
+                                // Offset the SAME path with a stroke band, rather than
+                                // scaling vertices. This keeps clearance uniform around
+                                // both the straight edges and the rounded corners.
+                                const offset = (2 + trayButton.rippleProgress * 1.6) * mark / 9;
+                                ctx.globalAlpha = 0.8 - trayButton.rippleProgress * 0.3;
+                                ctx.lineWidth = offset * 2 + 1;
+                                triangle(mark);
+                                ctx.stroke();
+                                ctx.globalCompositeOperation = "destination-out";
+                                ctx.globalAlpha = 1;
+                                ctx.lineWidth = offset * 2 - 1;
+                                ctx.fill();
+                                ctx.stroke();
+                                ctx.globalCompositeOperation = "source-over";
+                            }
+                            ctx.globalAlpha = 1;
+                            ctx.lineWidth = 2 * mark / 9;
+                            triangle(mark); ctx.fill(); ctx.stroke();
+                        }
+                    }
+                }
+                HoverHandler { id: trayHover }
+                TapHandler { id: trayTap; onTapped: trayButton.activate() }
+                PlasmaComponents.ToolTip { text: i18n("System tray") }
+            }
+
+            Item {
+                id: batteryStatusButton
+                visible: root.hasBattery
+                Layout.preferredWidth: root.batteryOnAC ? root.statusPitch
+                    : Math.max(root.statusPitch, batteryPercentReadout.implicitWidth + 4)
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
+                Layout.fillHeight: true
+                Accessible.name: i18n("Battery and Control Center")
+                Accessible.role: Accessible.Button
+                function activate() { root.openSurface("control"); }
+
+                StatusFace {
+                    anchors.fill: parent
+                    touched: batteryStatusTap.pressed || root.reachedControl === batteryStatusButton
+                    hovered: batteryStatusHover.hovered
+
+                    PlasmaComponents.Label {
+                        id: batteryPercentReadout
+                        visible: !root.batteryOnAC
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.batteryLabel() || "—"
+                        font.pixelSize: 15
+                        // The clock's weight: a status is not louder than the time.
+                        font.weight: Font.Normal
+                        color: "#F8F8FF"
+                    }
+                    Canvas {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        visible: root.batteryOnAC
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.reset();
+                            // The bolt is drawn on an 18 px grid.
+                            ctx.scale(width / 18, height / 18);
+                            ctx.fillStyle = "#F8F8FF";
+                            ctx.beginPath();
+                            ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
+                            ctx.lineTo(8, 10); ctx.lineTo(7, 17);
+                            ctx.lineTo(14.5, 7); ctx.lineTo(10, 7);
+                            ctx.closePath(); ctx.fill();
+                        }
+                    }
+                }
+                HoverHandler { id: batteryStatusHover }
+                TapHandler { id: batteryStatusTap; onTapped: batteryStatusButton.activate() }
+                PlasmaComponents.ToolTip {
+                    text: root.batteryOnAC ? i18n("AC power · %1", root.batteryLabel())
+                        : i18n("Battery and Control Center")
+                }
+            }
+
+            StatusClock {
+                id: statusClock
+                objectName: "temperance-clock"
+                visible: root.clockEnabled
+                Layout.leftMargin: 6
+                Layout.rightMargin: 6
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
+                Layout.maximumWidth: implicitWidth
+                Layout.fillHeight: true
+                dateTime: systemClock.dateTime
+                showTime: root.timeEnabled
+                showDate: root.dateEnabled
+                fontFamily: Plasmoid.configuration.clockFontFamily || ""
+                Accessible.role: Accessible.Button
+                Accessible.onPressAction: activate()
+                function activate() { root.openSurface("calendar"); }
+
+                TapHandler { onTapped: statusClock.activate() }
+            }
+        }
+
+        Timer {
+            id: expandedSync
+            interval: 100
+            onTriggered: systemTrayState.expanded = dialog.visible
+        }
+
+        // Move the visual parent itself away from the panel. Dialog.floating
+        // controls screen-border treatment and does not create this panel gap.
+        PanelPopupAnchor {
+            id: popupAnchor
+            objectName: "popupAnchor"
+            vertical: root.vertical
+            surfaceWidth: compactSurface.width
+            surfaceHeight: compactSurface.height
+            panelLocation: Plasmoid.location
+        }
+
+        Item {
+            id: criticalPopupAnchor
+            width: root.vertical ? compactSurface.width : 1
+            height: compactSurface.height
+            x: root.vertical ? popupAnchor.x
+                : compactSurface.width - width
+            // CriticalNotification windows do not inherit the same panel-side
+            // floating clearance as AppletPopup windows.
+            y: popupAnchor.y + (Plasmoid.location === PlasmaCore.Types.TopEdge ? 10
+                : Plasmoid.location === PlasmaCore.Types.BottomEdge ? -10 : 0)
+        }
+
+        PlasmaCore.Dialog {
+            id: dialog
+            objectName: "popupWindow"
+            visualParent: popupAnchor
+            location: Plasmoid.location
+            type: PlasmaCore.Dialog.AppletPopup
+            floating: 10
+            hideOnWindowDeactivate: !(Plasmoid.configuration.showPinButton
+                && Plasmoid.configuration.pin)
+            visible: systemTrayState.expanded
+            appletInterface: root
+            // Unlike AppletPopup, Dialog genuinely supports a frameless host.
+            // ExpandedRepresentation owns the complete rounded #141414 surface.
+            backgroundHints: PlasmaCore.Dialog.NoBackground
+            onVisibleChanged: {
+                if (!visible) expandedSync.restart();
+                else requestActivate();
+            }
+            mainItem: ExpandedRepresentation {
+                id: expandedRepresentation
+                Keys.onEscapePressed: systemTrayState.expanded = false
+                Item { id: preloadedStorage; visible: false }
+            }
+        }
+
+        PlasmaCore.Dialog {
+            id: criticalAlertPopup
+            visualParent: criticalPopupAnchor
+            location: Plasmoid.location
+            type: PlasmaCore.Dialog.CriticalNotification
+            floating: 10
+            flags: Qt.WindowStaysOnTopHint
+            hideOnWindowDeactivate: false
+            backgroundHints: PlasmaCore.Dialog.NoBackground
+            visible: priorityNotifications.count > 0 && bannerStack.stackHeight > 0
+
+            mainItem: Item {
+                id: bannerStack
+                width: 360
+                // Wayland rejects zero-size window geometry, even briefly
+                // during a show/hide transition. Animate cards, not this host.
+                height: Math.max(1, stackHeight)
+                property real stackHeight: 0
+                readonly property real heightLimit: root.notificationPopupHeightLimit
+                clip: true
+
+                function reflow() {
+                    let used = 0;
+                    let full = false;
+                    for (let row = 0; row < bannerRepeater.count; ++row) {
+                        const card = bannerRepeater.itemAt(row);
+                        if (!card) continue;
+                        const gap = used > 0 ? 4 : 0;
+                        const cardHeight = Math.min(card.implicitHeight, heightLimit);
+                        if (full || used + gap + cardHeight > heightLimit) {
+                            card.visible = false;
+                            full = true;
+                            continue;
+                        }
+                        card.y = used + gap;
+                        card.height = cardHeight;
+                        card.visible = true;
+                        used += gap + cardHeight;
+                    }
+                    stackHeight = used;
+                }
+                onHeightLimitChanged: Qt.callLater(reflow)
+
+                Repeater {
+                    id: bannerRepeater
+                    model: priorityNotifications
+                    onItemAdded: Qt.callLater(bannerStack.reflow)
+                    onItemRemoved: Qt.callLater(bannerStack.reflow)
+
+                delegate: Rectangle {
+                    id: criticalCard
+                    required property int index
+                    required property string summary
+                    required property string body
+                    required property string applicationName
+                    required property string applicationIconName
+                    required property bool hasDefaultAction
+                    readonly property bool hasApplicationIcon:
+                        applicationIconName.length > 0
+                    width: bannerStack.width
+                    // Keep the banner bounded by its message instead of by a
+                    // permanently wide action row. The 44 px action rail stays
+                    // comfortable to target while one uninterrupted text column
+                    // owns the remaining width beside it.
+                    implicitHeight: Math.max(68, criticalContent.implicitHeight + 24)
+                    visible: false
+                    clip: true
+                    property real entranceProgress: 0
+                    opacity: entranceProgress
+                    transform: Translate {
+                        y: (1 - criticalCard.entranceProgress) * 12
+                    }
+                    onVisibleChanged: {
+                        if (visible) {
+                            bannerEntrance.restart();
+                        } else {
+                            bannerEntrance.stop();
+                            entranceProgress = 0;
+                        }
+                    }
+                    NumberAnimation {
+                        id: bannerEntrance
+                        target: criticalCard
+                        property: "entranceProgress"
+                        from: 0
+                        to: 1
+                        duration: 180
+                        easing.type: Easing.OutCubic
+                    }
+                    onImplicitHeightChanged: Qt.callLater(bannerStack.reflow)
+                    Behavior on y {
+                        enabled: criticalCard.visible
+                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                    }
+                    color: "#141414"
+                    radius: 12
+                    border.width: 1
+                    border.color: "#333333"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            const modelIndex = priorityNotifications.mapToSource(
+                                priorityNotifications.index(criticalCard.index, 0));
+                            if (criticalCard.hasDefaultAction) {
+                                notificationHistory.invokeDefaultAction(modelIndex);
+                            } else {
+                                root.minimizePriorityNotification(modelIndex);
+                                root.openSurface("notifications");
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        id: criticalContent
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 12
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop
+                            spacing: 12
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                PlasmaComponents.Label {
+                                    Layout.fillWidth: true
+                                    text: criticalCard.applicationName || i18n("System alert")
+                                    opacity: 0.62
+                                    elide: Text.ElideRight
+                                }
+                                PlasmaComponents.Label {
+                                    id: criticalSummary
+                                    Layout.fillWidth: true
+                                    text: criticalCard.summary
+                                    textFormat: Text.PlainText
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 4
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            PlasmaComponents.Label {
+                                id: criticalBody
+                                Layout.fillWidth: true
+                                visible: text.length > 0
+                                text: criticalCard.body
+                                textFormat: Text.StyledText
+                                opacity: 0.78
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 8
+                                elide: Text.ElideRight
+                            }
+                            PlasmaComponents.ToolButton {
+                                text: i18n("Show more")
+                                visible: criticalSummary.truncated || criticalBody.truncated
+                                Layout.minimumHeight: 44
+                                onClicked: {
+                                    root.minimizePriorityNotification(priorityNotifications.mapToSource(
+                                        priorityNotifications.index(criticalCard.index, 0)));
+                                    root.openNotifications();
+                                }
+                            }
+                        }
+
+                        Item {
+                            id: actionRail
+                            Layout.preferredWidth: 44
+                            Layout.minimumWidth: 44
+                            Layout.maximumWidth: 44
+                            Layout.fillHeight: true
+                            Layout.minimumHeight: actionButtons.implicitHeight
+                                + (criticalCard.hasApplicationIcon
+                                    ? 8 + Kirigami.Units.iconSizes.small : 0)
+
+                            ColumnLayout {
+                                id: actionButtons
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                                spacing: 0
+
+                                BannerActionButton {
+                                    closeGlyph: true
+                                    text: i18n("Dismiss")
+                                    onClicked: notificationHistory.close(
+                                        priorityNotifications.mapToSource(
+                                            priorityNotifications.index(criticalCard.index, 0)))
+                                }
+
+                                BannerActionButton {
+                                    text: i18n("Keep for review")
+                                    onClicked: root.minimizePriorityNotification(
+                                        priorityNotifications.mapToSource(
+                                            priorityNotifications.index(criticalCard.index, 0)))
+                                }
+                            }
+
+                            Kirigami.Icon {
+                                visible: criticalCard.hasApplicationIcon
+                                anchors.right: parent.right
+                                anchors.rightMargin: 6
+                                anchors.bottom: parent.bottom
+                                width: Kirigami.Units.iconSizes.small
+                                height: width
+                                source: criticalCard.applicationIconName
+                            }
+                        }
+                    }
+
+                }
+                }
+            }
+        }
+    }
+}

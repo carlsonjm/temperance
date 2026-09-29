@@ -1,0 +1,21 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Jared Carlson"
+            }
+        ],
+        "Category": "System Information",
+        "Description": "Stay informed and in control with quiet notifications and everyday essentials",
+        "EnabledByDefault": true,
+        "FormFactors": ["desktop"],
+        "Icon": "studio.warbler.temperance",
+        "Id": "studio.warbler.temperance",
+        "License": "GPL-2.0+",
+        "Name": "Temperance",
+        "Version": "1.1.0"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-ContainmentType": "CustomEmbedded"
+}

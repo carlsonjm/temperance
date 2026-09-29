@@ -1,0 +1,618 @@
+/*
+    SPDX-FileCopyrightText: 2026 carlsonjm
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
+import org.kde.notificationmanager as NotificationManager
+import org.kde.plasma.components as PlasmaComponents
+
+Item {
+    id: page
+
+    required property var notificationModel
+    required property var clearHistory
+    required property var resolveApplicationIcon
+    required property var launchApplication
+    required property bool demoNotificationVisible
+    required property real maximumHeight
+    // Today's calendar events, which head the history, and how one is
+    // dismissed and its times written.
+    property var events: []
+    property var dismissEvent: key => {}
+    property var formatTime: value => value.toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
+    readonly property int compactSpacing: 8
+    readonly property int standardSpacing: 12
+    readonly property int surfaceSpacing: 24
+    // The popup's margin line, 12 px into the page; a card's text sits 12 px
+    // inside the card and 8 px from its top and bottom.
+    readonly property int marginInset: 12
+    readonly property int cardPaddingH: 12
+    readonly property int cardPaddingV: 8
+
+    readonly property real naturalHeight: notificationContent.implicitHeight + standardSpacing + surfaceSpacing
+    implicitHeight: Math.min(maximumHeight, naturalHeight)
+
+    component NotificationActionPill: PlasmaComponents.ToolButton {
+        id: pill
+        readonly property color visualFill: actionBackground.color
+        readonly property color visualOutline: actionBackground.border.color
+        readonly property real visualOutlineWidth: actionBackground.border.width
+        readonly property real visualOpacity: actionBackground.opacity
+        display: PlasmaComponents.AbstractButton.TextOnly
+        implicitHeight: 44
+        leftPadding: 14
+        rightPadding: 14
+        Accessible.name: text
+        // ToolButton handles Space; consume Enter here before the card's
+        // default/open key handler can receive it through parent propagation.
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+        contentItem: PlasmaComponents.Label {
+            text: pill.text
+            textFormat: Text.PlainText
+            color: "#F8F8FF"
+            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.Wrap
+        }
+        background: Item {
+            Rectangle {
+                id: actionBackground
+                objectName: "notificationActionBackground"
+                anchors.centerIn: parent
+                width: parent.width
+                height: 30
+                radius: height / 2
+                color: pill.hovered || pill.down
+                    ? Qt.rgba(1, 1, 1, pill.down ? 0.20 : 0.12) : "transparent"
+                border.width: 1
+                border.color: "#F8F8FF"
+                opacity: pill.activeFocus ? 1 : 0.62
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on opacity { NumberAnimation { duration: 120 } }
+            }
+        }
+    }
+
+    ColumnLayout {
+        id: notificationContent
+        anchors.fill: parent
+        anchors.leftMargin: page.marginInset
+        anchors.rightMargin: page.marginInset
+        anchors.topMargin: page.standardSpacing
+        anchors.bottomMargin: page.surfaceSpacing
+        spacing: page.compactSpacing
+
+        Item { Layout.fillHeight: true }
+
+        // Today's events, drawn as notification cards are: the calendar where
+        // an app's name goes, the event as the summary, its times as the body,
+        // and the same Dismiss.
+        ColumnLayout {
+            objectName: "notificationEvents"
+            Layout.fillWidth: true
+            visible: page.events.length > 0
+            spacing: 8
+
+            PlasmaComponents.Label {
+                Layout.fillWidth: true
+                text: i18nc("@title the day's calendar events", "Today")
+                font.pixelSize: 13
+                font.weight: Font.Medium
+                color: "#A8FFFFFF"
+            }
+
+            Repeater {
+                model: page.events
+                delegate: Rectangle {
+                    id: eventCard
+                    required property var modelData
+                    objectName: "notificationEventCard"
+                    Layout.fillWidth: true
+                    implicitHeight: eventCardContent.implicitHeight + page.cardPaddingV * 2
+                    radius: 8
+                    color: Qt.rgba(1, 1, 1, 0.07)
+                    border.width: 0
+                    Accessible.role: Accessible.StaticText
+                    Accessible.name: [eventCard.modelData.title, eventTimes.text].join(", ")
+
+                    RowLayout {
+                        id: eventCardContent
+                        anchors.fill: parent
+                        anchors.leftMargin: page.cardPaddingH
+                        anchors.rightMargin: page.cardPaddingH
+                        anchors.topMargin: page.cardPaddingV
+                        anchors.bottomMargin: page.cardPaddingV
+                        spacing: 8
+
+                        Item { Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+                                PlasmaComponents.Label {
+                                    Layout.maximumWidth: Kirigami.Units.gridUnit * 8
+                                    visible: text.length > 0
+                                    text: eventCard.modelData.calendar || ""
+                                    font.pixelSize: 13
+                                    font.weight: Font.Medium
+                                    color: "#A8FFFFFF"
+                                    elide: Text.ElideRight
+                                }
+                                PlasmaComponents.Label {
+                                    visible: (eventCard.modelData.calendar || "").length > 0
+                                    text: "·"
+                                    opacity: 0.42
+                                }
+                                PlasmaComponents.Label {
+                                    objectName: "notificationEventTitle"
+                                    Layout.fillWidth: true
+                                    text: eventCard.modelData.title
+                                    textFormat: Text.PlainText
+                                    font.pixelSize: 15
+                                    font.weight: Font.Medium
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            PlasmaComponents.Label {
+                                id: eventTimes
+                                Layout.fillWidth: true
+                                text: page.formatTime(eventCard.modelData.start)
+                                    + " – " + page.formatTime(eventCard.modelData.end)
+                                font.pixelSize: 13
+                                color: "#A8FFFFFF"
+                            }
+                            Item {
+                                implicitHeight: 44
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: implicitHeight
+                                Layout.topMargin: 4
+                                NotificationActionPill {
+                                    objectName: "notificationEventDismiss"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: i18n("Dismiss")
+                                    Accessible.name: i18n("Dismiss event: %1", eventCard.modelData.title)
+                                    onClicked: page.dismissEvent(eventCard.modelData.key)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Notifications are a group of their own below the day's events.
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: page.events.length > 0 ? page.surfaceSpacing - page.compactSpacing : 0
+            visible: page.notificationModel.count > 0 || page.demoNotificationVisible
+
+            PlasmaComponents.Label {
+                Layout.fillWidth: true
+                text: page.notificationModel.unreadNotificationsCount > 0
+                    ? i18np("%1 unread", "%1 unread", page.notificationModel.unreadNotificationsCount)
+                    : i18n("Recent")
+                font.pixelSize: 13
+                font.weight: Font.Medium
+                color: "#A8FFFFFF"
+            }
+
+            PlasmaComponents.ToolButton {
+                text: i18n("Clear")
+                display: PlasmaComponents.AbstractButton.TextOnly
+                onClicked: page.clearHistory()
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: demoContent.implicitHeight + Kirigami.Units.largeSpacing * 2
+            visible: page.demoNotificationVisible
+            radius: 8
+            color: Qt.rgba(1, 1, 1, 0.07)
+
+            RowLayout {
+                id: demoContent
+                anchors.fill: parent
+                anchors.margins: Kirigami.Units.largeSpacing
+                spacing: Kirigami.Units.mediumSpacing
+
+                Kirigami.Icon {
+                    Layout.alignment: Qt.AlignTop
+                    source: "notification-active"
+                    implicitWidth: Kirigami.Units.iconSizes.medium
+                    implicitHeight: implicitWidth
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+                    PlasmaComponents.Label {
+                        Layout.fillWidth: true
+                        text: i18n("Temperance")
+                        font.pixelSize: 15
+                        font.weight: Font.Medium
+                    }
+                    PlasmaComponents.Label {
+                        Layout.fillWidth: true
+                        text: i18n("Demo notification")
+                    }
+                    PlasmaComponents.Label {
+                        Layout.fillWidth: true
+                        text: i18n("The adaptive rail and notification history are working.")
+                        font.pixelSize: 13
+                        color: "#A8FFFFFF"
+                        wrapMode: Text.Wrap
+                    }
+                }
+            }
+        }
+
+        ListView {
+            id: historyView
+            objectName: "notificationHistoryView"
+            displaced: Transition {
+                NumberAnimation {
+                    properties: "x,y"
+                    duration: 220
+                    easing.type: Easing.OutCubic
+                }
+            }
+            add: Transition {
+                NumberAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 140
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? contentHeight : 0
+            Layout.minimumHeight: 0
+            Layout.fillHeight: true
+            visible: count > 0
+            clip: true
+            spacing: 0
+            model: page.notificationModel
+
+            delegate: Item {
+                id: historyItem
+                objectName: "notificationRow" + index
+                required property int index
+                required property bool isGroup
+                required property bool isInGroup
+                required property bool isGroupExpanded
+                required property int groupChildrenCount
+                required property string summary
+                required property string body
+                required property string applicationName
+                required property string applicationIconName
+                required property string desktopEntry
+                required property bool hasDefaultAction
+                required property var actionNames
+                required property var actionLabels
+                readonly property var producerActions: {
+                    const actions = [];
+                    if (isGroup) return actions;
+                    const names = actionNames || [];
+                    const labels = actionLabels || [];
+                    for (let i = 0; i < Math.min(names.length, labels.length); ++i) {
+                        // NotificationManager excludes the default action from
+                        // these roles; keep it exclusively on the card even if
+                        // a producer/model supplies it in the named-action list.
+                        if (names[i] && names[i] !== "default" && labels[i])
+                            actions.push({name: names[i], label: labels[i]});
+                    }
+                    return actions;
+                }
+                property bool detailsExpanded: false
+                readonly property bool canOpen: !isGroup
+                    && (hasDefaultAction || desktopEntry.length > 0)
+                function openNotification() {
+                    if (!canOpen) return;
+                    if (hasDefaultAction) {
+                        page.notificationModel.invokeDefaultAction(
+                            page.notificationModel.index(index, 0));
+                    } else {
+                        page.launchApplication(desktopEntry);
+                    }
+                }
+                width: historyView.width
+                implicitHeight: isGroup ? 44 : notificationCard.height + 8
+                height: implicitHeight
+
+                RowLayout {
+                    id: groupHeading
+                    visible: historyItem.isGroup
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    // The icon stands where a card's padding ends, so the name
+                    // after it lines up with the cards' text below.
+                    anchors.leftMargin: page.cardPaddingH
+                    anchors.rightMargin: page.cardPaddingH
+                    spacing: 8
+
+                    Kirigami.Icon {
+                        source: page.resolveApplicationIcon(
+                            historyItem.applicationName,
+                            historyItem.desktopEntry,
+                            historyItem.applicationIconName)
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: implicitWidth
+                    }
+
+                    Kirigami.Heading {
+                        Layout.fillWidth: true
+                        text: historyItem.applicationName || i18n("Notifications")
+                        level: 3
+                        elide: Text.ElideRight
+                    }
+
+                    PlasmaComponents.Label {
+                        text: historyItem.groupChildrenCount
+                        opacity: 0.58
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.minimumWidth: 20
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        id: clearGroupButton
+                        objectName: "notificationClearGroup"
+                        text: i18n("Clear")
+                        icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/trash-2.svg"
+                        icon.color: "#F8F8FF"
+                        contentItem: SuiteIcon {
+                            glyph: "trash-2"
+                            implicitWidth: 20; implicitHeight: 20
+                        }
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        onClicked: page.notificationModel.close(
+                            page.notificationModel.index(historyItem.index, 0))
+                        PlasmaComponents.ToolTip {
+                            text: i18n("Clear notifications from %1",
+                                historyItem.applicationName || i18n("this app"))
+                        }
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        id: expandGroupButton
+                        objectName: "notificationExpandGroup"
+                        icon.source: historyItem.isGroupExpanded
+                            ? "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-up.svg"
+                            : "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-down.svg"
+                        icon.color: "#F8F8FF"
+                        contentItem: SuiteIcon {
+                            glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
+                            implicitWidth: 20; implicitHeight: 20
+                        }
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        text: historyItem.isGroupExpanded
+                            ? i18n("Collapse") : i18n("Expand")
+                        onClicked: page.notificationModel.setData(
+                            page.notificationModel.index(historyItem.index, 0),
+                            !historyItem.isGroupExpanded,
+                            NotificationManager.Notifications.IsGroupExpandedRole)
+                        PlasmaComponents.ToolTip { text: expandGroupButton.text }
+                    }
+                }
+
+                Rectangle {
+                    id: notificationCard
+                    objectName: "notificationCard"
+                    readonly property real visualOutlineWidth: border.width
+                    readonly property color visualOutline: border.color
+                    activeFocusOnTab: historyItem.canOpen
+                    Accessible.role: Accessible.Button
+                    Accessible.name: historyItem.summary.length > 0 ? historyItem.summary
+                        : historyItem.applicationName.length > 0 ? historyItem.applicationName
+                        : historyItem.body
+                    Accessible.onPressAction: historyItem.openNotification()
+                    Keys.onReturnPressed: historyItem.openNotification()
+                    Keys.onSpacePressed: historyItem.openNotification()
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: historyItem.canOpen
+                        onClicked: historyItem.openNotification()
+                    }
+                    visible: !historyItem.isGroup
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: notificationCardContent.implicitHeight
+                        + page.cardPaddingV * 2
+                    radius: 8
+                    color: Qt.rgba(1, 1, 1, 0.07)
+                    border.width: 0
+
+                    RowLayout {
+                        id: notificationCardContent
+                        objectName: "notificationCardContent"
+                        anchors.fill: parent
+                        anchors.leftMargin: page.cardPaddingH
+                        anchors.rightMargin: page.cardPaddingH
+                        anchors.topMargin: page.cardPaddingV
+                        anchors.bottomMargin: page.cardPaddingV
+                        spacing: 8
+
+                        Item {
+                            // Group headings own the app identity, keeping child
+                            // alerts aligned like pills beneath a Tray section.
+                            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+
+                            RowLayout {
+                                id: notificationHeader
+                                objectName: "notificationHeader"
+                                Layout.fillWidth: true
+                                visible: applicationLabel.visible || summaryLabel.visible
+                                spacing: 4
+
+                                PlasmaComponents.Label {
+                                    id: applicationLabel
+                                    objectName: "notificationApplication"
+                                    Layout.fillWidth: !summaryLabel.visible
+                                    Layout.maximumWidth: summaryLabel.visible
+                                        ? Kirigami.Units.gridUnit * 8 : Number.POSITIVE_INFINITY
+                                    visible: !historyItem.isInGroup
+                                        && historyItem.applicationName.length > 0
+                                    text: historyItem.applicationName
+                                    font.pixelSize: 13
+                                    font.weight: Font.Medium
+                                    color: "#A8FFFFFF"
+                                    elide: Text.ElideRight
+                                }
+
+                                PlasmaComponents.Label {
+                                    objectName: "notificationHeaderSeparator"
+                                    visible: applicationLabel.visible && summaryLabel.visible
+                                    text: "·"
+                                    opacity: 0.42
+                                }
+
+                                PlasmaComponents.Label {
+                                    id: summaryLabel
+                                    objectName: "notificationSummary"
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: historyItem.summary
+                                    textFormat: Text.PlainText
+                                    font.pixelSize: 15
+                                    font.weight: Font.Medium
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: historyItem.detailsExpanded ? 1000 : 1
+                                    elide: historyItem.detailsExpanded
+                                        ? Text.ElideNone : Text.ElideRight
+                                }
+                            }
+                            PlasmaComponents.Label {
+                                id: bodyLabel
+                                objectName: "notificationBody"
+                                Layout.fillWidth: true
+                                visible: text.length > 0 && text !== historyItem.summary
+                                text: historyItem.body
+                                // StyledText supports bounded lines/truncation;
+                                // AutoText may choose RichText, which does not.
+                                textFormat: Text.StyledText
+                                font.pixelSize: 13
+                                color: "#A8FFFFFF"
+                                wrapMode: Text.Wrap
+                                maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
+                                elide: historyItem.detailsExpanded
+                                    ? Text.ElideNone : Text.ElideRight
+                            }
+
+                            PlasmaComponents.ToolButton {
+                                id: detailsButton
+                                objectName: "notificationReadMore"
+                                Layout.alignment: Qt.AlignRight
+                                Layout.minimumHeight: 44
+                                leftPadding: 12
+                                rightPadding: 12
+                                visible: historyItem.detailsExpanded
+                                    || summaryLabel.truncated || bodyLabel.truncated
+                                text: historyItem.detailsExpanded
+                                    ? i18n("Show less") : i18n("Show more")
+                                display: PlasmaComponents.AbstractButton.TextOnly
+                                onClicked: historyItem.detailsExpanded
+                                    = !historyItem.detailsExpanded
+                                background: Rectangle {
+                                    radius: height / 2
+                                    color: detailsButton.hovered || detailsButton.down
+                                        ? Qt.rgba(1, 1, 1, 0.12)
+                                        : Qt.rgba(1, 1, 1, 0.07)
+                                    border.width: detailsButton.activeFocus ? 1 : 0
+                                    border.color: "#F8F8FF"
+                                    Behavior on color { ColorAnimation { duration: 120 } }
+                                }
+                            }
+
+                            Item {
+                                implicitHeight: Math.max(44, actionFlow.childrenRect.height)
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: implicitHeight
+                                // Reserve the accepted touch row before repeater
+                                // delegates finish incubating so ListView never
+                                // positions the next recent card through it.
+                                Layout.minimumHeight: implicitHeight
+                                Layout.topMargin: 4
+
+                                Flow {
+                                    id: actionFlow
+                                    objectName: "notificationActionFlow"
+                                    anchors.fill: parent
+                                    spacing: 8
+                                    // These controls stack above the card's earlier
+                                    // MouseArea and accept their own pointer/key input.
+                                    Repeater {
+                                        model: historyItem.producerActions
+                                        delegate: NotificationActionPill {
+                                            required property var modelData
+                                            objectName: "notificationAction-" + modelData.name
+                                            width: Math.min(implicitWidth, actionFlow.width)
+                                            text: modelData.label
+                                            onClicked: page.notificationModel.invokeAction(
+                                                page.notificationModel.index(historyItem.index, 0),
+                                                modelData.name)
+                                        }
+                                    }
+                                    NotificationActionPill {
+                                        objectName: "notificationDismiss"
+                                        width: Math.min(implicitWidth, actionFlow.width)
+                                        text: i18n("Dismiss")
+                                        Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
+                                        onClicked: page.notificationModel.close(
+                                            page.notificationModel.index(historyItem.index, 0))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Kirigami.Units.gridUnit * 10
+            visible: page.notificationModel.count === 0 && !page.demoNotificationVisible
+                && page.events.length === 0
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                width: parent.width
+                spacing: Kirigami.Units.mediumSpacing
+
+                BellGlyph {
+                    objectName: "notificationEmptyBell"
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: Kirigami.Units.iconSizes.huge
+                    Layout.preferredHeight: Kirigami.Units.iconSizes.huge
+                    glyphColor: "#F8F8FF"
+                    strokeWidth: 1.4
+                    opacity: 0.34
+                }
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    text: i18n("All caught up")
+                    horizontalAlignment: Text.AlignHCenter
+                    font.weight: Font.DemiBold
+                    font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
+                }
+            }
+        }
+    }
+}

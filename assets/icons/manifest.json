@@ -1,0 +1,28 @@
+{
+  "family": "Lucide",
+  "package": "lucide-static",
+  "version": "1.46.0",
+  "license": "ISC with inherited Feather MIT notice",
+  "foreground": {
+    "name": "Ghost White",
+    "value": "#F8F8FF"
+  },
+  "icons": {
+    "action-overflow": "ellipsis",
+    "settings": "settings",
+    "action-add": "plus",
+    "keep-open": "pin",
+    "clear": "trash-2",
+    "collapse": "chevron-up",
+    "expand": "chevron-down",
+    "session-logout": "log-out",
+    "session-restart": "rotate-cw",
+    "session-shutdown": "power",
+    "configure": "sliders-horizontal",
+    "brightness": "sun",
+    "performance": "gauge"
+  },
+  "exceptions": {
+    "notification-animated": "qml/BellGlyph.qml (Lucide-derived segmented geometry for clapper and slash animation)"
+  }
+}
