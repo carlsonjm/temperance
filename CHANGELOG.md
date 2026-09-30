@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The installer reports success only once the system holds this package's own
+  files, and says whether the restarted panel loaded them, so a run whose copy
+  never happened no longer reads as an install.
 - The battery opens Plasma's Power and Battery page, as Control Center's battery
   row does; the network icon opens Control Center. A wired connection shows
   Lucide's ethernet port, drawn with the bell's line. The notification count

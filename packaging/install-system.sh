@@ -2,10 +2,12 @@
 set -euo pipefail
 
 package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# TEMPERANCE_ROOT stages the files under another folder instead of the system.
+root="${TEMPERANCE_ROOT:-}"
 plugin_name="studio.warbler.temperance.so"
-plugin_target="/usr/lib/qt6/plugins/plasma/applets/${plugin_name}"
+plugin_target="${root}/usr/lib/qt6/plugins/plasma/applets/${plugin_name}"
 icon_name="studio.warbler.temperance.png"
-icon_target="/usr/share/icons/hicolor/512x512/apps/${icon_name}"
+icon_target="${root}/usr/share/icons/hicolor/512x512/apps/${icon_name}"
 
 # File managers launch scripts without a terminal, which makes sudo fail out of
 # sight. Re-open ourselves in a terminal so authorization and errors are visible.
@@ -41,10 +43,32 @@ sudo install -Dm755 "${package_dir}/${plugin_name}" "${plugin_target}"
 sudo install -Dm644 "${package_dir}/${icon_name}" "${icon_target}"
 kbuildsycoca6
 
-if [[ ! -f "${plugin_target}" || ! -f "${icon_target}" ]]; then
-    printf '%s\n' "Installation failed: the plugin or icon was not created." >&2
+# An earlier install leaves files in place, so their being there proves
+# nothing: they must be this package's own.
+if ! cmp -s "${package_dir}/${plugin_name}" "${plugin_target}" \
+        || ! cmp -s "${package_dir}/${icon_name}" "${icon_target}"; then
+    printf '%s\n' "Installation failed: the system's Temperance is not this package's." \
+        "Run ./install-system.sh again and watch for errors above." >&2
     exit 1
 fi
+
+# The panel runs this build once it has loaded the file just installed, which
+# is a new file on disk, not the one it had before.
+panel_runs_this_build() {
+    local pid inode tries=0
+    inode="$(stat -c %i "${plugin_target}")"
+    while (( tries < 40 )); do
+        pid="$(systemctl --user show -p MainPID --value plasma-plasmashell.service 2>/dev/null || true)"
+        if [[ -n "${pid}" && "${pid}" != "0" ]] \
+                && awk -v path="${plugin_target}" -v inode="${inode}" \
+                    '$6 == path && $5 == inode { found = 1 } END { exit !found }' "/proc/${pid}/maps" 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.25
+        tries=$((tries + 1))
+    done
+    return 1
+}
 
 # A restarted shell has sometimes come back not knowing the current activity,
 # and then shows no desktop on any screen, so no wallpaper, until the activity
@@ -71,10 +95,15 @@ announce_activity() {
 
 # The panel loads a widget's plugin once, so it restarts to pick up the new
 # build. Windows and the session stay as they are.
-if systemctl --user --quiet is-active plasma-plasmashell.service 2>/dev/null; then
+if [[ -z "${root}" ]] && systemctl --user --quiet is-active plasma-plasmashell.service 2>/dev/null; then
     systemctl --user restart plasma-plasmashell.service
     announce_activity
-    printf '%s\n' "Installed Temperance and restarted the panel."
+    if panel_runs_this_build; then
+        printf '%s\n' "Installed Temperance and restarted the panel, which now runs this build."
+    else
+        printf '%s\n' "Installed Temperance and restarted the panel, but the panel has not loaded it yet." \
+            "If Temperance is on a panel, sign out and back in to load it."
+    fi
 else
     printf '%s\n' "Installed Temperance successfully. Sign out and back in to load it."
 fi
