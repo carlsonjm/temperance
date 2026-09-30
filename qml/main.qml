@@ -192,6 +192,14 @@ ContainmentItem {
             priorityNotificationKey(model, modelIndex)]);
     }
 
+    // A transfer is Ambient's, which keeps its end in view for a minute; the
+    // end of one, in the freedesktop transfer categories, is kept in the
+    // history and never played on the ticker.
+    function isFiledQuietly(model, modelIndex) {
+        const category = model.data(modelIndex, NotificationManager.Notifications.CategoryRole);
+        return category === "transfer.complete" || category === "transfer.error";
+    }
+
     function isPriorityNotificationCandidate(model, modelIndex) {
         const urgency = model.data(modelIndex,
             NotificationManager.Notifications.UrgencyRole);
@@ -1048,6 +1056,7 @@ ContainmentItem {
 
     NotificationManager.Notifications {
         id: notificationHistory
+        objectName: "temperance-notification-history"
         showExpired: true
         showDismissed: true
         showAddedDuringInhibition: true
@@ -1110,7 +1119,8 @@ ContainmentItem {
             // A minimized banner remains in history, but has already had its
             // presentation. Do not queue another automatic readout.
             return unread && !reservedForBanner
-                && !root.isPriorityNotificationMinimized(sourceModel, idx);
+                && !root.isPriorityNotificationMinimized(sourceModel, idx)
+                && !root.isFiledQuietly(sourceModel, idx);
         }
         Component.onCompleted: sourceModel = notificationHistory
     }

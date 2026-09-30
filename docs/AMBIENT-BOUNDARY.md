@@ -21,9 +21,10 @@ Preserve these invariants:
   invent completion from filesystem quiet time or source loss.
 - A transition outcome may enter Temperance through the shared notification path,
   but the same outcome must not be presented twice.
-- Temperance changes for Ambient integration are limited to a proven event handoff,
-  duplicate suppression, or shared geometry contract. Ambient implementation stays
-  in Tette.
+- A transfer's end, in the freedesktop transfer categories, goes to the history
+  and never the ticker or a banner: Ambient kept it in view for a minute first.
+- Temperance changes for Ambient are limited to a proven handoff, duplicate
+  suppression, or shared geometry. Ambient implementation stays in Tette.
 
 ## Panel geometry
 

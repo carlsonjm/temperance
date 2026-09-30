@@ -68,7 +68,8 @@ Temperance, and fall back to Temperance if stock loading fails.
 
 ### Routes follow meaning
 
-Normal notifications, including actionable ones, use the ticker and history.
+Normal notifications, including actionable ones, use the ticker and history; a
+transfer's end uses the history alone (`AMBIENT-BOUNDARY.md`).
 Critical notifications and the bounded system-alert policy may use priority
 banners, and a notification held for a banner does not also enter the ticker.
 Keeping a banner for review moves it to history without replaying the ticker.

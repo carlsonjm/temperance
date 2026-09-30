@@ -127,6 +127,30 @@ private Q_SLOTS:
     hint(taskFace, "Layout.fillWidth", false);
     window.show();
     QTest::qWait(1000);
+    // A transfer's end, as Ambient files it after its minute in view: the
+    // history keeps it, and the ticker does not play it.
+    auto *history = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-notification-history"));
+    QVERIFY(history);
+    auto transfer = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.Notifications"),
+        QStringLiteral("/org/freedesktop/Notifications"),
+        QStringLiteral("org.freedesktop.Notifications"),
+        QStringLiteral("Notify"));
+    transfer.setArguments(
+        {QStringLiteral("T1 fixture"), uint(0), QString(),
+         QStringLiteral("photo.png"), QStringLiteral("Arrived in Downloads"),
+         QStringList{},
+         QVariantMap{{QStringLiteral("category"),
+                      QStringLiteral("transfer.complete")}},
+         0});
+    QDBusPendingCallWatcher filed(
+        QDBusConnection::sessionBus().asyncCall(transfer));
+    QSignalSpy filedDone(&filed, &QDBusPendingCallWatcher::finished);
+    QVERIFY(filedDone.wait(3000));
+    QTRY_COMPARE(history->property("count").toInt(), 1);
+    QTest::qWait(300);
+    QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 0);
     // Plasma positions the AppletContainer ancestor, not the applet root.
     // A parent-only move must invalidate the scene-space width measurement.
     auto *taskContainer = taskFace->parentItem();
@@ -251,6 +275,9 @@ private Q_SLOTS:
     QDBusPendingReply<uint> reply = notification;
     QVERIFY2(!reply.isError(), qPrintable(reply.error().message()));
     QTRY_VERIFY(rightFace->property("lastLiveNotificationCount").toInt() > 0);
+    // The ordinary notice plays alone.
+    QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 1);
+    QCOMPARE(history->property("count").toInt(), 2);
     auto *controls =
         findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *ticker =
