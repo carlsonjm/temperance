@@ -717,6 +717,121 @@ ContainmentItem {
         notificationHide.restart();
     }
 
+    // A finger has no pointer to rest on the bell, so the ticker answers a
+    // sideways flick. The line shown, a notification or today's event, is set
+    // aside into the history and the next comes up; with no line showing, the
+    // flick brings up the latest first, so nothing is set aside unseen. Lines
+    // stay up a while after the finger lifts, as under a resting pointer.
+    property string tickerCarry: ""
+    property real tickerOffset: 0
+    property real tickerVelocity: 0
+    property real tickerSampleX: 0
+    property double tickerSampleAt: 0
+    onTickerOffsetChanged: {
+        if (tickerCarry === "notification") notificationMessageLayer.x = 2 + tickerOffset;
+        else if (tickerCarry === "event") eventLayer.offset = tickerOffset;
+    }
+    function beginTickerCarry() {
+        tickerAway.stop();
+        tickerBack.stop();
+        touchRevealRelease.stop();
+        tickerVelocity = 0;
+        tickerSampleX = 0;
+        tickerSampleAt = Date.now();
+        tickerCarry = notificationCopyActive && notificationPages > 0 && !eventPage ? "notification"
+            : eventLayer.opacity > 0 && tickerEvent !== null ? "event" : "";
+        if (tickerCarry === "notification") {
+            notificationIntro.stop();
+            notificationReveal.stop();
+            notificationHide.stop();
+            notificationMessageLayer.opacity = 1;
+        } else if (tickerCarry === "event") {
+            eventEntry.stop();
+            eventFade.stop();
+            eventExit.stop();
+            eventLayer.opacity = 1;
+        }
+        tickerOffset = 0;
+    }
+    function carryTicker(dx) {
+        const now = Date.now();
+        tickerVelocity = 0.6 * ((dx - tickerSampleX) / Math.max(1, now - tickerSampleAt)) + 0.4 * tickerVelocity;
+        tickerSampleX = dx;
+        tickerSampleAt = now;
+        tickerOffset = dx;
+    }
+    function endTickerCarry() {
+        if (tickerCarry === "") {
+            holdTickerForTouch();
+            return;
+        }
+        const flicked = Math.abs(tickerVelocity) > 0.6 && Math.sign(tickerVelocity) === Math.sign(tickerOffset);
+        if (tickerOffset !== 0 && (Math.abs(tickerOffset) > notificationContentArea.width * 0.35 || flicked)) {
+            tickerAway.to = Math.sign(tickerOffset) * notificationContentArea.width;
+            tickerAway.start();
+        } else {
+            tickerBack.start();
+        }
+    }
+    function setTickerLineAside() {
+        const carried = tickerCarry;
+        tickerCarry = "";
+        tickerOffset = 0;
+        if (carried === "event" && tickerEvent !== null) {
+            eventLayer.opacity = 0;
+            eventLayer.offset = 0;
+            markEventSeen(tickerEvent.key);
+        } else if (carried === "notification") {
+            notificationMessageLayer.opacity = 0;
+            notificationMessageLayer.x = 2;
+            if (railNotifications.count > 0) {
+                const row = Math.min(liveNotificationView.currentIndex, railNotifications.count - 1);
+                notificationHistory.setData(railNotifications.mapToSource(railNotifications.index(row, 0)),
+                    true, NotificationManager.Notifications.ReadRole);
+                railNotifications.invalidateFilter();
+                liveNotificationView.currentIndex = Math.max(0, Math.min(row, railNotifications.count - 1));
+            } else if (demoNotificationVisible) {
+                if (demoNotificationIndex < demoNotificationTexts.length - 1) demoNotificationIndex++;
+                else demoNotificationVisible = false;
+            }
+        }
+        holdTickerForTouch();
+        revealNotificationText();
+    }
+    function holdTickerForTouch() {
+        notificationControls.revealed = true;
+        touchRevealRelease.restart();
+    }
+    NumberAnimation {
+        id: tickerAway
+        target: root
+        property: "tickerOffset"
+        duration: root.motionEnabled ? 160 : 0
+        easing.type: Easing.InCubic
+        onFinished: root.setTickerLineAside()
+    }
+    NumberAnimation {
+        id: tickerBack
+        target: root
+        property: "tickerOffset"
+        to: 0
+        duration: root.motionEnabled ? 240 : 0
+        easing.type: Easing.OutBack
+        onFinished: {
+            root.tickerCarry = "";
+            root.holdTickerForTouch();
+        }
+    }
+    Timer {
+        id: touchRevealRelease
+        interval: 4000
+        onTriggered: {
+            if (!sharedControlsHover.hovered && !reviewNotificationsButton.hovered
+                    && !nextNotificationButton.hovered && !tickerDrag.active)
+                notificationControls.revealed = false;
+        }
+    }
+
     function acHoldingCharge(onBattery, state) {
         // UPower: fully charged (4) or pending charge (5), with AC confirmed.
         return onBattery === false && (Number(state) === 4 || Number(state) === 5);
@@ -1108,6 +1223,7 @@ ContainmentItem {
 
     KItemModels.KSortFilterProxyModel {
         id: railNotifications
+        objectName: "temperance-rail-notifications"
         filterRoleName: "read"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
@@ -1677,6 +1793,15 @@ ContainmentItem {
                         TapHandler {
                             enabled: root.notificationCopyActive
                             onTapped: root.openNotifications()
+                        }
+
+                        DragHandler {
+                            id: tickerDrag
+                            target: null
+                            yAxis.enabled: false
+                            enabled: root.hasAttention && !tickerAway.running
+                            onActiveChanged: active ? root.beginTickerCarry() : root.endTickerCarry()
+                            onActiveTranslationChanged: if (active) root.carryTicker(activeTranslation.x)
                         }
 
                         // The calendar's next event. It reads in from the right

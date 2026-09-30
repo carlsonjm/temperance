@@ -47,6 +47,8 @@ what you see happen. Other documents cite this one and do not restate it.
 | Click the arrow on an event | Moves the event into the history; the next of today's events takes its place. |
 | Click the arrow after the last line | Hides the line; another click starts again from the newest. |
 | Tap or click the ticker's line | Opens Notifications & events. |
+| Flick the ticker's line sideways, or drag it, by finger or mouse | Sets it aside: a notification goes to the history as read, today's event is marked seen, and the next line comes up. Let go early and it springs back. |
+| Flick sideways over the ticker with no line showing | Brings up the latest line, and sets nothing aside. After a touch the line stays a few seconds. |
 
 ### Important banners
 

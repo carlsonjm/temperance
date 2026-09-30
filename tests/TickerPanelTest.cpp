@@ -151,6 +151,79 @@ private Q_SLOTS:
     QTRY_COMPARE(history->property("count").toInt(), 1);
     QTest::qWait(300);
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 0);
+    // A finger sets a ticker line aside with a sideways flick. With no line
+    // showing it first brings the latest up, setting nothing aside unseen; on
+    // a line that shows, it sends the line to the history. A mouse drag does
+    // the same.
+    auto *rail = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-rail-notifications"));
+    auto *tickerArea =
+        findItem(rightFace, QStringLiteral("temperance-ticker-content"));
+    auto *tickerControls =
+        findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
+    QVERIFY(rail && tickerArea && tickerControls);
+    const auto notify = [](const QString &summary) {
+      auto posted = QDBusMessage::createMethodCall(
+          QStringLiteral("org.freedesktop.Notifications"),
+          QStringLiteral("/org/freedesktop/Notifications"),
+          QStringLiteral("org.freedesktop.Notifications"),
+          QStringLiteral("Notify"));
+      posted.setArguments({QStringLiteral("T1 fixture"), uint(0), QString(),
+                           summary, QStringLiteral("Body"), QStringList{},
+                           QVariantMap{}, 0});
+      QDBusPendingCallWatcher sent(
+          QDBusConnection::sessionBus().asyncCall(posted));
+      QSignalSpy done(&sent, &QDBusPendingCallWatcher::finished);
+      return done.wait(3000);
+    };
+    // Where the line is now: opening the controls narrows the ticker.
+    const auto lineCentre = [&] {
+      return tickerArea
+          ->mapToScene(QPointF(tickerArea->width() / 2,
+                               tickerArea->height() / 2))
+          .toPoint();
+    };
+    auto *swipeFinger = QTest::createTouchDevice();
+    const auto flick = [&] {
+      const QPoint swipeFrom = lineCentre();
+      QTest::touchEvent(&window, swipeFinger).press(0, swipeFrom);
+      for (int step = 1; step <= 4; ++step) {
+        QTest::qWait(12);
+        QTest::touchEvent(&window, swipeFinger)
+            .move(0, swipeFrom - QPoint(step * 25, 0));
+      }
+      QTest::touchEvent(&window, swipeFinger)
+          .release(0, swipeFrom - QPoint(100, 0));
+    };
+    QVERIFY(notify(QStringLiteral("Swipe fixture")));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QVERIFY(QMetaObject::invokeMethod(rightFace, "hideNotificationText"));
+    QTRY_VERIFY(!rightFace->property("notificationCopyActive").toBool());
+    flick();
+    QTRY_VERIFY(tickerControls->property("revealed").toBool());
+    QTRY_VERIFY(rightFace->property("notificationCopyActive").toBool());
+    QCOMPARE(rail->property("count").toInt(), 1);
+    QTest::qWait(400);
+    flick();
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QCOMPARE(history->property("count").toInt(), 2);
+    QVERIFY(notify(QStringLiteral("Drag fixture")));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
+    QTRY_VERIFY(rightFace->property("notificationCopyActive").toBool());
+    QTest::qWait(400);
+    const QPoint dragFrom = lineCentre();
+    QTest::mousePress(&window, Qt::LeftButton, {}, dragFrom);
+    for (int step = 1; step <= 4; ++step) {
+      QTest::qWait(12);
+      QTest::mouseMove(&window, dragFrom - QPoint(step * 25, 0));
+    }
+    QTest::mouseRelease(&window, Qt::LeftButton, {},
+                        dragFrom - QPoint(100, 0));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QCOMPARE(history->property("count").toInt(), 3);
+    tickerControls->setProperty("revealed", false);
+    QTest::qWait(300);
     // Plasma positions the AppletContainer ancestor, not the applet root.
     // A parent-only move must invalidate the scene-space width measurement.
     auto *taskContainer = taskFace->parentItem();
@@ -277,7 +350,7 @@ private Q_SLOTS:
     QTRY_VERIFY(rightFace->property("lastLiveNotificationCount").toInt() > 0);
     // The ordinary notice plays alone.
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 1);
-    QCOMPARE(history->property("count").toInt(), 2);
+    QCOMPARE(history->property("count").toInt(), 4);
     auto *controls =
         findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *ticker =
