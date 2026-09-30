@@ -4,8 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
-- A sideways flick, by finger or mouse, sets the ticker's line aside into the
-  history and brings the next up, so touch reaches what the arrow did.
+- A sideways flick, by finger or mouse, checks the ticker's line off, unread in
+  the history, and brings the next up; the arrow is gone, and its width is the
+  ticker's. Once every line is checked off the bell shows ✓ until the history
+  is opened. Opening the history clears the ticker, and a finger on the bell no
+  longer brings its line back.
 - A transfer's end is filed in the history without crossing the ticker: Ambient
   has already shown it for a minute.
 - Corners follow the suite's three tiers: Control Center and alerts at 12 px,

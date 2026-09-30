@@ -151,12 +151,17 @@ private Q_SLOTS:
     QTRY_COMPARE(history->property("count").toInt(), 1);
     QTest::qWait(300);
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 0);
-    // A finger sets a ticker line aside with a sideways flick. With no line
-    // showing it first brings the latest up, setting nothing aside unseen; on
-    // a line that shows, it sends the line to the history. A mouse drag does
-    // the same.
+    // A finger checks a ticker line off with a sideways flick. With no line
+    // showing it first brings the latest up, checking nothing unseen; on a
+    // line that shows, it takes the line off the ticker, unread in the
+    // history, and the bell holds a check until the history is opened. A
+    // mouse drag does the same.
     auto *rail = rightFace->findChild<QObject *>(
         QStringLiteral("temperance-rail-notifications"));
+    auto *checked = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-checked-notifications"));
+    auto *count = findItem(rightFace, QStringLiteral("temperance-notification-count"));
+    QVERIFY(checked && count);
     auto *tickerArea =
         findItem(rightFace, QStringLiteral("temperance-ticker-content"));
     auto *tickerControls =
@@ -207,6 +212,13 @@ private Q_SLOTS:
     flick();
     QTRY_COMPARE(rail->property("count").toInt(), 0);
     QCOMPARE(history->property("count").toInt(), 2);
+    QTRY_COMPARE(checked->property("count").toInt(), 1);
+    QTRY_COMPARE(count->property("text").toString(), QString::fromUtf8("✓"));
+    QTRY_VERIFY(count->parentItem()->opacity() > 0.9);
+    // The check takes the clapper's place, as a count does.
+    auto *bell = findItem(rightFace, QStringLiteral("temperance-bell-glyph"));
+    QVERIFY(bell);
+    QTRY_VERIFY(bell->property("clapperProgress").toReal() < 0.01);
     QVERIFY(notify(QStringLiteral("Drag fixture")));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
     QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
@@ -222,6 +234,12 @@ private Q_SLOTS:
                         dragFrom - QPoint(100, 0));
     QTRY_COMPARE(rail->property("count").toInt(), 0);
     QCOMPARE(history->property("count").toInt(), 3);
+    QTRY_COMPARE(checked->property("count").toInt(), 2);
+    // Opening the history reads them, and the check goes.
+    QVERIFY(history->setProperty("lastRead", QDateTime::currentDateTime().addSecs(1)));
+    QTRY_COMPARE(checked->property("count").toInt(), 0);
+    QTRY_VERIFY(count->parentItem()->opacity() < 0.1);
+    QTRY_VERIFY(bell->property("clapperProgress").toReal() > 0.99);
     tickerControls->setProperty("revealed", false);
     QTest::qWait(300);
     // Plasma positions the AppletContainer ancestor, not the applet root.
@@ -441,6 +459,43 @@ private Q_SLOTS:
     clickOn(QStringLiteral("temperance-control-center"), QStringLiteral("control"));
     clickOn(QStringLiteral("temperance-clock"), QStringLiteral("calendar"));
     clickOn(QStringLiteral("temperance-tray"), QStringLiteral("tray"));
+
+    // A finger on the bell opens the history; it is not a pointer resting
+    // there, so the ticker does not bring its line back. Opened, the history
+    // is read, and the line waiting on the ticker goes.
+    state->setProperty("expanded", false);
+    QTest::qWait(300);
+    // Lines still waiting from above are checked off first, as a flick does.
+    auto *historyModel = qobject_cast<QAbstractItemModel *>(history);
+    QVERIFY(historyModel);
+    for (int row = 0; row < historyModel->rowCount(); ++row)
+      QVERIFY(QMetaObject::invokeMethod(history, "expire",
+                                        Q_ARG(QModelIndex, historyModel->index(row, 0))));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    tickerControls->setProperty("revealed", false);
+    QTRY_VERIFY(!rightFace->property("notificationCopyActive").toBool());
+    QVERIFY(notify(QStringLiteral("Roll fixture")));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    // It rolls past once, then the ticker rests.
+    QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(!rightFace->property("notificationCopyActive").toBool(), 15000);
+    QVERIFY(!tickerControls->property("revealed").toBool());
+    const QPoint bellCentre =
+        bell->mapToScene({bell->width() / 2, bell->height() / 2}).toPoint();
+    QTest::touchEvent(&window, finger).press(0, bellCentre);
+    QTest::qWait(400);
+    QVERIFY(!tickerControls->property("revealed").toBool());
+    QVERIFY(!rightFace->property("notificationCopyActive").toBool());
+    QTest::touchEvent(&window, finger).release(0, bellCentre);
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QVERIFY(!tickerControls->property("revealed").toBool());
+    // A mouse resting on the bell still opens the ticker's controls.
+    state->setProperty("expanded", false);
+    QTest::qWait(700);
+    QTest::mouseMove(&window, bellCentre + QPoint(0, 1));
+    QTest::mouseMove(&window, bellCentre);
+    QTRY_VERIFY(tickerControls->property("revealed").toBool());
     face->setParentItem(nullptr);
     qInfo() << "T1_ERRORS" << boundaryError << surfaceError;
     QVERIFY(boundaryError <= 2.);

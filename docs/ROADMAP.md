@@ -8,9 +8,6 @@ What is planned for Temperance.
 - **Progress.** Live progress and its actions stay with Ambient in Tettegouche,
   and neither side keeps the same finished item indefinitely
   (`AMBIENT-BOUNDARY.md`).
-- **Retiring the arrow.** The flick sets lines aside by finger and mouse alike;
-  the arrow goes, and a way to look back through the day's lines takes its
-  last job.
 - **Confirming Log Out.** Open decision: whether Log Out asks first, as Restart
   and Shut Down do.
 - **Choosing the notification presenter.** An option for Plasma's own presenter,

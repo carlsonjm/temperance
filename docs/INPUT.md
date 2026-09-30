@@ -26,7 +26,7 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Input | What happens |
 | --- | --- |
-| Tap or click the bell | Opens Notifications & events. |
+| Tap or click the bell | Opens Notifications & events, which reads what waited, so the ticker clears. |
 | Tap or click a notification | Runs the application's default action, or opens the application when it has none. |
 | Tap or click an action pill | Runs that action only. |
 | Tap or click Dismiss on a notification | Removes that notification. |
@@ -42,12 +42,9 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Input | What happens |
 | --- | --- |
-| Pointer resting on the bell | The bell takes the highlight color, and the ticker shows its latest line again with an arrow beside the bell. |
-| Click the arrow | Shows the next notification; after the last, today's next event. |
-| Click the arrow on an event | Moves the event into the history; the next of today's events takes its place. |
-| Click the arrow after the last line | Hides the line; another click starts again from the newest. |
+| Pointer resting on the bell | The bell takes the highlight color, and the ticker shows its latest line again. A finger on the bell only opens the history. |
 | Tap or click the ticker's line | Opens Notifications & events. |
-| Flick the ticker's line sideways, or drag it, by finger or mouse | Sets it aside: a notification goes to the history as read, today's event is marked seen, and the next line comes up. Let go early and it springs back. |
+| Flick the ticker's line sideways, or drag it, by finger or mouse | Checks it off: a notification leaves the ticker and waits unread in the history, today's event is marked seen, and the next line comes up. The bell counts the lines still waiting and, once all are checked off, shows ✓ until the history is opened. Let go early and the line springs back. |
 | Flick sideways over the ticker with no line showing | Brings up the latest line, and sets nothing aside. After a touch the line stays a few seconds. |
 
 ### Important banners

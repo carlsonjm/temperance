@@ -33,6 +33,9 @@ ContainmentItem {
     readonly property real bellStroke: 2
     // The status control a touch outside every control's own box is on.
     property Item reachedControl: null
+    // When a finger last pressed or lifted anywhere on the panel. Its press and
+    // lift also arrive as a pointer, which is not one resting on the bell.
+    property double lastTouchAt: 0
     readonly property bool oneRowOrColumn: true
     readonly property alias systemTrayState: systemTrayState
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
@@ -98,10 +101,13 @@ ContainmentItem {
     property bool weatherRequestPending: false
     readonly property bool hasBattery: Boolean(compactBattery.properties.IsPresent)
     readonly property var demoNotificationTexts: [
-        i18n("FINAL SCROLL TEST: This message is intentionally much longer than the notification rail can display at once. Hover the paging arrows and keep reading while the remaining sentence glides cleanly into view."),
+        i18n("FINAL SCROLL TEST: This message is intentionally much longer than the notification rail can display at once. Rest on the bell and keep reading while the remaining sentence glides cleanly into view."),
         i18n("System Update: Packages are ready"),
         i18n("Downloads: Transfer completed")
     ]
+    // The bell wears a mark below its rim, in place of its clapper: the lines
+    // waiting, or ✓ once all are checked off and the history is still unread.
+    readonly property bool bellMarked: hasAttention || checkedNotifications.count > 0
     readonly property bool hasAttention: notificationsEnabled
         && (railNotifications.count > 0 || demoNotificationVisible || tickerEvent !== null)
     readonly property int notificationPages: railNotifications.count > 0 ? railNotifications.count
@@ -336,6 +342,7 @@ ContainmentItem {
         contentItem: StatusFace {
             touched: railControlButton.pressed || root.reachedControl === railControlButton
             BellGlyph {
+                objectName: "temperance-bell-glyph"
                 width: root.bellSize
                 height: root.bellSize
                 anchors.centerIn: parent
@@ -343,46 +350,7 @@ ContainmentItem {
                 anchors.verticalCenterOffset: root.bellSize * 0.1
                 strokeWidth: root.bellStroke
                 glyphColor: railControlButton.glyphColor
-                clapperProgress: root.hasAttention ? 0 : 1
-            }
-        }
-    }
-
-    component RailChevronButton: PlasmaComponents.ToolButton {
-        id: railChevronButton
-        required property bool pointsLeft
-        property color glyphColor: railChevronButton.pressed ? Qt.lighter(root.accentColor, 1.18)
-            : railChevronButton.hovered ? root.accentColor : "#F8F8FF"
-        implicitWidth: 26
-        implicitHeight: 26
-        background: null
-        Behavior on glyphColor { ColorAnimation { duration: 120 } }
-        contentItem: Canvas {
-            id: chevronGlyphCanvas
-            implicitWidth: 10
-            implicitHeight: 14
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.reset();
-                ctx.strokeStyle = railChevronButton.glyphColor;
-                ctx.lineWidth = 1.8;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.beginPath();
-                if (railChevronButton.pointsLeft) {
-                    ctx.moveTo(width * 0.65, height * 0.2);
-                    ctx.lineTo(width * 0.35, height * 0.5);
-                    ctx.lineTo(width * 0.65, height * 0.8);
-                } else {
-                    ctx.moveTo(width * 0.35, height * 0.2);
-                    ctx.lineTo(width * 0.65, height * 0.5);
-                    ctx.lineTo(width * 0.35, height * 0.8);
-                }
-                ctx.stroke();
-            }
-            Connections {
-                target: railChevronButton
-                function onGlyphColorChanged() { chevronGlyphCanvas.requestPaint(); }
+                clapperProgress: root.bellMarked ? 0 : 1
             }
         }
     }
@@ -718,8 +686,9 @@ ContainmentItem {
     }
 
     // A finger has no pointer to rest on the bell, so the ticker answers a
-    // sideways flick. The line shown, a notification or today's event, is set
-    // aside into the history and the next comes up; with no line showing, the
+    // sideways flick. The line shown is checked off: a notification leaves the
+    // ticker as a timed-out popup does, unread in the history until the history
+    // is opened, and today's event is marked seen; the next comes up; with no line showing, the
     // flick brings up the latest first, so nothing is set aside unseen. Lines
     // stay up a while after the finger lifts, as under a resting pointer.
     property string tickerCarry: ""
@@ -786,9 +755,9 @@ ContainmentItem {
             notificationMessageLayer.x = 2;
             if (railNotifications.count > 0) {
                 const row = Math.min(liveNotificationView.currentIndex, railNotifications.count - 1);
-                notificationHistory.setData(railNotifications.mapToSource(railNotifications.index(row, 0)),
-                    true, NotificationManager.Notifications.ReadRole);
+                notificationHistory.expire(railNotifications.mapToSource(railNotifications.index(row, 0)));
                 railNotifications.invalidateFilter();
+                checkedNotifications.invalidateFilter();
                 liveNotificationView.currentIndex = Math.max(0, Math.min(row, railNotifications.count - 1));
             } else if (demoNotificationVisible) {
                 if (demoNotificationIndex < demoNotificationTexts.length - 1) demoNotificationIndex++;
@@ -826,8 +795,7 @@ ContainmentItem {
         id: touchRevealRelease
         interval: 4000
         onTriggered: {
-            if (!sharedControlsHover.hovered && !reviewNotificationsButton.hovered
-                    && !nextNotificationButton.hovered && !tickerDrag.active)
+            if (!notificationControls.pointerResting() && !tickerDrag.active)
                 notificationControls.revealed = false;
         }
     }
@@ -1039,8 +1007,11 @@ ContainmentItem {
     // the panel's height above and below the row.
     TapHandler {
         id: statusReach
-        onPressedChanged: root.reachedControl = pressed
-            ? root.reachedControlAt(point.scenePressPosition) : null
+        onPressedChanged: {
+            if (point.device && point.device.type === PointerDevice.TouchScreen)
+                root.lastTouchAt = Date.now();
+            root.reachedControl = pressed ? root.reachedControlAt(point.scenePressPosition) : null;
+        }
         onTapped: eventPoint => {
             const control = root.reachedControlAt(eventPoint.scenePosition);
             if (control) control.activate();
@@ -1227,7 +1198,9 @@ ContainmentItem {
         filterRoleName: "read"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
-            const unread = !sourceModel.data(idx, filterRole)
+            // Unread as the history counts it, so opening the history takes
+            // its lines off the ticker.
+            const unread = root.unreadInHistory(sourceModel, idx)
                 || root.isFreshLogoutCancellation(sourceModel, idx);
             const reservedForBanner = root.notificationsEnabled
                 && Plasmoid.configuration.showPriorityBanners
@@ -1236,9 +1209,44 @@ ContainmentItem {
             // presentation. Do not queue another automatic readout.
             return unread && !reservedForBanner
                 && !root.isPriorityNotificationMinimized(sourceModel, idx)
+                && !root.isFiledQuietly(sourceModel, idx)
+                && !sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole);
+        }
+        Component.onCompleted: sourceModel = notificationHistory
+    }
+
+    // Lines checked off the ticker that the history has not shown yet: the bell
+    // keeps a ✓ for them until the history is opened. A transfer's end, filed
+    // without crossing the ticker, was never checked and raises none.
+    KItemModels.KSortFilterProxyModel {
+        id: checkedNotifications
+        objectName: "temperance-checked-notifications"
+        filterRowCallback: (sourceRow, sourceParent) => {
+            const idx = sourceModel.index(sourceRow, 0, sourceParent);
+            return root.unreadInHistory(sourceModel, idx)
+                && Boolean(sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole))
                 && !root.isFiledQuietly(sourceModel, idx);
         }
         Component.onCompleted: sourceModel = notificationHistory
+    }
+    Connections {
+        target: notificationHistory
+        function onLastReadChanged() {
+            railNotifications.invalidateFilter();
+            checkedNotifications.invalidateFilter();
+        }
+    }
+
+    // Unread as the history counts it: not marked read, and newer than the
+    // last time the history was opened.
+    function unreadInHistory(model, modelIndex) {
+        if (model.data(modelIndex, NotificationManager.Notifications.ReadRole)) return false;
+        const occurred = model.data(modelIndex, NotificationManager.Notifications.UpdatedRole)
+            || model.data(modelIndex, NotificationManager.Notifications.CreatedRole);
+        const lastRead = notificationHistory.lastRead;
+        const readUntil = lastRead && lastRead.getTime ? lastRead.getTime() : NaN;
+        const occurredMs = occurred && occurred.getTime ? occurred.getTime() : NaN;
+        return !Number.isFinite(readUntil) || !Number.isFinite(occurredMs) || occurredMs > readUntil;
     }
 
     // Logout cancellation entries are short-lived by design. Refresh the two
@@ -1428,12 +1436,10 @@ ContainmentItem {
                         id: notificationControls
                         objectName: "temperance-ticker-controls"
                         visible: root.notificationsEnabled
-                        readonly property real expandedWidth: root.hasAttention
-                            ? root.statusPitch + 30 : root.statusPitch
                         property bool layoutOpen: active || revealed
                         // The notification control is a permanent live icon beside the
-                        // status group. Paging expands left into ticker space.
-                        Layout.preferredWidth: layoutOpen ? expandedWidth : root.statusPitch
+                        // status group, one status pitch wide; the ticker has the rest.
+                        Layout.preferredWidth: root.statusPitch
                         Layout.minimumWidth: Layout.preferredWidth
                         Layout.maximumWidth: Layout.preferredWidth
                         Layout.fillHeight: true
@@ -1443,13 +1449,22 @@ ContainmentItem {
                             && systemTrayState.expanded
                         color: "transparent"
                         clip: true
+                        // A resting pointer, a pen held over it included, shows the
+                        // latest line. A finger does not rest: on the bell it
+                        // opens the history. Its press also arrives as a hover
+                        // from the touchscreen, which is not a pointer resting.
                         HoverHandler {
                             id: sharedControlsHover
                             onHoveredChanged: notificationControls.syncSharedHover()
                         }
+                        function pointerResting() {
+                            return sharedControlsHover.hovered
+                                && Date.now() - root.lastTouchAt > 600
+                                && !(sharedControlsHover.point.device
+                                    && sharedControlsHover.point.device.type === PointerDevice.TouchScreen);
+                        }
                         function syncSharedHover() {
-                            const pointerInside = reviewNotificationsButton.hovered
-                                || nextNotificationButton.hovered || sharedControlsHover.hovered;
+                            const pointerInside = pointerResting();
                             if (pointerInside) {
                                 sharedHoverRelease.stop();
                                 revealed = true;
@@ -1481,8 +1496,7 @@ ContainmentItem {
                             interval: 280
                             repeat: false
                             onTriggered: {
-                                const pointerInside = reviewNotificationsButton.hovered
-                                    || nextNotificationButton.hovered || sharedControlsHover.hovered;
+                                const pointerInside = notificationControls.pointerResting();
                                 if (!pointerInside) notificationControls.revealed = false;
                             }
                         }
@@ -1495,75 +1509,6 @@ ContainmentItem {
                                     notificationControls.layoutOpen = false;
                             }
                         }
-                        Connections {
-                            target: reviewNotificationsButton
-                            function onHoveredChanged() { notificationControls.syncSharedHover(); }
-                        }
-                        Connections {
-                            target: nextNotificationButton
-                            function onHoveredChanged() { notificationControls.syncSharedHover(); }
-                        }
-                        RailChevronButton {
-                            id: nextNotificationButton
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            opacity: notificationControls.revealed && root.hasAttention
-                                ? (root.notificationReviewComplete ? 0.58 : 1) : 0
-                            enabled: notificationControls.revealed && root.hasAttention
-                            property bool canPage: railNotifications.count > 0
-                                ? liveNotificationView.currentIndex < railNotifications.count - 1
-                                : root.demoNotificationVisible
-                                    && root.demoNotificationIndex < root.demoNotificationTexts.length - 1
-                            pointsLeft: true
-                            Behavior on opacity { NumberAnimation { duration: 110; easing.type: Easing.InOutCubic } }
-                            onClicked: {
-                                // The event is the run's last page. The arrow
-                                // lands it in the history as it ends the run.
-                                if (root.eventPage && root.tickerEvent !== null) {
-                                    const more = root.tickerEvents.length > 1;
-                                    root.markEventSeen(root.tickerEvent.key);
-                                    // The next of today's events takes its
-                                    // place; the run ends when none is left.
-                                    if (more)
-                                        return;
-                                    root.eventPage = false;
-                                    root.notificationReviewComplete = true;
-                                    notificationHide.restart();
-                                    return;
-                                }
-                                if (!canPage) {
-                                    if (!root.notificationReviewComplete) {
-                                        if (root.tickerEvent !== null) {
-                                            root.eventPage = true;
-                                            root.revealNotificationText();
-                                            return;
-                                        }
-                                        root.notificationReviewComplete = true;
-                                        root.hideNotificationText();
-                                        return;
-                                    }
-                                    root.notificationReviewComplete = false;
-                                    root.eventPage = false;
-                                    if (railNotifications.count > 0) {
-                                        liveNotificationView.currentIndex = 0;
-                                        liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
-                                    } else {
-                                        root.demoNotificationIndex = 0;
-                                    }
-                                    root.revealNotificationText();
-                                    return;
-                                }
-                                root.notificationReviewComplete = false;
-                                if (railNotifications.count > 0) {
-                                    liveNotificationView.currentIndex++;
-                                    liveNotificationView.positionViewAtIndex(liveNotificationView.currentIndex, ListView.Contain);
-                                } else {
-                                    root.demoNotificationIndex++;
-                                }
-                                root.revealNotificationText();
-                            }
-                        }
-
                         RailControlButton {
                             id: reviewNotificationsButton
                             anchors.right: parent.right
@@ -1585,8 +1530,8 @@ ContainmentItem {
                                 + root.bellSize * 0.1 + root.bellSize * 0.708
                                 + root.bellStroke / 2 + 1)
                             visible: opacity > 0
-                            opacity: root.hasAttention ? 1 : 0
-                            scale: root.hasAttention ? 1 : 0.72
+                            opacity: root.bellMarked ? 1 : 0
+                            scale: root.bellMarked ? 1 : 0.72
                             width: Math.max(18, notificationCountLabel.implicitWidth + 6)
                             height: countInk.tightBoundingRect.height
                             z: 40
@@ -1606,12 +1551,8 @@ ContainmentItem {
                                 id: notificationCountLabel
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 y: -baselineOffset - countInk.tightBoundingRect.y
-                                text: root.notificationReviewComplete ? "✓"
-                                    : notificationControls.revealed
-                                    ? (root.eventPage ? root.attentionPages
-                                        : railNotifications.count > 0 ? liveNotificationView.currentIndex + 1
-                                        : root.demoNotificationIndex + 1) + "/" + root.attentionPages
-                                    : root.attentionPages
+                                objectName: "temperance-notification-count"
+                                text: root.attentionPages > 0 ? root.attentionPages : "✓"
                                 // The clock's date size, the smallest text on the
                                 // panel, so the count reads at arm's length.
                                 font.pixelSize: 11
