@@ -149,6 +149,20 @@ private Q_SLOTS:
     QSignalSpy filedDone(&filed, &QDBusPendingCallWatcher::finished);
     QVERIFY(filedDone.wait(3000));
     QTRY_COMPARE(history->property("count").toInt(), 1);
+    // So is a drive plugged in that sat its minute in Ambient unopened.
+    auto drive = transfer;
+    drive.setArguments(
+        {QStringLiteral("T1 fixture"), uint(0), QString(),
+         QStringLiteral("STICK"), QStringLiteral("32.0 GB, plugged in"),
+         QStringList{},
+         QVariantMap{{QStringLiteral("category"),
+                      QStringLiteral("device.added")}},
+         0});
+    QDBusPendingCallWatcher driveFiled(
+        QDBusConnection::sessionBus().asyncCall(drive));
+    QSignalSpy driveDone(&driveFiled, &QDBusPendingCallWatcher::finished);
+    QVERIFY(driveDone.wait(3000));
+    QTRY_COMPARE(history->property("count").toInt(), 2);
     QTest::qWait(300);
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 0);
     // A finger checks a ticker line off with a sideways flick. With no line
@@ -211,7 +225,7 @@ private Q_SLOTS:
     QTest::qWait(400);
     flick();
     QTRY_COMPARE(rail->property("count").toInt(), 0);
-    QCOMPARE(history->property("count").toInt(), 2);
+    QCOMPARE(history->property("count").toInt(), 3);
     QTRY_COMPARE(checked->property("count").toInt(), 1);
     QTRY_COMPARE(count->property("text").toString(), QString::fromUtf8("✓"));
     QTRY_VERIFY(count->parentItem()->opacity() > 0.9);
@@ -233,7 +247,7 @@ private Q_SLOTS:
     QTest::mouseRelease(&window, Qt::LeftButton, {},
                         dragFrom - QPoint(100, 0));
     QTRY_COMPARE(rail->property("count").toInt(), 0);
-    QCOMPARE(history->property("count").toInt(), 3);
+    QCOMPARE(history->property("count").toInt(), 4);
     QTRY_COMPARE(checked->property("count").toInt(), 2);
     // Opening the history reads them, and the check goes.
     QVERIFY(history->setProperty("lastRead", QDateTime::currentDateTime().addSecs(1)));
@@ -368,7 +382,7 @@ private Q_SLOTS:
     QTRY_VERIFY(rightFace->property("lastLiveNotificationCount").toInt() > 0);
     // The ordinary notice plays alone.
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 1);
-    QCOMPARE(history->property("count").toInt(), 4);
+    QCOMPARE(history->property("count").toInt(), 5);
     auto *controls =
         findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *ticker =

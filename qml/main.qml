@@ -198,12 +198,14 @@ ContainmentItem {
             priorityNotificationKey(model, modelIndex)]);
     }
 
-    // A transfer is Ambient's, which keeps its end in view for a minute; the
-    // end of one, in the freedesktop transfer categories, is kept in the
+    // A transfer, and a drive plugged in that nothing mounted, are Ambient's,
+    // which keeps each in view for a minute first. The end of a transfer and
+    // the drive, filed in their freedesktop categories, are kept in the
     // history and never played on the ticker.
     function isFiledQuietly(model, modelIndex) {
         const category = model.data(modelIndex, NotificationManager.Notifications.CategoryRole);
-        return category === "transfer.complete" || category === "transfer.error";
+        return category === "transfer.complete" || category === "transfer.error"
+            || category === "device.added";
     }
 
     function isPriorityNotificationCandidate(model, modelIndex) {
