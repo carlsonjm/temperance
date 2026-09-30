@@ -445,6 +445,8 @@ ContainmentItem {
         // A single-colour symbolic drawing fills its box, so it is asked for
         // smaller than a theme's padded 24 px status icon to draw the same mark.
         readonly property bool symbolic: String(statusIcon).endsWith("-symbolic")
+        // A wired connection draws Lucide's ethernet port, as the bell is drawn.
+        readonly property bool ethernet: statusIcon === "suite-ethernet"
         signal triggered()
         function activate() { triggered(); }
         Layout.preferredWidth: root.statusPitch
@@ -458,7 +460,14 @@ ContainmentItem {
             anchors.fill: parent
             touched: statusIconButtonTap.pressed || root.reachedControl === statusIconButton
             hovered: statusIconButtonHover.hovered
+            EthernetGlyph {
+                visible: statusIconButton.ethernet
+                anchors.centerIn: parent
+                width: 21
+                height: 21
+            }
             Kirigami.Icon {
+                visible: !statusIconButton.ethernet
                 anchors.centerIn: parent
                 source: statusIconButton.statusIcon
                 // 24 is a size themes draw status icons at, so the theme's
@@ -838,11 +847,15 @@ ContainmentItem {
     // network-wireless-60-locked, and adds -symbolic to the name in a panel.
     // The freedesktop symbolic names carry the same states, and themes draw
     // them as bold single-colour marks that sit with the other status icons.
-    // A name with no counterpart is kept.
+    // A wired connection draws Lucide's ethernet port in the bell's line, rather
+    // than a theme's network diagram; a cable pulled keeps the theme's own
+    // disconnected mark. A name with no counterpart is kept.
     function symbolicNetworkIcon(icon) {
         const name = String(icon).replace(/-symbolic$/, "");
         const strength = { "100": "excellent", "80": "excellent", "60": "good",
             "40": "ok", "20": "weak", "0": "none", "00": "none" };
+        if (/^network-wired(?:-activated)?(?:-limited|-locked)?$/.test(name))
+            return "suite-ethernet";
         const wireless = /^network-wireless-(?:connected-)?([0-9]+)(-locked)?$/.exec(name);
         if (wireless && strength[wireless[1]] !== undefined)
             return "network-wireless-signal-" + strength[wireless[1]]
@@ -852,8 +865,6 @@ ContainmentItem {
             "network-wireless-disconnected": "network-wireless-disconnected-symbolic",
             "network-wireless-off": "network-wireless-disabled-symbolic",
             "network-wireless-hotspot": "network-wireless-hotspot-symbolic",
-            "network-wired": "network-wired-symbolic",
-            "network-wired-activated": "network-wired-symbolic",
             "network-wired-disconnected": "network-wired-disconnected-symbolic",
             "network-vpn": "network-vpn-symbolic",
             "network-flightmode-on": "airplane-mode-symbolic",
@@ -1525,12 +1536,13 @@ ContainmentItem {
                             id: notificationCountBadge
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
                             // Bell rim: centered canvas, its optical offset,
-                            // 0.708 normalized rim, half the stroke. Keep one
-                            // logical pixel below that painted rim.
+                            // 0.708 normalized rim, half the stroke. Keep three
+                            // logical pixels below that painted rim, so the
+                            // count reads apart from the bell.
                             y: Math.min(notificationControls.height - height,
                                 notificationControls.height / 2 - root.bellSize / 2
                                 + root.bellSize * 0.1 + root.bellSize * 0.708
-                                + root.bellStroke / 2 + 1)
+                                + root.bellStroke / 2 + 3)
                             visible: opacity > 0
                             opacity: root.bellMarked ? 1 : 0
                             scale: root.bellMarked ? 1 : 0.72
@@ -2053,9 +2065,16 @@ ContainmentItem {
                 Layout.minimumWidth: Layout.preferredWidth
                 Layout.maximumWidth: Layout.preferredWidth
                 Layout.fillHeight: true
-                Accessible.name: i18n("Battery and Control Center")
+                Accessible.name: i18n("Battery")
                 Accessible.role: Accessible.Button
-                function activate() { root.openSurface("control"); }
+                // Plasma's Power and Battery page, as Control Center's battery
+                // row opens it; Control Center itself, where that page is missing.
+                function activate() {
+                    if (root.appletsById["org.kde.plasma.battery"])
+                        root.activateAppletById("org.kde.plasma.battery");
+                    else
+                        root.openSurface("control");
+                }
 
                 StatusFace {
                     anchors.fill: parent

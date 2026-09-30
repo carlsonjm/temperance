@@ -190,12 +190,18 @@ Item {
             implicitWidth: 18
             implicitHeight: 18
         }
-        background: Rectangle {
-            radius: height / 2
-            color: powerPill.hovered || powerPill.down ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-            border.width: 1
-            border.color: powerPill.activeFocus ? "#F8F8FF" : "#5a5a5a"
-            Behavior on color { ColorAnimation { duration: 120 } }
+        // The title bar's pill: a 34 x 22 grey pill inside the 42 x 30 touch,
+        // with no outline, lighter under the pointer and lighter again pressed.
+        background: Item {
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 4
+                radius: height / 2
+                color: powerPill.down ? "#4A4A4A" : powerPill.hovered ? "#333333" : "#242424"
+                border.width: powerPill.visualFocus ? 1 : 0
+                border.color: "#F8F8FF"
+                Behavior on color { ColorAnimation { duration: 120 } }
+            }
         }
         HeaderToolTip { text: powerPill.text }
     }

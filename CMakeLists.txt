@@ -118,6 +118,7 @@ plasma_add_applet(studio.warbler.temperance
         qml/ConfigGeneral.qml
         qml/ControlCenterPage.qml
         qml/CurrentItemHighLight.qml
+        qml/EthernetGlyph.qml
         qml/ExpandedRepresentation.qml
         qml/ExpanderArrow.qml
         qml/HiddenItemsView.qml

@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The battery opens Plasma's Power and Battery page, as Control Center's battery
+  row does; the network icon opens Control Center. A wired connection shows
+  Lucide's ethernet port, drawn with the bell's line. The notification count
+  sits a little lower under the bell, and Control Center's power pill is a
+  flat grey pill like the title bar's.
 - A sideways flick, by finger or mouse, checks the ticker's line off, unread in
   the history, and brings the next up; the arrow is gone, and its width is the
   ticker's. Once every line is checked off the bell shows ✓ until the history

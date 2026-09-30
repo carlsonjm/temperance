@@ -23,6 +23,7 @@
     "performance": "gauge"
   },
   "exceptions": {
-    "notification-animated": "qml/BellGlyph.qml (Lucide-derived segmented geometry for clapper and slash animation)"
+    "notification-animated": "qml/BellGlyph.qml (Lucide-derived segmented geometry for clapper and slash animation)",
+    "network-wired": "qml/EthernetGlyph.qml (Lucide ethernet-port geometry drawn at the bell's 2 px line)"
   }
 }

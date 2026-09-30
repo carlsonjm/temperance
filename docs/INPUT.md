@@ -6,7 +6,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Task | Touch | Keyboard |
 | --- | --- | --- |
 | Notifications & events | Tap the bell | — |
-| Control Center | Tap the network icon or the battery | — |
+| Control Center | Tap the network icon | — |
 | System Tray | Tap the tray icon | — |
 | Calendar | Tap the clock | — |
 | Weather | Tap the weather icon | — |
@@ -61,7 +61,8 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Input | What happens |
 | --- | --- |
-| Tap or click the network icon or the battery | Opens Control Center. |
+| Tap or click the network icon | Opens Control Center. |
+| Tap or click the battery in the bar | Opens Plasma's Power and Battery page, or Control Center where that page is missing. |
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
 | Tap or click the battery | Opens the battery page. |

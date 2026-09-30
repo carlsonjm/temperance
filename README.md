@@ -17,7 +17,7 @@ manager, and other panel widgets remain independent.
 | Task | Touch | Keyboard |
 | --- | --- | --- |
 | Notifications & events | Tap the bell | — |
-| Control Center | Tap the network icon or the battery | — |
+| Control Center | Tap the network icon | — |
 | System Tray | Tap the tray icon | — |
 | Calendar | Tap the clock | — |
 | Weather | Tap the weather icon | — |
