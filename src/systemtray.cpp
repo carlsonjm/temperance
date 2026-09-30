@@ -70,6 +70,13 @@ void SystemTray::requestSessionAction(const QString &action)
         else Q_EMIT sessionActionFailed();
         return;
     }
+    // Locking asks nothing first: it loses no work.
+    if (action == u"lock"_s) {
+        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
+        if (session && session->canLock()) session->lock();
+        else Q_EMIT sessionActionFailed();
+        return;
+    }
     const auto message = sessionActionPrompt(action);
     if (message.type() != QDBusMessage::MethodCallMessage) return;
     auto *watcher = new QDBusPendingCallWatcher(

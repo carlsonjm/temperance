@@ -510,6 +510,32 @@ private Q_SLOTS:
     QTest::mouseMove(&window, bellCentre + QPoint(0, 1));
     QTest::mouseMove(&window, bellCentre);
     QTRY_VERIFY(tickerControls->property("revealed").toBool());
+
+    // A line shorter than the ticker rests against the bell it belongs to,
+    // however wide the gap to the dock.
+    hint(taskFace, "Layout.preferredWidth", 40.);
+    hint(taskFace, "Layout.maximumWidth", 40.);
+    QTest::mouseMove(&window, {0, 0});
+    tickerControls->setProperty("revealed", false);
+    QTRY_VERIFY(!rightFace->property("notificationCopyActive").toBool());
+    QVERIFY(notify(QStringLiteral("Hi")));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
+    QTRY_VERIFY_WITH_TIMEOUT(!rightFace->property("notificationCopyActive").toBool(), 15000);
+    QVERIFY(tickerControls->setProperty("revealed", true));
+    QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
+    QTest::qWait(600);
+    auto *shortTicker = findItem(rightFace, QStringLiteral("temperance-live-ticker"));
+    QVERIFY(shortTicker);
+    auto *shortLabel = findItem(shortTicker, QStringLiteral("temperance-ticker-label"));
+    QVERIFY(shortLabel);
+    const qreal lineEnd = shortLabel->mapToScene({shortLabel->width(), 0}).x();
+    const qreal bellStart = tickerControls->mapToScene({0, 0}).x();
+    qInfo() << "T1_SHORT" << shortLabel->x() << shortLabel->width()
+            << shortTicker->width() << lineEnd << bellStart;
+    QVERIFY(shortLabel->width() < shortTicker->width() - 40);
+    QVERIFY(bellStart - lineEnd >= 0);
+    QVERIFY(bellStart - lineEnd <= 12);
     face->setParentItem(nullptr);
     qInfo() << "T1_ERRORS" << boundaryError << surfaceError;
     QVERIFY(boundaryError <= 2.);

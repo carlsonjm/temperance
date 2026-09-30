@@ -182,7 +182,8 @@ int main(int argc, char **argv)
     const QStringList glyphs{
         QStringLiteral("ellipsis"), QStringLiteral("settings"), QStringLiteral("plus"),
         QStringLiteral("pin"), QStringLiteral("trash-2"), QStringLiteral("chevron-up"),
-        QStringLiteral("chevron-down"), QStringLiteral("log-out"), QStringLiteral("rotate-cw"),
+        QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
+        QStringLiteral("rotate-cw"),
         QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"),
         QStringLiteral("gauge")
     };

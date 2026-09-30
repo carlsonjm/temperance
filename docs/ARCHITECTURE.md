@@ -49,6 +49,11 @@ above and below is a separate handler that acts only outside the row: a pointer'
 press reaches both it and the control, and acting on both opened a page and closed
 it again.
 
+The bell and the wired connection's port are outlines Temperance draws. They are
+kept to the size of the theme's filled marks beside them, 21 and 18 px in a
+1.75 px line, because an outline reads larger than a filled mark in the same box.
+The bell's count sits 5 px under its rim, in 13 px type.
+
 The protected bell and tray are scaled, not redrawn. The network icon is the
 theme's bold symbolic mark: Plasma's network widget adds `-symbolic` to its own
 state names in a panel, so Temperance drops that ending and maps the name to the
@@ -133,10 +138,11 @@ and all-day events stay in the calendar card.
 
 ## Control Center and tray
 
-Session controls live in the Control Center header. Log Out, Restart and Shut Down
-are on by default and Switch User is opt-in. Log Out calls `org.kde.Shutdown`
-directly; Restart and Shut Down go through `org.kde.LogoutPrompt`, so Plasma
-confirms them. Bluetooth pairing is the installed KDE wizard; Temperance does not
+Session controls live in the Control Center header. Lock, Restart and Shut Down
+stand in the row; Log Out and Switch User wait behind More. All are on by default
+except Switch User, which is opt-in. Lock asks nothing, since it loses no work;
+Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
+`org.kde.LogoutPrompt`, so Plasma confirms them. Bluetooth pairing is the installed KDE wizard; Temperance does not
 implement pairing.
 
 Promoted tray entries become Control Center pills and leave the organized tray,

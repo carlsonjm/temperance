@@ -15,6 +15,7 @@ KCMUtils.ScrollViewKCM {
 
     property color cfg_accentColor
     property list<string> cfg_controlCenterItems: []
+    property bool cfg_showLock
     property bool cfg_showLogout
     property bool cfg_showSwitchUser
     property bool cfg_showRestart
@@ -58,9 +59,9 @@ KCMUtils.ScrollViewKCM {
     header: Kirigami.FormLayout {
         QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Session controls:")
-            text: i18n("Show log out")
-            checked: page.cfg_showLogout
-            onToggled: page.cfg_showLogout = checked
+            text: i18n("Show lock")
+            checked: page.cfg_showLock
+            onToggled: page.cfg_showLock = checked
         }
         QQC2.CheckBox {
             text: i18n("Show restart")
@@ -68,14 +69,19 @@ KCMUtils.ScrollViewKCM {
             onToggled: page.cfg_showRestart = checked
         }
         QQC2.CheckBox {
-            text: i18n("Show switch user in the session menu")
-            checked: page.cfg_showSwitchUser
-            onToggled: page.cfg_showSwitchUser = checked
-        }
-        QQC2.CheckBox {
             text: i18n("Show shut down")
             checked: page.cfg_showShutdown
             onToggled: page.cfg_showShutdown = checked
+        }
+        QQC2.CheckBox {
+            text: i18n("Show log out in the session menu")
+            checked: page.cfg_showLogout
+            onToggled: page.cfg_showLogout = checked
+        }
+        QQC2.CheckBox {
+            text: i18n("Show switch user in the session menu")
+            checked: page.cfg_showSwitchUser
+            onToggled: page.cfg_showSwitchUser = checked
         }
         KQC.ColorButton {
             Kirigami.FormData.label: i18n("Highlight color:")

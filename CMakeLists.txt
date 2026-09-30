@@ -146,6 +146,7 @@ plasma_add_applet(studio.warbler.temperance
         assets/icons/lucide/chevron-down.svg
         assets/icons/lucide/chevron-left.svg
         assets/icons/lucide/chevron-right.svg
+        assets/icons/lucide/lock.svg
         assets/icons/lucide/log-out.svg
         assets/icons/lucide/rotate-cw.svg
         assets/icons/lucide/power.svg

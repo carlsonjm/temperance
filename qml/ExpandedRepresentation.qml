@@ -190,20 +190,31 @@ Item {
             implicitWidth: 18
             implicitHeight: 18
         }
-        // The title bar's pill: a 34 x 22 grey pill inside the 42 x 30 touch,
-        // with no outline, lighter under the pointer and lighter again pressed.
-        background: Item {
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 4
-                radius: height / 2
-                color: powerPill.down ? "#4A4A4A" : powerPill.hovered ? "#333333" : "#242424"
-                border.width: powerPill.visualFocus ? 1 : 0
-                border.color: "#F8F8FF"
-                Behavior on color { ColorAnimation { duration: 120 } }
-            }
+        // A grey pill as large as its 42 x 30 touch, with no outline, lighter
+        // under the pointer and lighter again pressed.
+        background: Rectangle {
+            radius: height / 2
+            color: powerPill.down ? "#4A4A4A" : powerPill.hovered ? "#333333" : "#242424"
+            border.width: powerPill.visualFocus ? 1 : 0
+            border.color: "#F8F8FF"
+            Behavior on color { ColorAnimation { duration: 120 } }
         }
         HeaderToolTip { text: powerPill.text }
+    }
+
+    // A line of the session menu; hidden, it takes no room.
+    component SessionMenuItem: QQC2.MenuItem {
+        id: sessionOption
+        implicitHeight: visible ? 36 : 0
+        contentItem: PlasmaComponents.Label {
+            text: sessionOption.text
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: sessionOption.highlighted ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        }
     }
 
     PlasmaExtras.PlasmoidHeading {
@@ -287,13 +298,15 @@ Item {
             RowLayout {
                 id: sessionActions
                 visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
-                    && (Plasmoid.configuration.showRestart || Plasmoid.configuration.showShutdown || Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser)
+                    && (Plasmoid.configuration.showLock || Plasmoid.configuration.showRestart || Plasmoid.configuration.showShutdown || Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser)
                 spacing: 4
+                // The device's own actions stand in the row; the session's,
+                // log out and switch user, wait behind the ellipsis.
                 HeaderPowerPill {
-                    visible: Plasmoid.configuration.showLogout
-                    glyph: "log-out"
-                    text: i18n("Log out")
-                    onClicked: controlPage.requestSessionAction("logout")
+                    visible: Plasmoid.configuration.showLock
+                    glyph: "lock"
+                    text: i18n("Lock")
+                    onClicked: controlPage.requestSessionAction("lock")
                 }
                 HeaderPowerPill {
                     visible: Plasmoid.configuration.showRestart
@@ -309,7 +322,7 @@ Item {
                 }
                 PlasmaComponents.ToolButton {
                     id: sessionMore
-                    visible: Plasmoid.configuration.showSwitchUser
+                    visible: Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
                     icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis.svg"
@@ -335,20 +348,15 @@ Item {
                             border.width: 1
                             border.color: "#5a5a5a"
                         }
-                        QQC2.MenuItem {
-                            id: switchUserOption
+                        SessionMenuItem {
+                            visible: Plasmoid.configuration.showLogout
+                            text: i18n("Log out")
+                            onTriggered: controlPage.requestSessionAction("logout")
+                        }
+                        SessionMenuItem {
+                            visible: Plasmoid.configuration.showSwitchUser
                             text: i18n("Switch user")
-                            implicitHeight: 36
                             onTriggered: controlPage.requestSessionAction("switchUser")
-                            contentItem: PlasmaComponents.Label {
-                                text: switchUserOption.text
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
-                            background: Rectangle {
-                                radius: height / 2
-                                color: switchUserOption.highlighted ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                            }
                         }
                     }
                 }

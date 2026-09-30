@@ -29,8 +29,11 @@ ContainmentItem {
     // pitch is narrower than a fingertip wants, so each icon also answers a
     // touch anywhere in the panel's height above or below it.
     readonly property int statusPitch: 34
-    readonly property int bellSize: 24
-    readonly property real bellStroke: 2
+    // The drawn outlines, the bell and the wired port, are kept to the size
+    // of the theme's filled marks beside them, in a line lighter than 2 px:
+    // an outline reads larger than a filled mark of the same box.
+    readonly property int bellSize: 21
+    readonly property real bellStroke: 1.75
     // The status control a touch outside every control's own box is on.
     property Item reachedControl: null
     // When a finger last pressed or lifted anywhere on the panel. Its press and
@@ -463,8 +466,9 @@ ContainmentItem {
             EthernetGlyph {
                 visible: statusIconButton.ethernet
                 anchors.centerIn: parent
-                width: 21
-                height: 21
+                width: 18
+                height: 18
+                strokeWidth: root.bellStroke
             }
             Kirigami.Icon {
                 visible: !statusIconButton.ethernet
@@ -1536,13 +1540,14 @@ ContainmentItem {
                             id: notificationCountBadge
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
                             // Bell rim: centered canvas, its optical offset,
-                            // 0.708 normalized rim, half the stroke. Keep three
+                            // 0.708 normalized rim, half the stroke. Keep five
                             // logical pixels below that painted rim, so the
-                            // count reads apart from the bell.
+                            // count reads apart from the bell, and never past
+                            // the bottom of the control.
                             y: Math.min(notificationControls.height - height,
                                 notificationControls.height / 2 - root.bellSize / 2
                                 + root.bellSize * 0.1 + root.bellSize * 0.708
-                                + root.bellStroke / 2 + 3)
+                                + root.bellStroke / 2 + 5)
                             visible: opacity > 0
                             opacity: root.bellMarked ? 1 : 0
                             scale: root.bellMarked ? 1 : 0.72
@@ -1567,9 +1572,9 @@ ContainmentItem {
                                 y: -baselineOffset - countInk.tightBoundingRect.y
                                 objectName: "temperance-notification-count"
                                 text: root.attentionPages > 0 ? root.attentionPages : "✓"
-                                // The clock's date size, the smallest text on the
-                                // panel, so the count reads at arm's length.
-                                font.pixelSize: 11
+                                // Larger than the clock's date, so the count
+                                // reads at arm's length under the smaller bell.
+                                font.pixelSize: 13
                                 font.weight: Font.Medium
                                 color: "#F8F8FF"
                             }

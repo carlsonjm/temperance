@@ -5,8 +5,9 @@
 import QtQuick
 
 // Lucide's ethernet port, drawn with the bell's line: its geometry is
-// Lucide's 24 px grid, scaled to the box, and its stroke stays 2 px at any
-// size. At the network icon's 21 px it is no wider or taller than the bell.
+// Lucide's 24 px grid, scaled to the box, and its stroke keeps the width it
+// is given at any size. The panel draws it at 18 px, the size of the theme's
+// filled status marks beside it.
 Canvas {
     id: glyph
 

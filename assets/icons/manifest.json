@@ -15,6 +15,7 @@
     "clear": "trash-2",
     "collapse": "chevron-up",
     "expand": "chevron-down",
+    "session-lock": "lock",
     "session-logout": "log-out",
     "session-restart": "rotate-cw",
     "session-shutdown": "power",
@@ -24,6 +25,6 @@
   },
   "exceptions": {
     "notification-animated": "qml/BellGlyph.qml (Lucide-derived segmented geometry for clapper and slash animation)",
-    "network-wired": "qml/EthernetGlyph.qml (Lucide ethernet-port geometry drawn at the bell's 2 px line)"
+    "network-wired": "qml/EthernetGlyph.qml (Lucide ethernet-port geometry drawn in the bell's line)"
   }
 }

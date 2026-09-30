@@ -77,7 +77,7 @@ if(NOT expanded_qml MATCHES "i18n\\(\"do not disturb\"\\)"
    OR NOT abstract_item_qml MATCHES "Display configuration")
     message(FATAL_ERROR "Visible notification and system tray copy must follow suite casing rules")
 endif()
-foreach(session_toggle showLogout showRestart showShutdown)
+foreach(session_toggle showLock showLogout showRestart showShutdown)
     if(NOT config_xml MATCHES "<entry name=\"${session_toggle}\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
         message(FATAL_ERROR "Session control ${session_toggle} must default enabled")
     endif()
@@ -94,7 +94,7 @@ if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
 endif()
 if(NOT notification_history_qml MATCHES "textFormat: Text.StyledText"
    OR NOT main_qml MATCHES "criticalSummary.truncated \\|\\| criticalBody.truncated"
-   OR NOT main_qml MATCHES "font.pixelSize: 11"
+   OR NOT main_qml MATCHES "font.pixelSize: 13"
    OR NOT main_qml MATCHES "countInk.tightBoundingRect")
     message(FATAL_ERROR "Formatted notification expansion and measured badge geometry must be preserved")
 endif()
