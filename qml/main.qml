@@ -67,6 +67,10 @@ ContainmentItem {
     property int pendingNotificationCount: 0
     property int notificationAutoBatchSize: 0
     property bool notificationCopyActive: false
+    // A new line has come in beside the bell and is resting there; until it
+    // rests it is arriving, and does not scroll.
+    property bool notificationResting: false
+    readonly property bool notificationArriving: notificationIntro.running && !notificationResting
     property bool notificationSequenceActive: false
     property bool notificationReviewComplete: false
     // The arrow's run ends on the calendar's event, after any unread
@@ -1634,8 +1638,9 @@ ContainmentItem {
                                         notificationDelegate.summary, notificationDelegate.body)
                                     accessibleText: root.notificationDisplayText(notificationDelegate.applicationName,
                                         notificationDelegate.summary, notificationDelegate.body)
-                                    scrollingEnabled: notificationControls.revealed
-                                        && !notificationReveal.running && !root.notificationReviewComplete
+                                    scrollingEnabled: (notificationControls.revealed || root.notificationResting)
+                                        && !root.notificationArriving && !notificationReveal.running
+                                        && !root.notificationReviewComplete
                                 }
                             }
                         }
@@ -1653,41 +1658,73 @@ ContainmentItem {
                                 alignRight: true
                                 exposeOverflow: notificationIntro.running
                                 text: root.demoNotificationTexts[root.demoNotificationIndex]
-                                scrollingEnabled: notificationControls.revealed
-                                    && !notificationReveal.running && !root.notificationReviewComplete
+                                scrollingEnabled: (notificationControls.revealed || root.notificationResting)
+                                    && !root.notificationArriving && !notificationReveal.running
+                                    && !root.notificationReviewComplete
                             }
                         }
                         }
 
+                        // A new line comes out from beside the bell, as today's
+                        // event does, and rests against it rather than crossing
+                        // the gap to the dock; a line too long for the ticker
+                        // comes in until its start reaches the far edge, and
+                        // scrolls once while it rests. It is up as long as a pass
+                        // across the gap took, then goes.
                         SequentialAnimation {
                             id: notificationIntro
+                            readonly property real arrival: root.motionEnabled
+                                ? Math.min(notificationMessageLayer.flybyWidth, notificationContentArea.width) : 0
+                            readonly property int arrivalDuration: root.motionEnabled
+                                ? Math.max(900, arrival * 20) : 0
+                            readonly property int restDuration: Math.max(3000,
+                                (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20
+                                    - arrivalDuration)
+                            onRunningChanged: if (!running) root.notificationResting = false
                             ScriptAction {
                                 script: {
                                     root.notificationCopyActive = true;
-                                    notificationMessageLayer.x = root.motionEnabled
-                                        ? notificationContentArea.width : 2;
+                                    notificationMessageLayer.x = 2 + notificationIntro.arrival;
                                     notificationMessageLayer.opacity = 0;
                                 }
                             }
                             PauseAnimation { duration: root.motionEnabled ? 210 : 0 }
                             ScriptAction {
                                 script: {
-                                    notificationMessageLayer.opacity = 1;
+                                    // Off the ticker's edge until it moves, so
+                                    // only a line that does not move fades in.
+                                    if (notificationIntro.arrival > 0)
+                                        notificationMessageLayer.opacity = 1;
                                 }
                             }
+                            ParallelAnimation {
+                                NumberAnimation {
+                                    target: notificationMessageLayer
+                                    property: "opacity"
+                                    to: 1
+                                    duration: Kirigami.Units.longDuration
+                                    easing.type: Easing.OutCubic
+                                }
+                                NumberAnimation {
+                                    target: notificationMessageLayer
+                                    property: "x"
+                                    to: 2
+                                    duration: notificationIntro.arrivalDuration
+                                    easing.type: Easing.OutQuad
+                                }
+                            }
+                            ScriptAction { script: root.notificationResting = true }
+                            PauseAnimation { duration: notificationIntro.restDuration }
                             NumberAnimation {
                                 target: notificationMessageLayer
-                                property: "x"
-                                to: root.motionEnabled
-                                    ? -Math.max(notificationMessageLayer.width,
-                                        notificationMessageLayer.flybyWidth) : 2
-                                duration: root.motionEnabled ? Math.max(3000,
-                                    (notificationContentArea.width
-                                        + notificationMessageLayer.flybyWidth) * 20) : 1800
-                                easing.type: Easing.Linear
+                                property: "opacity"
+                                to: 0
+                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
+                                easing.type: Easing.InCubic
                             }
                             ScriptAction {
                                 script: {
+                                    root.notificationResting = false;
                                     notificationMessageLayer.opacity = 0;
                                     notificationMessageLayer.x = 2;
                                     // Keep weather suppressed between items while a

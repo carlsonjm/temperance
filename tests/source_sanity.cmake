@@ -132,9 +132,9 @@ if(NOT main_qml MATCHES "component BannerActionButton: Item"
 endif()
 
 if(NOT main_qml MATCHES "motionEnabled: Kirigami.Units.longDuration > 0"
-   OR NOT main_qml MATCHES "root.motionEnabled \\? Math.max\\(3000"
-   OR NOT main_qml MATCHES "root.motionEnabled[\n\r ]+\\? notificationContentArea.width : 2")
-    message(FATAL_ERROR "Notification travel must retain a reduced-motion path")
+   OR NOT main_qml MATCHES "readonly property real arrival: root.motionEnabled"
+   OR NOT main_qml MATCHES "\\? Math.max\\(900, arrival \\* 20\\) : 0")
+    message(FATAL_ERROR "A notification's arrival must retain a reduced-motion path")
 endif()
 
 if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"

@@ -8,6 +8,9 @@ This file records user-visible changes.
   as large as its touch; Log out and Switch user wait behind More. Lock locks at
   once. The bell and the wired connection's port are drawn smaller, to the size
   of the icons beside them, and the bell's count is larger and set lower.
+- A new notification comes out from beside the bell and rests there, as today's
+  event does, instead of crossing the ticker to the dock; one too long to fit
+  scrolls once in place.
 - The installer reports success only once the system holds this package's own
   files, and says whether the restarted panel loaded them, so a run whose copy
   never happened no longer reads as an install.

@@ -387,6 +387,19 @@ private Q_SLOTS:
         findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *ticker =
         findItem(rightFace, QStringLiteral("temperance-ticker-content"));
+    // Too long for the ticker, it comes in until its start reaches the far
+    // edge and, resting there, scrolls once to its end.
+    if (rightFace->property("motionEnabled").toBool()) {
+      QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationResting").toBool(), 8000);
+      auto *arriving = findItem(rightFace, QStringLiteral("temperance-live-ticker"));
+      QVERIFY(arriving);
+      auto *arrivingLabel = findItem(arriving, QStringLiteral("temperance-ticker-label"));
+      QVERIFY(arrivingLabel);
+      const qreal restStart = arrivingLabel->mapToScene({0, 0}).x();
+      qInfo() << "T1_LONG_REST" << restStart << ticker->mapToScene({0, 0}).x();
+      QVERIFY(qAbs(restStart - ticker->mapToScene({0, 0}).x()) <= 4);
+      QTRY_VERIFY_WITH_TIMEOUT(arrivingLabel->mapToScene({0, 0}).x() < restStart - 20, 5000);
+    }
     QVERIFY(controls->setProperty("revealed", true));
     QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
     QTest::qWait(600);
@@ -490,7 +503,7 @@ private Q_SLOTS:
     QTRY_VERIFY(!rightFace->property("notificationCopyActive").toBool());
     QVERIFY(notify(QStringLiteral("Roll fixture")));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
-    // It rolls past once, then the ticker rests.
+    // It comes in once and rests, then goes.
     QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
     QTRY_VERIFY_WITH_TIMEOUT(!rightFace->property("notificationCopyActive").toBool(), 15000);
     QVERIFY(!tickerControls->property("revealed").toBool());
@@ -521,21 +534,33 @@ private Q_SLOTS:
     QVERIFY(notify(QStringLiteral("Hi")));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
     QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
-    QTRY_VERIFY_WITH_TIMEOUT(!rightFace->property("notificationCopyActive").toBool(), 15000);
-    QVERIFY(tickerControls->setProperty("revealed", true));
-    QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
-    QTest::qWait(600);
     auto *shortTicker = findItem(rightFace, QStringLiteral("temperance-live-ticker"));
     QVERIFY(shortTicker);
     auto *shortLabel = findItem(shortTicker, QStringLiteral("temperance-ticker-label"));
     QVERIFY(shortLabel);
-    const qreal lineEnd = shortLabel->mapToScene({shortLabel->width(), 0}).x();
     const qreal bellStart = tickerControls->mapToScene({0, 0}).x();
+    const auto gapToBell = [&] {
+      return bellStart - shortLabel->mapToScene({shortLabel->width(), 0}).x();
+    };
+    // On arrival it comes out beside the bell, rests there, and does not go
+    // on toward the dock.
+    QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationResting").toBool(), 6000);
+    const qreal arrived = gapToBell();
+    QTest::qWait(1500);
+    QVERIFY(rightFace->property("notificationCopyActive").toBool());
+    qInfo() << "T1_ARRIVAL" << arrived << gapToBell();
+    QVERIFY(arrived >= 0 && arrived <= 12);
+    QVERIFY(qAbs(gapToBell() - arrived) < 1);
+    QTRY_VERIFY_WITH_TIMEOUT(!rightFace->property("notificationCopyActive").toBool(), 20000);
+    // Brought back under a resting pointer, it is in the same place.
+    QVERIFY(tickerControls->setProperty("revealed", true));
+    QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
+    QTest::qWait(600);
     qInfo() << "T1_SHORT" << shortLabel->x() << shortLabel->width()
-            << shortTicker->width() << lineEnd << bellStart;
+            << shortTicker->width() << gapToBell();
     QVERIFY(shortLabel->width() < shortTicker->width() - 40);
-    QVERIFY(bellStart - lineEnd >= 0);
-    QVERIFY(bellStart - lineEnd <= 12);
+    QVERIFY(gapToBell() >= 0);
+    QVERIFY(gapToBell() <= 12);
     face->setParentItem(nullptr);
     qInfo() << "T1_ERRORS" << boundaryError << surfaceError;
     QVERIFY(boundaryError <= 2.);

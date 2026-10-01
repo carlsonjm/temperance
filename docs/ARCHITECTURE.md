@@ -125,6 +125,12 @@ settings in your home folder, and anyone holding it can read that
 calendar. Linked calendars are read-only: writing would need a sign-in per service,
 and Google reviews apps that write to calendars.
 
+A new notification comes out from beside the bell and rests against it, rather
+than crossing the gap to the dock, which on a wide display took the line far
+from the bell it belongs to. A line too long for the ticker comes in until its
+start reaches the far edge, then scrolls once while it rests. It stays up 20 ms
+for each pixel of gap and line together, at least three seconds, then goes.
+
 Today's next timed event rides the ticker rather than a line beside the time. It
 reads in as a notification does and holds still with a dot in its calendar's color
 until it is moved into the history, a notification takes the ticker, or it ends.
