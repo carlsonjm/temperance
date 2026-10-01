@@ -5,7 +5,7 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Task | Touch | Keyboard |
 | --- | --- | --- |
-| Notifications & events | Tap the bell | — |
+| Notifications & Events | Tap the bell | — |
 | Control Center | Tap the network icon | — |
 | System Tray | Tap the tray icon | — |
 | Calendar | Tap the clock | — |
@@ -22,11 +22,11 @@ what you see happen. Other documents cite this one and do not restate it.
 | Escape, with a page open | Closes the page. |
 | Tap or click the pin in a page's header | Keeps the page open when focus leaves it; shown only when turned on in settings. |
 
-## Notifications & events
+## Notifications & Events
 
 | Input | What happens |
 | --- | --- |
-| Tap or click the bell | Opens Notifications & events, which reads what waited, so the ticker clears. |
+| Tap or click the bell | Opens Notifications & Events, which reads what waited, so the ticker clears. |
 | Tap or click a notification | Runs the application's default action, or opens the application when it has none. |
 | Tap or click an action pill | Runs that action only. |
 | Tap or click Dismiss on a notification | Removes that notification. |
@@ -43,7 +43,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Input | What happens |
 | --- | --- |
 | Pointer resting on the bell | The bell takes the highlight color, and the ticker shows its latest line again. A finger on the bell only opens the history. |
-| Tap or click the ticker's line | Opens Notifications & events. |
+| Tap or click the ticker's line | Opens Notifications & Events. |
 | Flick the ticker's line sideways, or drag it, by finger or mouse | Checks it off: a notification leaves the ticker and waits unread in the history, today's event is marked seen, and the next line comes up. The bell counts the lines still waiting and, once all are checked off, shows ✓ until the history is opened. Let go early and the line springs back. |
 | Flick sideways over the ticker with no line showing | Brings up the latest line, and sets nothing aside. After a touch the line stays a few seconds. |
 
@@ -62,12 +62,13 @@ what you see happen. Other documents cite this one and do not restate it.
 | Input | What happens |
 | --- | --- |
 | Tap or click the network icon | Opens Control Center. |
-| Tap or click the battery in the bar | Opens Plasma's Power and Battery page, or Control Center where that page is missing. |
+| Tap or click the battery in the bar | Opens Plasma's Power and Battery page, else Control Center. |
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
 | Tap or click the battery | Opens the battery page. |
 | Choose a Profile | Changes the power profile; shown only where the machine offers profiles. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
+| Tap or click Back | Returns to the page that opened this one. |
 | Tap, click, right-click, middle-click, scroll or press and hold a pill | The same as on that entry in the System Tray. |
 
 ### Session actions
@@ -85,7 +86,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Input | What happens |
 | --- | --- |
 | Tap or click the tray icon | Opens the System Tray. |
-| Tap or click an entry | Opens its page, or acts as its application says; an application's entry then closes the popup, so what it does reaches the window in use. |
+| Tap or click an entry | Opens its page, or acts as its application says and closes the popup, so the action reaches the window in use. |
 | Right-click or press and hold an entry | Opens the entry's own menu. |
 | Middle-click an entry | Runs the entry's secondary action, as in Plasma's tray. |
 | Wheel over an entry | Passes the scroll to the entry, such as changing the volume. |

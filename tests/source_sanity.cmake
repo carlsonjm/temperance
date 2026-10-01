@@ -87,7 +87,7 @@ if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*
 endif()
 if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
    OR NOT expanded_qml MATCHES "bluetoothPairingPill"
-   OR NOT expanded_qml MATCHES "addBluetoothHover.hovered \\|\\| addBluetoothDevice.down"
+   OR NOT expanded_qml MATCHES "addBluetoothHover.hovered \\? \"#333333\""
    OR NOT expanded_qml MATCHES "org.kde.plasma.bluetooth"
    OR NOT expanded_qml MATCHES "Add new device")
     message(FATAL_ERROR "Bluetooth must offer the native pairing wizard")
@@ -146,7 +146,7 @@ if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"
     message(FATAL_ERROR "Pinned Lucide suite action assets are incomplete")
 endif()
 if(expanded_qml MATCHES "contentItem:[\n\r ]*Item[\n\r ]*\\{[\n\r ]*SuiteIcon"
-   OR NOT expanded_qml MATCHES "component HeaderPowerPill:[^}]+leftPadding: 12[^}]+topPadding: 6[^}]+contentItem: SuiteIcon[\n\r ]*\\{[^}]+implicitWidth: 18[^}]+implicitHeight: 18")
+   OR NOT expanded_qml MATCHES "component HeaderPill:[^}]+leftPadding: 12[^}]+topPadding: 6[^}]+contentItem: SuiteIcon[\n\r ]*\\{[^}]+implicitWidth: 18[^}]+implicitHeight: 18")
     message(FATAL_ERROR "Header session glyphs must use a directly sized SuiteIcon content item")
 endif()
 

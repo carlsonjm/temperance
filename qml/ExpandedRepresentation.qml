@@ -127,10 +127,10 @@ Item {
 
     function pageTitle() {
         if (systemTrayState.activeApplet) return systemTrayState.activeApplet.plasmoid.title;
-        if (systemTrayState.page === "tray") return i18n("System tray");
-        if (systemTrayState.page === "notifications") return i18n("Notifications & events");
+        if (systemTrayState.page === "tray") return i18n("System Tray");
+        if (systemTrayState.page === "notifications") return i18n("Notifications & Events");
         if (systemTrayState.page === "calendar") return calendarPage.title;
-        return i18n("Control center");
+        return i18n("Control Center");
     }
 
     component HeaderToolTip: PlasmaComponents.ToolTip {
@@ -176,10 +176,13 @@ Item {
         HeaderToolTip { text: arrow.text }
     }
 
-    component HeaderPowerPill: PlasmaComponents.ToolButton {
+    // The header's button: a grey pill as large as its 42 x 30 touch, with a
+    // 14 px glyph and no outline, lighter under the pointer, lighter again
+    // pressed or on. Every header control but the calendar's takes this grey.
+    component HeaderPill: PlasmaComponents.ToolButton {
         id: powerPill
         required property string glyph
-        objectName: "temperance-session-" + glyph
+        objectName: "temperance-header-" + glyph
         Layout.preferredWidth: 42
         Layout.minimumWidth: 42
         Layout.maximumWidth: 42
@@ -199,17 +202,48 @@ Item {
             implicitWidth: 18
             implicitHeight: 18
         }
-        // A grey pill as large as its 42 x 30 touch, with no outline, lighter
-        // under the pointer and lighter again pressed.
         background: Rectangle {
             radius: height / 2
-            color: powerPill.down ? "#4A4A4A" : pillHover.hovered ? "#333333" : "#242424"
+            color: powerPill.down || powerPill.checked ? "#4A4A4A"
+                : pillHover.hovered ? "#333333" : "#242424"
             border.width: powerPill.visualFocus ? 1 : 0
             border.color: "#F8F8FF"
             Behavior on color { ColorAnimation { duration: 120 } }
         }
         PointerHover { id: pillHover }
         HeaderToolTip { text: powerPill.text }
+    }
+
+    // The header's grey as a 30 px circle, for what moves around the header
+    // rather than acting: back, and the session menu.
+    component HeaderCircle: PlasmaComponents.ToolButton {
+        id: headerCircle
+        required property string glyph
+        // Held lit while what it opened is open.
+        property bool held: false
+        Layout.preferredWidth: 30
+        Layout.preferredHeight: 30
+        Layout.maximumWidth: 30
+        Layout.maximumHeight: 30
+        padding: 6
+        display: PlasmaComponents.AbstractButton.IconOnly
+        Accessible.name: text
+        contentItem: SuiteIcon {
+            glyph: headerCircle.glyph
+            glyphInset: 1
+            implicitWidth: 18
+            implicitHeight: 18
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: headerCircle.down || headerCircle.held ? "#4A4A4A"
+                : circleHover.hovered ? "#333333" : "#242424"
+            border.width: headerCircle.visualFocus ? 1 : 0
+            border.color: "#F8F8FF"
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        PointerHover { id: circleHover }
+        HeaderToolTip { text: headerCircle.text }
     }
 
     // A line of the session menu; hidden, it takes no room.
@@ -249,6 +283,16 @@ Item {
             // On the calendar the arrows end on the grid's 16 px margin line.
             Layout.rightMargin: popup.pageInset
             Layout.topMargin: popup.headerSafety
+
+            // A page an applet shows, Networks say, goes back to the page it
+            // was opened from.
+            HeaderCircle {
+                objectName: "temperance-header-back"
+                visible: systemTrayState.activeApplet !== null
+                glyph: "chevron-left"
+                text: i18n("Back")
+                onClicked: systemTrayState.setActiveApplet(null)
+            }
 
             Kirigami.Heading {
                 Layout.fillWidth: true
@@ -313,53 +357,33 @@ Item {
                 spacing: 4
                 // The device's own actions stand in the row; the session's,
                 // log out and switch user, wait behind the ellipsis.
-                HeaderPowerPill {
+                HeaderPill {
                     visible: Plasmoid.configuration.showLock
                     glyph: "lock"
                     text: i18n("Lock")
                     onClicked: controlPage.requestSessionAction("lock")
                 }
-                HeaderPowerPill {
+                HeaderPill {
                     visible: Plasmoid.configuration.showRestart
                     glyph: "rotate-cw"
                     text: i18n("Restart")
                     onClicked: controlPage.requestSessionAction("restart")
                 }
-                HeaderPowerPill {
+                HeaderPill {
                     visible: Plasmoid.configuration.showShutdown
                     glyph: "power"
                     text: i18n("Shut down")
                     onClicked: controlPage.requestSessionAction("shutdown")
                 }
-                PlasmaComponents.ToolButton {
+                HeaderCircle {
                     id: sessionMore
                     objectName: "temperance-session-more"
                     visible: Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser
-                    // The power row's grey, as a 30 px circle, so the menu
-                    // reads as part of the row but not as one more action.
-                    Layout.preferredWidth: 30
-                    Layout.preferredHeight: 30
-                    padding: 6
+                    glyph: "ellipsis-vertical"
                     icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis-vertical.svg"
-                    icon.color: "#F8F8FF"
-                    contentItem: SuiteIcon {
-                        glyph: "ellipsis-vertical"
-                        glyphInset: 1
-                        implicitWidth: 18; implicitHeight: 18
-                    }
-                    background: Rectangle {
-                        radius: height / 2
-                        color: sessionMore.down || sessionMenu.visible ? "#4A4A4A"
-                            : sessionMoreHover.hovered ? "#333333" : "#242424"
-                        border.width: sessionMore.visualFocus ? 1 : 0
-                        border.color: "#F8F8FF"
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                    }
-                    PointerHover { id: sessionMoreHover }
-                    display: PlasmaComponents.AbstractButton.IconOnly
+                    held: sessionMenu.visible
                     text: i18n("More session options")
                     onClicked: sessionMenu.open()
-                    HeaderToolTip { text: parent.text }
                     QQC2.Menu {
                         id: sessionMenu
                         y: sessionMore.height + 4
@@ -388,35 +412,22 @@ Item {
                 onVisibleChanged: if (!visible) sessionMenu.close()
             }
 
-            PlasmaComponents.ToolButton {
+            HeaderPill {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
+                glyph: "settings"
                 icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/settings.svg"
-                icon.color: "#F8F8FF"
-                contentItem: SuiteIcon {
-                    glyph: "settings"
-                    implicitWidth: 20; implicitHeight: 20
-                }
-                display: PlasmaComponents.AbstractButton.IconOnly
                 text: i18n("Open system settings")
                 onClicked: {
                     systemTrayState.expanded = false;
                     KCM.KCMLauncher.openSystemSettings("kcm_landingpage");
                 }
-                HeaderToolTip { text: parent.text }
             }
 
-            PlasmaComponents.ToolButton {
+            HeaderPill {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sliders-horizontal.svg"
-                icon.color: "#F8F8FF"
-                contentItem: SuiteIcon {
-                    glyph: "sliders-horizontal"
-                    implicitWidth: 20; implicitHeight: 20
-                }
-                display: PlasmaComponents.AbstractButton.IconOnly
+                glyph: "sliders-horizontal"
                 text: i18n("Configure system tray icons")
                 onClicked: Plasmoid.internalAction("configure").trigger()
-                HeaderToolTip { text: parent.text }
             }
 
             PlasmaComponents.ToolButton {
@@ -449,10 +460,10 @@ Item {
                         width: parent.width
                         height: 30
                         radius: height / 2
-                        color: addBluetoothHover.hovered || addBluetoothDevice.down
-                            ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                        border.width: 1
-                        border.color: addBluetoothDevice.activeFocus ? "#F8F8FF" : "#5a5a5a"
+                        color: addBluetoothDevice.down ? "#4A4A4A"
+                            : addBluetoothHover.hovered ? "#333333" : "#242424"
+                        border.width: addBluetoothDevice.visualFocus ? 1 : 0
+                        border.color: "#F8F8FF"
                         Behavior on color { ColorAnimation { duration: 120 } }
                     }
                 }
@@ -464,18 +475,16 @@ Item {
                 HeaderToolTip { text: parent.text }
             }
 
-            PlasmaComponents.ToolButton {
+            HeaderPill {
                 readonly property bool isWeather: systemTrayState.activeApplet
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.weather"
                 visible: isWeather && String(Plasmoid.configuration.weatherApplication || "").length > 0
-                icon.name: "weather-clear-symbolic"
-                display: PlasmaComponents.AbstractButton.IconOnly
+                glyph: "cloud-sun"
                 text: i18n("Open weather")
                 onClicked: {
                     systemTrayState.expanded = false;
                     Plasmoid.launchApplication(Plasmoid.configuration.weatherApplication);
                 }
-                HeaderToolTip { text: parent.text }
             }
 
             RowLayout {
@@ -494,6 +503,7 @@ Item {
 
                 Rectangle {
                     id: doNotDisturbPill
+                    objectName: "temperance-do-not-disturb"
                     readonly property bool checked: NotificationManager.Server.inhibited
                     Layout.preferredWidth: 42
                     Layout.minimumWidth: 42
@@ -503,9 +513,7 @@ Item {
                     radius: height / 2
                     clip: true
                     color: checked ? root.accentColor
-                        : dndHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
-                    border.width: checked ? 0 : 1
-                    border.color: "#333333"
+                        : dndTap.pressed ? "#4A4A4A" : dndHover.hovered ? "#333333" : "#242424"
                     Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                     BellGlyph {
@@ -517,8 +525,9 @@ Item {
                         strokeWidth: 1.55
                     }
 
-                    HoverHandler { id: dndHover }
+                    PointerHover { id: dndHover }
                     TapHandler {
+                        id: dndTap
                         onTapped: NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited
                     }
                     HeaderToolTip {
@@ -528,20 +537,13 @@ Item {
                 }
             }
 
-            PlasmaComponents.ToolButton {
+            HeaderPill {
                 visible: Plasmoid.configuration.showPinButton
                 checkable: true
                 checked: Plasmoid.configuration.pin
                 onToggled: Plasmoid.configuration.pin = checked
-                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/pin.svg"
-                icon.color: "#F8F8FF"
-                contentItem: SuiteIcon {
-                    glyph: "pin"
-                    implicitWidth: 20; implicitHeight: 20
-                }
-                display: PlasmaComponents.AbstractButton.IconOnly
+                glyph: "pin"
                 text: i18n("Keep open")
-                HeaderToolTip { text: parent.text }
             }
         }
 

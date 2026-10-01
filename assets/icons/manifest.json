@@ -21,6 +21,8 @@
     "session-shutdown": "power",
     "configure": "sliders-horizontal",
     "brightness": "sun",
+    "open-weather": "cloud-sun",
+    "back": "chevron-left",
     "performance": "gauge"
   },
   "exceptions": {

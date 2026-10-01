@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Page titles read Notifications & Events, Control Center and System Tray. A
+  page an entry opens, Networks say, has Back, which returns to the page it
+  came from. The System Tray's buttons, Do Not Disturb, Bluetooth's Add new
+  device, weather's button and the pin are the power row's grey pill.
 - Control Center's power row holds Lock, Restart and Shut down, each a grey pill
   as large as its touch; Log out and Switch user wait behind More. Lock locks at
   once; More is a grey circle with a vertical ellipsis. The header's buttons

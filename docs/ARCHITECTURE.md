@@ -137,7 +137,7 @@ The lead says when without a second clock: Now while it is under way, In and the
 minutes within the hour of its start, otherwise its start in the clock's form. A
 notification leads with its application in secondary white, and a line too long
 for the ticker ends in an ellipsis while it stands still. Events and notifications
-share the history, titled Notifications & events, today's events first; holidays
+share the history, titled Notifications & Events, today's events first; holidays
 and all-day events stay in the calendar card.
 
 ## Control Center and tray
@@ -146,8 +146,9 @@ Session controls live in the Control Center header. Lock, Restart and Shut Down
 stand in the row; Log Out and Switch User wait behind More. All are on by default
 except Switch User, which is opt-in. Lock asks nothing, since it loses no work;
 Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
-`org.kde.LogoutPrompt`, so Plasma confirms them. In tablet mode Plasma's buttons
-ignore the pointer, so the header's buttons watch a mouse, trackpad or pen
+`org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
+calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
+Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
 themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing is the installed KDE wizard; Temperance does not
 implement pairing.
 

@@ -152,6 +152,7 @@ plasma_add_applet(studio.warbler.temperance
         assets/icons/lucide/power.svg
         assets/icons/lucide/sliders-horizontal.svg
         assets/icons/lucide/sun.svg
+        assets/icons/lucide/cloud-sun.svg
         assets/icons/lucide/gauge.svg
 )
 

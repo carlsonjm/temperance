@@ -484,31 +484,52 @@ private Q_SLOTS:
       QVERIFY(state->property("expanded").toBool());
     };
     clickOn(QStringLiteral("temperance-control-center"), QStringLiteral("control"));
-    // A mouse over the power row lightens the button under it, in tablet mode
-    // too, where Plasma's own buttons stop hearing the pointer.
-    {
-      auto *popupWindow = qobject_cast<QQuickWindow *>(popup);
-      QVERIFY(popupWindow);
+    // A mouse over a header control lightens it, in tablet mode too, where
+    // Plasma's own buttons stop hearing the pointer.
+    auto *popupWindow = qobject_cast<QQuickWindow *>(popup);
+    QVERIFY(popupWindow);
+    const auto hoverLightens = [&](const QString &name) {
       QTRY_VERIFY(popupWindow->isExposed());
-      for (const auto &name : {QStringLiteral("temperance-session-lock"),
-                               QStringLiteral("temperance-session-more")}) {
-        auto *button = findItem(popupWindow->contentItem(), name);
-        QVERIFY2(button && button->isVisible(), qPrintable(name));
-        auto *face = qvariant_cast<QQuickItem *>(button->property("background"));
-        QVERIFY(face);
-        const QColor resting = face->property("color").value<QColor>();
-        const QPoint centre = button->mapToScene(
-            {button->width() / 2, button->height() / 2}).toPoint();
-        QTest::mouseMove(popupWindow, centre + QPoint(0, 1));
-        QTest::mouseMove(popupWindow, centre);
-        QTRY_VERIFY(face->property("color").value<QColor>().lightness() > resting.lightness());
-        qInfo() << "T1_HOVER" << name << resting.name()
-                << face->property("color").value<QColor>().name();
-        QTest::mouseMove(popupWindow, {2, 2});
-      }
-    }
+      auto *control = findItem(popupWindow->contentItem(), name);
+      QVERIFY2(control && control->isVisible(), qPrintable(name));
+      auto *face = control->property("background").isValid()
+          ? qvariant_cast<QQuickItem *>(control->property("background")) : control;
+      QVERIFY(face);
+      const QColor resting = face->property("color").value<QColor>();
+      const QPoint centre = control->mapToScene(
+          {control->width() / 2, control->height() / 2}).toPoint();
+      QTest::mouseMove(popupWindow, centre + QPoint(0, 1));
+      QTest::mouseMove(popupWindow, centre);
+      QTRY_VERIFY(face->property("color").value<QColor>().lightness() > resting.lightness());
+      qInfo() << "T1_HOVER" << name << resting.name()
+              << face->property("color").value<QColor>().name();
+      QTest::mouseMove(popupWindow, {2, 2});
+    };
+    hoverLightens(QStringLiteral("temperance-header-lock"));
+    hoverLightens(QStringLiteral("temperance-session-more"));
+    // A page an applet shows, opened from a page, has Back, which returns
+    // to that page.
+    const auto backReturns = [&](const QString &appletId, const QString &page) {
+      QVERIFY(QMetaObject::invokeMethod(rightFace, "activateAppletById",
+                                        Q_ARG(QVariant, appletId)));
+      QTRY_VERIFY(state->property("activeApplet").value<QObject *>());
+      auto *back = findItem(popupWindow->contentItem(), QStringLiteral("temperance-header-back"));
+      QVERIFY(back);
+      QTRY_VERIFY(back->isVisible());
+      QTest::qWait(300);
+      QTest::mouseClick(popupWindow, Qt::LeftButton, {},
+                        back->mapToScene({back->width() / 2, back->height() / 2}).toPoint());
+      QTRY_VERIFY(!state->property("activeApplet").value<QObject *>());
+      QCOMPARE(state->property("page").toString(), page);
+      QVERIFY(state->property("expanded").toBool());
+      QVERIFY(!back->isVisible());
+      qInfo() << "T1_BACK" << appletId << page;
+    };
+    backReturns(QStringLiteral("org.kde.plasma.networkmanagement"), QStringLiteral("control"));
     clickOn(QStringLiteral("temperance-clock"), QStringLiteral("calendar"));
     clickOn(QStringLiteral("temperance-tray"), QStringLiteral("tray"));
+    hoverLightens(QStringLiteral("temperance-header-settings"));
+    backReturns(QStringLiteral("org.kde.plasma.volume"), QStringLiteral("tray"));
 
     // A finger on the bell opens the history; it is not a pointer resting
     // there, so the ticker does not bring its line back. Opened, the history
@@ -540,6 +561,7 @@ private Q_SLOTS:
     QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
     QTRY_COMPARE(rail->property("count").toInt(), 0);
     QVERIFY(!tickerControls->property("revealed").toBool());
+    hoverLightens(QStringLiteral("temperance-do-not-disturb"));
     // A mouse resting on the bell still opens the ticker's controls.
     state->setProperty("expanded", false);
     QTest::qWait(700);

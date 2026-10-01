@@ -559,7 +559,14 @@ ContainmentItem {
             systemTrayState.expanded = false;
             return;
         }
-        if (applet) systemTrayState.setActiveApplet(applet);
+        if (!applet) return;
+        // Back returns to the page an applet was opened from. One opened from
+        // the bar itself, the battery's say, goes back to Control Center,
+        // where its page is otherwise reached.
+        if (!systemTrayState.expanded
+                || (systemTrayState.page !== "control" && systemTrayState.page !== "tray"))
+            systemTrayState.page = "control";
+        systemTrayState.setActiveApplet(applet);
     }
 
     function openSurface(page) {
@@ -2005,7 +2012,7 @@ ContainmentItem {
                 Layout.minimumWidth: root.statusPitch
                 Layout.maximumWidth: root.statusPitch
                 Layout.fillHeight: true
-                Accessible.name: i18n("System tray")
+                Accessible.name: i18n("System Tray")
                 Accessible.role: Accessible.Button
                 function activate() { root.openSurface("tray"); }
                 readonly property bool active: systemTrayState.activeApplet === null
@@ -2096,7 +2103,7 @@ ContainmentItem {
                 }
                 HoverHandler { id: trayHover }
                 TapHandler { id: trayTap; onTapped: trayButton.activate() }
-                PlasmaComponents.ToolTip { text: i18n("System tray") }
+                PlasmaComponents.ToolTip { text: i18n("System Tray") }
             }
 
             Item {

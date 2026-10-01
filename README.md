@@ -16,7 +16,7 @@ manager, and other panel widgets remain independent.
 
 | Task | Touch | Keyboard |
 | --- | --- | --- |
-| Notifications & events | Tap the bell | — |
+| Notifications & Events | Tap the bell | — |
 | Control Center | Tap the network icon | — |
 | System Tray | Tap the tray icon | — |
 | Calendar | Tap the clock | — |
@@ -47,7 +47,7 @@ address, which Google, iCloud and Outlook all give out. Linked calendars are
 read-only and are re-read every few minutes.
 
 Today's next timed event appears in the Status Bar beside your notifications, and
-today's events head the history, titled Notifications & events.
+today's events head the history, titled Notifications & Events.
 
 ## Notifications
 

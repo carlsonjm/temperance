@@ -80,6 +80,13 @@ int main(int argc, char **argv)
             if (systemTrayState.expanded) throw 'close weather';
             activateAppletById('weather'); openSurface('tray');
             if (!systemTrayState.expanded || systemTrayState.activeApplet) throw 'weather to tray';
+            // Back returns to the page an applet was opened from; from the bar,
+            // to Control Center.
+            activateAppletById('audio');
+            if (systemTrayState.page !== 'tray') throw 'tray applet backs to tray';
+            systemTrayState.expanded = false; systemTrayState.page = 'notifications';
+            activateAppletById('audio'); activateAppletById('weather');
+            if (systemTrayState.page !== 'control') throw 'bar applet backs to Control Center';
             return true;
         })()
     )JS"));
@@ -184,7 +191,7 @@ int main(int argc, char **argv)
         QStringLiteral("pin"), QStringLiteral("trash-2"), QStringLiteral("chevron-up"),
         QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
         QStringLiteral("rotate-cw"),
-        QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"),
+        QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"), QStringLiteral("cloud-sun"),
         QStringLiteral("gauge")
     };
     for (const QString &glyph : glyphs) {
