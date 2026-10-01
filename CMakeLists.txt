@@ -137,7 +137,7 @@ plasma_add_applet(studio.warbler.temperance
         qml/main.qml
     RESOURCES
         main.xml
-        assets/icons/lucide/ellipsis.svg
+        assets/icons/lucide/ellipsis-vertical.svg
         assets/icons/lucide/settings.svg
         assets/icons/lucide/plus.svg
         assets/icons/lucide/pin.svg

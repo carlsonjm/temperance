@@ -6,7 +6,9 @@ This file records user-visible changes.
 
 - Control Center's power row holds Lock, Restart and Shut down, each a grey pill
   as large as its touch; Log out and Switch user wait behind More. Lock locks at
-  once. The bell and the wired connection's port are drawn smaller, to the size
+  once; More is a grey circle with a vertical ellipsis. The header's buttons
+  light under a mouse in tablet mode too, where Plasma's own buttons stopped
+  hearing it. The bell and the wired connection's port are drawn smaller, to the size
   of the icons beside them, and the bell's count is larger and set lower.
 - A new notification comes out from beside the bell and rests there, as today's
   event does, instead of crossing the ticker to the dock; one too long to fit

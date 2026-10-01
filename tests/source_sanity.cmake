@@ -87,7 +87,7 @@ if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*
 endif()
 if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
    OR NOT expanded_qml MATCHES "bluetoothPairingPill"
-   OR NOT expanded_qml MATCHES "addBluetoothDevice.hovered \\|\\| addBluetoothDevice.down"
+   OR NOT expanded_qml MATCHES "addBluetoothHover.hovered \\|\\| addBluetoothDevice.down"
    OR NOT expanded_qml MATCHES "org.kde.plasma.bluetooth"
    OR NOT expanded_qml MATCHES "Add new device")
     message(FATAL_ERROR "Bluetooth must offer the native pairing wizard")
@@ -139,7 +139,7 @@ endif()
 
 if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"
    OR NOT EXISTS "${SOURCE_DIR}/assets/icons/lucide/LICENSE"
-   OR NOT expanded_qml MATCHES "temperance/ellipsis.svg"
+   OR NOT expanded_qml MATCHES "temperance/ellipsis-vertical.svg"
    OR NOT notification_history_qml MATCHES "temperance/trash-2.svg"
    OR NOT expanded_qml MATCHES "temperance/settings.svg"
    OR NOT control_center_qml MATCHES "temperance/sun.svg")

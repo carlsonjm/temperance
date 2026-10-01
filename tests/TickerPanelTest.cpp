@@ -484,6 +484,29 @@ private Q_SLOTS:
       QVERIFY(state->property("expanded").toBool());
     };
     clickOn(QStringLiteral("temperance-control-center"), QStringLiteral("control"));
+    // A mouse over the power row lightens the button under it, in tablet mode
+    // too, where Plasma's own buttons stop hearing the pointer.
+    {
+      auto *popupWindow = qobject_cast<QQuickWindow *>(popup);
+      QVERIFY(popupWindow);
+      QTRY_VERIFY(popupWindow->isExposed());
+      for (const auto &name : {QStringLiteral("temperance-session-lock"),
+                               QStringLiteral("temperance-session-more")}) {
+        auto *button = findItem(popupWindow->contentItem(), name);
+        QVERIFY2(button && button->isVisible(), qPrintable(name));
+        auto *face = qvariant_cast<QQuickItem *>(button->property("background"));
+        QVERIFY(face);
+        const QColor resting = face->property("color").value<QColor>();
+        const QPoint centre = button->mapToScene(
+            {button->width() / 2, button->height() / 2}).toPoint();
+        QTest::mouseMove(popupWindow, centre + QPoint(0, 1));
+        QTest::mouseMove(popupWindow, centre);
+        QTRY_VERIFY(face->property("color").value<QColor>().lightness() > resting.lightness());
+        qInfo() << "T1_HOVER" << name << resting.name()
+                << face->property("color").value<QColor>().name();
+        QTest::mouseMove(popupWindow, {2, 2});
+      }
+    }
     clickOn(QStringLiteral("temperance-clock"), QStringLiteral("calendar"));
     clickOn(QStringLiteral("temperance-tray"), QStringLiteral("tray"));
 

@@ -142,6 +142,13 @@ Item {
                 popup.width - 10 - anchorX - implicitWidth)) : 0
     }
 
+    // Plasma's buttons stop hearing the pointer in tablet mode, though a mouse
+    // or a trackpad may still be in use, so the header's own buttons watch for
+    // one themselves. A finger is left out: a tap would leave a hover behind.
+    component PointerHover: HoverHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
+    }
+
     // The calendar's month arrows: no boundary at rest, since the chevron is
     // the whole affordance, and the header family's 30 px height and radius.
     component CalendarArrow: PlasmaComponents.ToolButton {
@@ -160,17 +167,19 @@ Item {
         background: Rectangle {
             radius: height / 2
             color: arrow.down ? Qt.rgba(1, 1, 1, 0.18)
-                : arrow.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                : arrowHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
             border.width: arrow.visualFocus ? 1 : 0
             border.color: "#F8F8FF"
             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
+        PointerHover { id: arrowHover }
         HeaderToolTip { text: arrow.text }
     }
 
     component HeaderPowerPill: PlasmaComponents.ToolButton {
         id: powerPill
         required property string glyph
+        objectName: "temperance-session-" + glyph
         Layout.preferredWidth: 42
         Layout.minimumWidth: 42
         Layout.maximumWidth: 42
@@ -194,11 +203,12 @@ Item {
         // under the pointer and lighter again pressed.
         background: Rectangle {
             radius: height / 2
-            color: powerPill.down ? "#4A4A4A" : powerPill.hovered ? "#333333" : "#242424"
+            color: powerPill.down ? "#4A4A4A" : pillHover.hovered ? "#333333" : "#242424"
             border.width: powerPill.visualFocus ? 1 : 0
             border.color: "#F8F8FF"
             Behavior on color { ColorAnimation { duration: 120 } }
         }
+        PointerHover { id: pillHover }
         HeaderToolTip { text: powerPill.text }
     }
 
@@ -272,12 +282,13 @@ Item {
                     background: Rectangle {
                         radius: height / 2
                         color: calendarToday.down ? Qt.rgba(1, 1, 1, 0.18)
-                            : calendarToday.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                            : todayHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                         border.width: 1
                         border.color: calendarToday.visualFocus ? "#F8F8FF" : "#5a5a5a"
                         Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     }
                     onClicked: calendarPage.reset()
+                    PointerHover { id: todayHover }
                 }
 
                 RowLayout {
@@ -322,15 +333,29 @@ Item {
                 }
                 PlasmaComponents.ToolButton {
                     id: sessionMore
+                    objectName: "temperance-session-more"
                     visible: Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser
+                    // The power row's grey, as a 30 px circle, so the menu
+                    // reads as part of the row but not as one more action.
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
-                    icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis.svg"
+                    padding: 6
+                    icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis-vertical.svg"
                     icon.color: "#F8F8FF"
                     contentItem: SuiteIcon {
-                        glyph: "ellipsis"
+                        glyph: "ellipsis-vertical"
+                        glyphInset: 1
                         implicitWidth: 18; implicitHeight: 18
                     }
+                    background: Rectangle {
+                        radius: height / 2
+                        color: sessionMore.down || sessionMenu.visible ? "#4A4A4A"
+                            : sessionMoreHover.hovered ? "#333333" : "#242424"
+                        border.width: sessionMore.visualFocus ? 1 : 0
+                        border.color: "#F8F8FF"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                    }
+                    PointerHover { id: sessionMoreHover }
                     display: PlasmaComponents.AbstractButton.IconOnly
                     text: i18n("More session options")
                     onClicked: sessionMenu.open()
@@ -424,7 +449,7 @@ Item {
                         width: parent.width
                         height: 30
                         radius: height / 2
-                        color: addBluetoothDevice.hovered || addBluetoothDevice.down
+                        color: addBluetoothHover.hovered || addBluetoothDevice.down
                             ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
                         border.width: 1
                         border.color: addBluetoothDevice.activeFocus ? "#F8F8FF" : "#5a5a5a"
@@ -435,6 +460,7 @@ Item {
                     Plasmoid.launchApplication("org.kde.bluedevilwizard");
                     systemTrayState.expanded = false;
                 }
+                PointerHover { id: addBluetoothHover }
                 HeaderToolTip { text: parent.text }
             }
 

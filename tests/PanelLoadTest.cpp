@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     iconWindow.setColor(Qt::transparent);
     iconWindow.show();
     const QStringList glyphs{
-        QStringLiteral("ellipsis"), QStringLiteral("settings"), QStringLiteral("plus"),
+        QStringLiteral("ellipsis-vertical"), QStringLiteral("settings"), QStringLiteral("plus"),
         QStringLiteral("pin"), QStringLiteral("trash-2"), QStringLiteral("chevron-up"),
         QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
         QStringLiteral("rotate-cw"),

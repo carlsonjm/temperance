@@ -49,10 +49,9 @@ above and below is a separate handler that acts only outside the row: a pointer'
 press reaches both it and the control, and acting on both opened a page and closed
 it again.
 
-The bell and the wired connection's port are outlines Temperance draws. They are
-kept to the size of the theme's filled marks beside them, 21 and 18 px in a
-1.75 px line, because an outline reads larger than a filled mark in the same box.
-The bell's count sits 5 px under its rim, in 13 px type.
+The bell and the wired port are outlines Temperance draws, kept to the size of
+the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
+reads larger than a filled mark. The count sits 5 px under the rim, in 13 px.
 
 The protected bell and tray are scaled, not redrawn. The network icon is the
 theme's bold symbolic mark: Plasma's network widget adds `-symbolic` to its own
@@ -125,11 +124,10 @@ settings in your home folder, and anyone holding it can read that
 calendar. Linked calendars are read-only: writing would need a sign-in per service,
 and Google reviews apps that write to calendars.
 
-A new notification comes out from beside the bell and rests against it, rather
-than crossing the gap to the dock, which on a wide display took the line far
-from the bell it belongs to. A line too long for the ticker comes in until its
-start reaches the far edge, then scrolls once while it rests. It stays up 20 ms
-for each pixel of gap and line together, at least three seconds, then goes.
+A new notification comes out from beside the bell and rests against it rather
+than crossing to the dock. A line too long for the ticker comes in until its
+start reaches the far edge, then scrolls once. It stays up 20 ms per pixel of
+gap and line, at least three seconds.
 
 Today's next timed event rides the ticker rather than a line beside the time. It
 reads in as a notification does and holds still with a dot in its calendar's color
@@ -148,7 +146,9 @@ Session controls live in the Control Center header. Lock, Restart and Shut Down
 stand in the row; Log Out and Switch User wait behind More. All are on by default
 except Switch User, which is opt-in. Lock asks nothing, since it loses no work;
 Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
-`org.kde.LogoutPrompt`, so Plasma confirms them. Bluetooth pairing is the installed KDE wizard; Temperance does not
+`org.kde.LogoutPrompt`, so Plasma confirms them. In tablet mode Plasma's buttons
+ignore the pointer, so the header's buttons watch a mouse, trackpad or pen
+themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing is the installed KDE wizard; Temperance does not
 implement pairing.
 
 Promoted tray entries become Control Center pills and leave the organized tray,

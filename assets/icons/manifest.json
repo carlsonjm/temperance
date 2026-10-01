@@ -8,7 +8,7 @@
     "value": "#F8F8FF"
   },
   "icons": {
-    "action-overflow": "ellipsis",
+    "action-overflow": "ellipsis-vertical",
     "settings": "settings",
     "action-add": "plus",
     "keep-open": "pin",
