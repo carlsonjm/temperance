@@ -11,7 +11,8 @@ may use, study, modify, fork and redistribute the source under its terms.
 The following are not licensed under the GPL and remain the property of the
 copyright holder, Jared Carlson:
 
-- The names **Shuffle**, **Kadunce**, **Tettegouche** and **Temperance**
+- The publisher name **Good Input** and the product name **Shuffle for Plasma**
+- The names **Kadunce**, **Tettegouche** and **Temperance**
 - The Temperance logo and the animated Temperance Bell mark
 
 This is the ordinary arrangement for free software: the code is free to

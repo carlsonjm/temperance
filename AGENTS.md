@@ -24,8 +24,8 @@ typed. `docs/README.md` routes every other document.
   set.
 - `docs/INPUT.md` defines every input and opens with the controls map; a README
   may repeat the map.
-- Public text describes the product, without names, approvals, narration or Table
-  design; `tests/verify-public.py` checks it. History lives in Git.
+- Public text describes the product, without names, approvals or narration;
+  `tests/verify-public.py` checks it. History lives in Git.
 - Preserve licensing, ABI, packaging, ownership, geometry, and accessibility
   invariants unless a roadmap item changes them.
 
