@@ -741,7 +741,6 @@ ContainmentItem {
             notificationHide.stop();
             notificationMessageLayer.opacity = 1;
         } else if (tickerCarry === "event") {
-            eventEntry.stop();
             eventFade.stop();
             eventExit.stop();
             eventLayer.opacity = 1;
@@ -1840,11 +1839,9 @@ ContainmentItem {
                             onActiveTranslationChanged: if (active) root.carryTicker(activeTranslation.x)
                         }
 
-                        // The calendar's next event. It reads in from the right
-                        // as a notification does, at the same pace, but stops
-                        // where a notification rests instead of passing, and
-                        // holds until it is read, it ends, or a notification
-                        // needs the ticker.
+                        // The calendar's next event. It fades in where a
+                        // notification rests, and holds until it is read, it
+                        // ends, or a notification needs the ticker.
                         Item {
                             id: eventLayer
                             objectName: "temperance-ticker-event"
@@ -1861,32 +1858,23 @@ ContainmentItem {
                             Accessible.name: root.tickerEvent
                                 ? root.eventTimeText(root.tickerEvent) + ", " + root.tickerEvent.title : ""
 
-                            function enter(travel) {
-                                eventEntry.stop();
+                            // Faded in where it rests: a line sliding in
+                            // past the bell's edge shows a letter cut in half.
+                            function enter() {
                                 eventExit.stop();
-                                if (!travel || !root.motionEnabled) {
-                                    offset = 0;
-                                    eventFade.restart();
-                                    return;
-                                }
-                                // Faded in as it slides, so the bell's edge
-                                // does not cut its first letter in half.
-                                offset = width - restingX;
-                                opacity = 0;
+                                offset = 0;
                                 eventFade.restart();
-                                eventEntry.restart();
                             }
 
                             function leave() {
-                                eventEntry.stop();
                                 eventFade.stop();
                                 eventExit.restart();
                             }
 
                             readonly property bool shown: root.eventShown
-                            onShownChanged: shown ? enter(!notificationControls.revealed) : leave()
-                            onEventKeyChanged: if (shown) enter(!notificationControls.revealed)
-                            Component.onCompleted: if (shown) enter(false)
+                            onShownChanged: shown ? enter() : leave()
+                            onEventKeyChanged: if (shown) enter()
+                            Component.onCompleted: if (shown) enter()
 
                             RowLayout {
                                 id: eventLine
@@ -1942,14 +1930,6 @@ ContainmentItem {
                                 }
                             }
 
-                            NumberAnimation {
-                                id: eventEntry
-                                target: eventLayer
-                                property: "offset"
-                                to: 0
-                                duration: Math.max(900, eventLayer.offset * 20)
-                                easing.type: Easing.OutQuad
-                            }
                             NumberAnimation {
                                 id: eventFade
                                 target: eventLayer

@@ -130,7 +130,7 @@ seconds. A line too long stops cut off, scrolls only under a hover on the bell,
 and goes when its application's popup time ends.
 
 Today's next timed event rides the ticker rather than a line beside the time. It
-reads in as a notification does and holds still with a dot in its calendar's color
+fades in where a notification rests and holds still with a dot in its calendar's color
 until it is moved into the history, a notification takes the ticker, or it ends.
 A color you pick wins over the feed's own, which only iCloud's carries.
 The lead says when without a second clock: Now while it is under way, In and the
