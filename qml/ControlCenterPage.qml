@@ -18,7 +18,7 @@ Item {
     required property var controlCenterModel
     required property var performancePresets
     required property string activePerformancePreset
-    required property var applyPerformancePreset
+    required property var openPerformancePage
     required property color accentColor
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
@@ -421,76 +421,44 @@ Item {
                 TapHandler { onTapped: page.activateAppletById("org.kde.plasma.battery") }
             }
 
+            // The profile in use, drawn as an entry like Networks; a tap
+            // opens the Performance page.
             Rectangle {
+                id: performanceEntry
+                objectName: "temperance-performance-entry"
                 visible: page.hasPerformanceProfiles
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 0
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.07)
+                color: performanceTap.pressed || performanceHover.hovered
+                    ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: page.standardSpacing
-                    RowLayout {
-                        spacing: Kirigami.Units.smallSpacing
-                        SuiteIcon {
-                            glyph: "gauge"
-                            implicitWidth: Kirigami.Units.iconSizes.small
-                            implicitHeight: implicitWidth
-                        }
-                        PlasmaComponents.Label {
-                            text: i18n("Profile")
-                            font.weight: Font.Medium
-                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
-                        }
+                    width: Math.min(implicitWidth, performanceEntry.width - Kirigami.Units.largeSpacing * 2)
+                    spacing: 8
+                    SuiteIcon {
+                        glyph: "gauge"
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: implicitWidth
                     }
-                    PlasmaComponents.ComboBox {
-                        id: presetSelector
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 5.8
-                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                        model: page.performancePresets
-                        flat: true
-                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                        Kirigami.Theme.textColor: page.accentTextColor
-                        rightPadding: 30
-                        indicator: Canvas {
-                            implicitWidth: 12
-                            implicitHeight: 8
-                            anchors.right: parent.right
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            onPaint: {
-                                const ctx = getContext("2d");
-                                ctx.reset();
-                                ctx.fillStyle = page.accentTextColor;
-                                ctx.beginPath();
-                                ctx.moveTo(1, 1);
-                                ctx.lineTo(width - 1, 1);
-                                ctx.lineTo(width / 2, height - 1);
-                                ctx.closePath();
-                                ctx.fill();
-                            }
-                            Connections {
-                                target: page
-                                function onAccentTextColorChanged() { parent.requestPaint(); }
-                            }
-                        }
-                        background: Rectangle {
-                            radius: height / 2
-                            color: presetSelector.pressed ? Qt.darker(page.accentColor, 1.08) : page.accentColor
-                        }
-                        function syncSelection() {
-                            const index = page.performancePresets.indexOf(page.activePerformancePreset);
-                            if (index >= 0) currentIndex = index;
-                        }
-                        Component.onCompleted: syncSelection()
-                        onActivated: index => page.applyPerformancePreset(page.performancePresets[index])
-                        Connections {
-                            target: page
-                            function onActivePerformancePresetChanged() { presetSelector.syncSelection(); }
-                            function onPerformancePresetsChanged() { presetSelector.syncSelection(); }
-                        }
+                    PlasmaComponents.Label {
+                        Layout.fillWidth: true
+                        text: page.activePerformancePreset || i18n("Performance")
+                        maximumLineCount: 1
+                        elide: Text.ElideRight
                     }
                 }
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: i18n("Performance")
+                Accessible.description: page.activePerformancePreset
+                Accessible.onPressAction: page.openPerformancePage()
+                Keys.onReturnPressed: page.openPerformancePage()
+                Keys.onSpacePressed: page.openPerformancePage()
+                HoverHandler { id: performanceHover }
+                TapHandler { id: performanceTap; onTapped: page.openPerformancePage() }
             }
         }
     }
