@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center's Profile pill has a tune button on Z13 tablets with the
+  z13ctl-plus helper. It sets each profile's energy use and which profile
+  runs plugged in and on battery, one setting at a time, so a profile never
+  picks up another tool's energy setting the way saving from the helper can.
 - A tray icon whose application quits while its menu is opening no longer
   takes the panel down.
 - A notification too long for the ticker goes when its application's popup

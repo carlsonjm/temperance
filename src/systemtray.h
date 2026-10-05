@@ -7,6 +7,9 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QJsonObject>
+#include <QVariantMap>
+#include <functional>
 #include <QPointer>
 #include <QList>
 
@@ -42,6 +45,13 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(QAbstractItemModel *configSystemTrayModel READ configSystemTrayModel CONSTANT)
     Q_PROPERTY(QStringList performancePresets READ performancePresets NOTIFY performancePresetsChanged)
     Q_PROPERTY(QString activePerformancePreset READ activePerformancePreset NOTIFY activePerformancePresetChanged)
+    // Each preset's energy preference and the AC/battery assignment, read
+    // from the z13ctl-plus daemon so presets can be tuned without capturing
+    // whatever happens to be live.
+    Q_PROPERTY(QVariantMap performancePresetEpps READ performancePresetEpps NOTIFY performanceStateChanged)
+    Q_PROPERTY(bool performanceAutoSwitch READ performanceAutoSwitch NOTIFY performanceStateChanged)
+    Q_PROPERTY(QString performanceAcPreset READ performanceAcPreset NOTIFY performanceStateChanged)
+    Q_PROPERTY(QString performanceBatteryPreset READ performanceBatteryPreset NOTIFY performanceStateChanged)
     Q_PROPERTY(int volumePercent READ volumePercent NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeMuted READ volumeMuted NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeAvailable READ volumeAvailable NOTIFY volumeChanged)
@@ -112,6 +122,12 @@ public:
     QString activePerformancePreset() const;
     Q_INVOKABLE void applyPerformancePreset(const QString &name);
     Q_INVOKABLE void refreshPerformancePresets();
+    QVariantMap performancePresetEpps() const;
+    bool performanceAutoSwitch() const;
+    QString performanceAcPreset() const;
+    QString performanceBatteryPreset() const;
+    Q_INVOKABLE void setPerformancePresetEpp(const QString &name, const QString &epp);
+    Q_INVOKABLE void setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset);
     int volumePercent() const;
     bool volumeMuted() const;
     bool volumeAvailable() const;
@@ -122,6 +138,7 @@ Q_SIGNALS:
     void sessionActionFailed();
     void performancePresetsChanged();
     void activePerformancePresetChanged();
+    void performanceStateChanged();
     void volumeChanged();
     void panelGeometryChanged();
 
@@ -157,6 +174,14 @@ private:
     QStringList m_performancePresets;
     QString m_activePerformancePreset;
     QString m_performanceHelper;
+    QVariantMap m_performancePresetEpps;
+    bool m_performanceAutoSwitch = false;
+    QString m_performanceAcPreset;
+    QString m_performanceBatteryPreset;
+    bool m_performanceBusy = false;
+
+    void refreshPerformanceState();
+    void sendPerformanceRequests(QList<QJsonObject> requests, std::function<void(bool ok, const QJsonObject &reply)> done);
     QPointer<PulseAudioQt::Sink> m_defaultAudioSink;
     QList<QPointer<QQuickItem>> m_watchedGeometryItems;
     CalendarFeeds *m_calendarFeeds = nullptr;

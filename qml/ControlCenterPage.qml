@@ -45,6 +45,14 @@ Item {
     property int displayBrightnessMax: 100
     readonly property bool hasBattery: Boolean(battery.properties.IsPresent)
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
+    property bool presetEditorOpen: false
+    // The four AMD energy preferences, from most saving to fastest.
+    readonly property var eppChoices: [
+        { value: "power", label: i18n("Save most") },
+        { value: "balance_power", label: i18n("Save some") },
+        { value: "balance_performance", label: i18n("Respond faster") },
+        { value: "performance", label: i18n("Fastest") }
+    ]
     readonly property real batteryPercent: Number(battery.properties.Percentage || 0)
     readonly property int batteryState: Number(battery.properties.State || 0)
     readonly property real batterySeconds: batteryState === 1
@@ -488,6 +496,104 @@ Item {
                             target: page
                             function onActivePerformancePresetChanged() { presetSelector.syncSelection(); }
                             function onPerformancePresetsChanged() { presetSelector.syncSelection(); }
+                        }
+                    }
+                    PlasmaComponents.ToolButton {
+                        text: page.presetEditorOpen ? i18n("Done tuning profiles") : i18n("Tune profiles")
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        checkable: true
+                        checked: page.presetEditorOpen
+                        onToggled: {
+                            page.presetEditorOpen = checked;
+                            if (checked) Plasmoid.refreshPerformancePresets();
+                        }
+                        contentItem: SuiteIcon {
+                            glyph: "sliders-horizontal"
+                            implicitWidth: Kirigami.Units.iconSizes.small
+                            implicitHeight: implicitWidth
+                        }
+                        PlasmaComponents.ToolTip { text: parent.text }
+                    }
+                }
+            }
+
+            // Profile tuning. Presets are changed one setting at a time through
+            // the Z13 helper, never by saving whatever is live, so a preset
+            // cannot pick up another tool's energy setting by accident.
+            ColumnLayout {
+                visible: page.hasPerformanceProfiles && page.presetEditorOpen
+                Layout.fillWidth: true
+                Layout.leftMargin: page.standardSpacing
+                Layout.rightMargin: page.standardSpacing
+                spacing: page.compactSpacing
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    PlasmaComponents.Label {
+                        Layout.fillWidth: true
+                        text: i18n("Switch when plugged in or unplugged")
+                    }
+                    PlasmaComponents.Switch {
+                        checked: Plasmoid.performanceAutoSwitch
+                        onToggled: Plasmoid.setPerformancePowerPolicy(checked, Plasmoid.performanceAcPreset, Plasmoid.performanceBatteryPreset)
+                    }
+                }
+
+                Repeater {
+                    model: [
+                        { label: i18n("Plugged in"), battery: false },
+                        { label: i18n("On battery"), battery: true }
+                    ]
+                    delegate: RowLayout {
+                        id: sourceRow
+                        required property var modelData
+                        Layout.fillWidth: true
+                        enabled: Plasmoid.performanceAutoSwitch
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: sourceRow.modelData.label
+                        }
+                        PlasmaComponents.ComboBox {
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+                            model: page.performancePresets
+                            currentIndex: page.performancePresets.indexOf(sourceRow.modelData.battery
+                                ? Plasmoid.performanceBatteryPreset : Plasmoid.performanceAcPreset)
+                            onActivated: index => {
+                                const name = page.performancePresets[index];
+                                if (sourceRow.modelData.battery) {
+                                    Plasmoid.setPerformancePowerPolicy(true, Plasmoid.performanceAcPreset, name);
+                                } else {
+                                    Plasmoid.setPerformancePowerPolicy(true, name, Plasmoid.performanceBatteryPreset);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    Layout.topMargin: page.compactSpacing
+                    text: i18n("Energy use")
+                    font.weight: Font.Medium
+                }
+
+                Repeater {
+                    model: page.performancePresets
+                    delegate: RowLayout {
+                        id: eppRow
+                        required property string modelData
+                        Layout.fillWidth: true
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: eppRow.modelData
+                            elide: Text.ElideRight
+                        }
+                        PlasmaComponents.ComboBox {
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+                            model: page.eppChoices.map(choice => choice.label)
+                            currentIndex: page.eppChoices.findIndex(choice =>
+                                choice.value === Plasmoid.performancePresetEpps[eppRow.modelData])
+                            onActivated: index => Plasmoid.setPerformancePresetEpp(eppRow.modelData, page.eppChoices[index].value)
                         }
                     }
                 }

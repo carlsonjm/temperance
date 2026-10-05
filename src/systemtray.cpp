@@ -31,6 +31,9 @@
 #include "systemtraysettings.h"
 
 #include <QGuiApplication>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QLocalSocket>
 #include <QMenu>
 #include <QMetaMethod>
 #include <QMetaObject>
@@ -480,6 +483,148 @@ void SystemTray::refreshPerformancePresets()
         process->deleteLater();
     });
     process->start(m_performanceHelper, {u"preset"_s, u"list"_s});
+    refreshPerformanceState();
+}
+
+QVariantMap SystemTray::performancePresetEpps() const
+{
+    return m_performancePresetEpps;
+}
+
+bool SystemTray::performanceAutoSwitch() const
+{
+    return m_performanceAutoSwitch;
+}
+
+QString SystemTray::performanceAcPreset() const
+{
+    return m_performanceAcPreset;
+}
+
+QString SystemTray::performanceBatteryPreset() const
+{
+    return m_performanceBatteryPreset;
+}
+
+// Sends each request to the z13ctl-plus daemon in turn, one connection per
+// request as its own client does, and stops at the first refusal.
+void SystemTray::sendPerformanceRequests(QList<QJsonObject> requests,
+                                         std::function<void(bool ok, const QJsonObject &reply)> done)
+{
+    if (requests.isEmpty()) {
+        done(true, {});
+        return;
+    }
+    const QJsonObject request = requests.takeFirst();
+    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
+        + u"/z13ctl-plus/z13ctl-plus.sock"_s;
+    auto *socket = new QLocalSocket(this);
+    auto finished = std::make_shared<bool>(false);
+    auto finish = [this, socket, finished, requests, done](bool ok, const QJsonObject &reply) {
+        if (*finished) {
+            return;
+        }
+        *finished = true;
+        socket->disconnect(this);
+        socket->deleteLater();
+        if (!ok || requests.isEmpty()) {
+            done(ok, reply);
+        } else {
+            sendPerformanceRequests(requests, done);
+        }
+    };
+    connect(socket, &QLocalSocket::connected, this, [socket, request]() {
+        socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n');
+    });
+    connect(socket, &QLocalSocket::readyRead, this, [socket, finish]() {
+        if (!socket->canReadLine()) {
+            return;
+        }
+        const QJsonObject reply = QJsonDocument::fromJson(socket->readLine()).object();
+        finish(reply.value(u"ok"_s).toBool(), reply);
+    });
+    connect(socket, &QLocalSocket::errorOccurred, this, [finish](QLocalSocket::LocalSocketError) {
+        finish(false, {});
+    });
+    QTimer::singleShot(5000, socket, [finish]() {
+        finish(false, {});
+    });
+    socket->connectToServer(path);
+}
+
+void SystemTray::refreshPerformanceState()
+{
+    if (m_performanceHelper.isEmpty() || m_performanceBusy) {
+        return;
+    }
+    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"get-state"_s}}}, [this](bool ok, const QJsonObject &reply) {
+        if (!ok) {
+            return;
+        }
+        const QJsonObject state = reply.value(u"state"_s).toObject();
+        QVariantMap epps;
+        const QJsonObject presets = state.value(u"presets"_s).toObject();
+        for (auto it = presets.begin(); it != presets.end(); ++it) {
+            epps.insert(it.key(), it.value().toObject().value(u"cpu_power"_s).toObject().value(u"epp"_s).toString());
+        }
+        const QJsonObject policy = state.value(u"power_policy"_s).toObject();
+        m_performancePresetEpps = epps;
+        m_performanceAutoSwitch = policy.value(u"enabled"_s).toBool();
+        m_performanceAcPreset = policy.value(u"ac_preset"_s).toString();
+        m_performanceBatteryPreset = policy.value(u"battery_preset"_s).toString();
+        Q_EMIT performanceStateChanged();
+    });
+}
+
+// The daemon can only save what is live, so a preset's energy preference is
+// changed by applying the preset, setting the preference, saving it under the
+// same name and returning to the preset that was active before. Nothing else
+// in the preset changes, and the live preference is never copied by accident.
+void SystemTray::setPerformancePresetEpp(const QString &name, const QString &epp)
+{
+    static const QStringList allowed{u"power"_s, u"balance_power"_s, u"balance_performance"_s, u"performance"_s};
+    if (m_performanceHelper.isEmpty() || m_performanceBusy || !m_performancePresets.contains(name) || !allowed.contains(epp)) {
+        return;
+    }
+    const QString previous = m_activePerformancePreset;
+    QList<QJsonObject> requests{
+        QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, name}},
+        QJsonObject{{u"cmd"_s, u"cpu-epp"_s}, {u"set"_s, epp}},
+        QJsonObject{{u"cmd"_s, u"preset-save"_s}, {u"name"_s, name}},
+    };
+    if (!previous.isEmpty() && previous != name) {
+        requests.append(QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, previous}});
+    }
+    m_performanceBusy = true;
+    sendPerformanceRequests(requests, [this, previous](bool ok, const QJsonObject &) {
+        m_performanceBusy = false;
+        if (!ok && !previous.isEmpty()) {
+            // Leave the machine on the preset it was on, whatever failed.
+            sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, previous}}}, [this](bool, const QJsonObject &) {
+                refreshPerformancePresets();
+            });
+            return;
+        }
+        refreshPerformancePresets();
+    });
+}
+
+void SystemTray::setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset)
+{
+    if (m_performanceHelper.isEmpty() || m_performanceBusy
+        || (!acPreset.isEmpty() && !m_performancePresets.contains(acPreset))
+        || (!batteryPreset.isEmpty() && !m_performancePresets.contains(batteryPreset))) {
+        return;
+    }
+    m_performanceBusy = true;
+    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"power-policy-set"_s},
+                              {u"enabled"_s, enabled},
+                              {u"ac_preset"_s, acPreset},
+                              {u"battery_preset"_s, batteryPreset}}},
+                            [this](bool, const QJsonObject &) {
+                                m_performanceBusy = false;
+                                refreshPerformancePresets();
+                            });
 }
 
 void SystemTray::applyPerformancePreset(const QString &name)
