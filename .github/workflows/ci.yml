@@ -20,6 +20,10 @@ jobs:
       # Qt otherwise logs to the journal, which a container lacks, and a
       # failing test's own reasons never reach the log.
       QT_FORCE_STDERR_LOGGING: "1"
+      # A desktop's locale and time zone: the clock tests read an unpadded
+      # hour, and floating calendar times need a known zone.
+      LANG: en_US.UTF-8
+      TZ: UTC
     steps:
       - name: Install the build stack
         run: |
@@ -29,6 +33,7 @@ jobs:
             kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
             kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
             kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt \
+            powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons \
             ttf-dejavu noto-fonts
       - uses: actions/checkout@v4
       - name: Trust the checkout
