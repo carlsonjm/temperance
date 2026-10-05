@@ -17,12 +17,13 @@
 #include <Plasma/Applet>
 #include <Plasma/Containment>
 #include <Plasma/Corona>
+#include "CoronaScreen.h"
 #include <PlasmaQuick/AppletQuickItem>
 #include <memory>
 
 class TestCorona : public Plasma::Corona {
 public:
-    QRect screenGeometry(int) const override { return QRect(0, 0, 1280, 800); }
+    QRect screenGeometry(CoronaScreenId) const override { return QRect(0, 0, 1280, 800); }
 };
 
 int main(int argc, char **argv)

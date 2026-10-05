@@ -6,6 +6,7 @@
 #include <Plasma/Applet>
 #include <Plasma/Containment>
 #include <Plasma/Corona>
+#include "CoronaScreen.h"
 #include <PlasmaQuick/AppletQuickItem>
 #include <QApplication>
 #include <QDBusConnection>
@@ -26,7 +27,7 @@
 
 class TickerCorona : public Plasma::Corona {
 public:
-  QRect screenGeometry(int) const override {
+  QRect screenGeometry(CoronaScreenId) const override {
     return QGuiApplication::screens()
         .value(qEnvironmentVariableIntValue("ITASCA_TEST_SCREEN"),
                QGuiApplication::primaryScreen())
