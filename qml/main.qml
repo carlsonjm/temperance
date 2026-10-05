@@ -1652,13 +1652,13 @@ ContainmentItem {
                                     objectName: "temperance-live-ticker"
                                     Layout.fillWidth: true
                                     alignRight: true
-                                    exposeOverflow: notificationIntro.running
+                                    exposeOverflow: root.notificationArriving
                                     styled: true
                                     text: root.notificationTickerMarkup(notificationDelegate.applicationName,
                                         notificationDelegate.summary, notificationDelegate.body)
                                     accessibleText: root.notificationDisplayText(notificationDelegate.applicationName,
                                         notificationDelegate.summary, notificationDelegate.body)
-                                    scrollingEnabled: (notificationControls.revealed || root.notificationResting)
+                                    scrollingEnabled: notificationControls.revealed
                                         && !root.notificationArriving && !notificationReveal.running
                                         && !root.notificationReviewComplete
                                 }
@@ -1676,9 +1676,9 @@ ContainmentItem {
                                 objectName: "temperance-demo-ticker"
                                 Layout.fillWidth: true
                                 alignRight: true
-                                exposeOverflow: notificationIntro.running
+                                exposeOverflow: root.notificationArriving
                                 text: root.demoNotificationTexts[root.demoNotificationIndex]
-                                scrollingEnabled: (notificationControls.revealed || root.notificationResting)
+                                scrollingEnabled: notificationControls.revealed
                                     && !root.notificationArriving && !notificationReveal.running
                                     && !root.notificationReviewComplete
                             }
@@ -1687,17 +1687,21 @@ ContainmentItem {
 
                         // A new line comes out from beside the bell, as today's
                         // event does, and rests against it rather than crossing
-                        // the gap to the dock; a line too long for the ticker
-                        // comes in until its start reaches the far edge, and
-                        // scrolls once while it rests. It is up as long as a pass
-                        // across the gap took, then goes.
+                        // the gap to the dock. A short line is up as long as a
+                        // pass across the gap took, then goes. A line too long
+                        // for the ticker comes in until its start reaches the
+                        // far edge and stops there, cut off, as an event waits
+                        // for review: it scrolls only for a hover on the bell,
+                        // and goes after half a minute without one.
                         SequentialAnimation {
                             id: notificationIntro
                             readonly property real arrival: root.motionEnabled
                                 ? Math.min(notificationMessageLayer.flybyWidth, notificationContentArea.width) : 0
                             readonly property int arrivalDuration: root.motionEnabled
                                 ? Math.max(900, arrival * 20) : 0
-                            readonly property int restDuration: Math.max(3000,
+                            readonly property bool longLine:
+                                notificationMessageLayer.flybyWidth > notificationContentArea.width + 2
+                            readonly property int restDuration: longLine ? 30000 : Math.max(3000,
                                 (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20
                                     - arrivalDuration)
                             onRunningChanged: if (!running) root.notificationResting = false
