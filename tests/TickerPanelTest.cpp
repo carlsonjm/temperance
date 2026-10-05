@@ -399,7 +399,7 @@ private Q_SLOTS:
       const qreal restStart = arrivingLabel->mapToScene({0, 0}).x();
       qInfo() << "T1_LONG_REST" << restStart << ticker->mapToScene({0, 0}).x();
       QVERIFY(qAbs(restStart - ticker->mapToScene({0, 0}).x()) <= 4);
-      QTest::qWait(3000);
+      QTest::qWait(1000);
       QVERIFY(qAbs(arrivingLabel->mapToScene({0, 0}).x() - restStart) < 1);
     }
     QVERIFY(controls->setProperty("revealed", true));

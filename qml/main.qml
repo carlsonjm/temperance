@@ -741,7 +741,6 @@ ContainmentItem {
             notificationHide.stop();
             notificationMessageLayer.opacity = 1;
         } else if (tickerCarry === "event") {
-            eventEntry.stop();
             eventFade.stop();
             eventExit.stop();
             eventLayer.opacity = 1;
@@ -1643,6 +1642,11 @@ ContainmentItem {
                                 required property string body
                                 required property string applicationName
                                 required property string applicationIconName
+                                required property var model
+                                // How long the application asked to be seen,
+                                // in ms: 0 for never expires, -1 for the
+                                // server's default.
+                                readonly property int timeout: model.timeout !== undefined ? model.timeout : -1
                                 width: liveNotificationView.width
                                 height: liveNotificationView.height
                                 readonly property real flybyWidth: notificationTicker.contentWidth
@@ -1692,7 +1696,8 @@ ContainmentItem {
                         // for the ticker comes in until its start reaches the
                         // far edge and stops there, cut off, as an event waits
                         // for review: it scrolls only for a hover on the bell,
-                        // and goes after half a minute without one.
+                        // and goes when the application's own popup time ends,
+                        // so today's event is not held behind it.
                         SequentialAnimation {
                             id: notificationIntro
                             readonly property real arrival: root.motionEnabled
@@ -1701,7 +1706,16 @@ ContainmentItem {
                                 ? Math.max(900, arrival * 20) : 0
                             readonly property bool longLine:
                                 notificationMessageLayer.flybyWidth > notificationContentArea.width + 2
-                            readonly property int restDuration: longLine ? 30000 : Math.max(3000,
+                            // The application's popup time; the server's
+                            // default where it gives none, and half a minute
+                            // for one that never expires.
+                            readonly property int popupTime: {
+                                const item = liveNotificationView.currentItem;
+                                const timeout = railNotifications.count > 0 && item ? item.timeout : -1;
+                                return timeout > 0 ? timeout : timeout === 0 ? 30000 : 5000;
+                            }
+                            readonly property int restDuration: longLine
+                                ? Math.max(1500, popupTime - arrivalDuration) : Math.max(3000,
                                 (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20
                                     - arrivalDuration)
                             onRunningChanged: if (!running) root.notificationResting = false
@@ -1825,11 +1839,9 @@ ContainmentItem {
                             onActiveTranslationChanged: if (active) root.carryTicker(activeTranslation.x)
                         }
 
-                        // The calendar's next event. It reads in from the right
-                        // as a notification does, at the same pace, but stops
-                        // where a notification rests instead of passing, and
-                        // holds until it is read, it ends, or a notification
-                        // needs the ticker.
+                        // The calendar's next event. It fades in where a
+                        // notification rests, and holds until it is read, it
+                        // ends, or a notification needs the ticker.
                         Item {
                             id: eventLayer
                             objectName: "temperance-ticker-event"
@@ -1846,29 +1858,23 @@ ContainmentItem {
                             Accessible.name: root.tickerEvent
                                 ? root.eventTimeText(root.tickerEvent) + ", " + root.tickerEvent.title : ""
 
-                            function enter(travel) {
-                                eventEntry.stop();
+                            // Faded in where it rests: a line sliding in
+                            // past the bell's edge shows a letter cut in half.
+                            function enter() {
                                 eventExit.stop();
-                                if (!travel || !root.motionEnabled) {
-                                    offset = 0;
-                                    eventFade.restart();
-                                    return;
-                                }
-                                offset = width - restingX;
-                                opacity = 1;
-                                eventEntry.restart();
+                                offset = 0;
+                                eventFade.restart();
                             }
 
                             function leave() {
-                                eventEntry.stop();
                                 eventFade.stop();
                                 eventExit.restart();
                             }
 
                             readonly property bool shown: root.eventShown
-                            onShownChanged: shown ? enter(!notificationControls.revealed) : leave()
-                            onEventKeyChanged: if (shown) enter(!notificationControls.revealed)
-                            Component.onCompleted: if (shown) enter(false)
+                            onShownChanged: shown ? enter() : leave()
+                            onEventKeyChanged: if (shown) enter()
+                            Component.onCompleted: if (shown) enter()
 
                             RowLayout {
                                 id: eventLine
@@ -1924,14 +1930,6 @@ ContainmentItem {
                                 }
                             }
 
-                            NumberAnimation {
-                                id: eventEntry
-                                target: eventLayer
-                                property: "offset"
-                                to: 0
-                                duration: Math.max(900, eventLayer.offset * 20)
-                                easing.type: Easing.OutQuad
-                            }
                             NumberAnimation {
                                 id: eventFade
                                 target: eventLayer
