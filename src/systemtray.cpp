@@ -5,6 +5,8 @@
 */
 
 #include <algorithm>
+#include <memory>
+#include <type_traits>
 #include <optional>
 
 #include "config-X11.h"
@@ -181,6 +183,30 @@ static void adoptExistingWeatherStation(Plasma::Applet *applet)
     destination.sync();
     applet->configChanged();
     qCDebug(SYSTEM_TRAY) << "Adopted existing Weather station:" << station.value(u"placeDisplayName"_s);
+}
+
+// Plasma 6.8 hands a loaded applet over as a std::unique_ptr, which the
+// containment then takes; earlier releases pass a raw pointer. Either way the
+// containment owns the applet, and the caller gets it back to finish setting up.
+template<typename Loaded>
+static Plasma::Applet *addLoadedApplet(Plasma::Containment *containment, Loaded loaded)
+{
+    Plasma::Applet *applet = nullptr;
+    if constexpr (std::is_pointer_v<Loaded>) {
+        applet = loaded;
+    } else {
+        applet = loaded.get();
+    }
+    if (!applet) {
+        return nullptr;
+    }
+    applet->setProperty("org.kde.plasma:force-create", true);
+    if constexpr (std::is_pointer_v<Loaded>) {
+        containment->addApplet(loaded);
+    } else {
+        containment->addApplet(std::move(loaded));
+    }
+    return applet;
 }
 
 static void showSystemTrayMenuX11(QMenu *menu, QQuickItem *trayItem, const QPoint &pos, Plasma::Types::Location location)
@@ -897,15 +923,14 @@ void SystemTray::startApplet(const QString &pluginId)
 
     // known one, recycle the id to reuse old config
     if (m_configGroupIds.contains(pluginId)) {
-        Applet *applet = Plasma::PluginLoader::self()->loadApplet(pluginId, m_configGroupIds.value(pluginId), QVariantList());
+        Applet *applet = addLoadedApplet(
+            this, Plasma::PluginLoader::self()->loadApplet(pluginId, m_configGroupIds.value(pluginId), QVariantList()));
         // this should never happen unless explicitly wrong config is hand-written or
         //(more likely) a previously added applet is uninstalled
         if (!applet) {
             qCWarning(SYSTEM_TRAY) << "Unable to find applet" << pluginId;
             return;
         }
-        applet->setProperty("org.kde.plasma:force-create", true);
-        addApplet(applet);
         adoptExistingWeatherStation(applet);
         // create a new one automatic id, new config group
     } else {
