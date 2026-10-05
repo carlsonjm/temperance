@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- A notification too long for the ticker goes when its application's popup
+  time ends instead of after half a minute, so today's event comes back
+  without waiting behind it; the event fades in as it slides back, so its
+  first letter is no longer cut at the bell's edge.
 - Page titles read Notifications & Events, Control Center and System Tray. A
   page an entry opens, Networks say, has Back, which returns to the page it
   came from. The System Tray's buttons, Do Not Disturb, Bluetooth's Add new

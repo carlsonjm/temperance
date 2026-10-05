@@ -1643,6 +1643,11 @@ ContainmentItem {
                                 required property string body
                                 required property string applicationName
                                 required property string applicationIconName
+                                required property var model
+                                // How long the application asked to be seen,
+                                // in ms: 0 for never expires, -1 for the
+                                // server's default.
+                                readonly property int timeout: model.timeout !== undefined ? model.timeout : -1
                                 width: liveNotificationView.width
                                 height: liveNotificationView.height
                                 readonly property real flybyWidth: notificationTicker.contentWidth
@@ -1692,7 +1697,8 @@ ContainmentItem {
                         // for the ticker comes in until its start reaches the
                         // far edge and stops there, cut off, as an event waits
                         // for review: it scrolls only for a hover on the bell,
-                        // and goes after half a minute without one.
+                        // and goes when the application's own popup time ends,
+                        // so today's event is not held behind it.
                         SequentialAnimation {
                             id: notificationIntro
                             readonly property real arrival: root.motionEnabled
@@ -1701,7 +1707,16 @@ ContainmentItem {
                                 ? Math.max(900, arrival * 20) : 0
                             readonly property bool longLine:
                                 notificationMessageLayer.flybyWidth > notificationContentArea.width + 2
-                            readonly property int restDuration: longLine ? 30000 : Math.max(3000,
+                            // The application's popup time; the server's
+                            // default where it gives none, and half a minute
+                            // for one that never expires.
+                            readonly property int popupTime: {
+                                const item = liveNotificationView.currentItem;
+                                const timeout = railNotifications.count > 0 && item ? item.timeout : -1;
+                                return timeout > 0 ? timeout : timeout === 0 ? 30000 : 5000;
+                            }
+                            readonly property int restDuration: longLine
+                                ? Math.max(1500, popupTime - arrivalDuration) : Math.max(3000,
                                 (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20
                                     - arrivalDuration)
                             onRunningChanged: if (!running) root.notificationResting = false
@@ -1854,8 +1869,11 @@ ContainmentItem {
                                     eventFade.restart();
                                     return;
                                 }
+                                // Faded in as it slides, so the bell's edge
+                                // does not cut its first letter in half.
                                 offset = width - restingX;
-                                opacity = 1;
+                                opacity = 0;
+                                eventFade.restart();
                                 eventEntry.restart();
                             }
 
