@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux:latest
     timeout-minutes: 45
+    env:
+      # Qt otherwise logs to the journal, which a container lacks, and a
+      # failing test's own reasons never reach the log.
+      QT_FORCE_STDERR_LOGGING: "1"
     steps:
       - name: Install the build stack
         run: |
@@ -24,7 +28,8 @@ jobs:
             extra-cmake-modules qt6-base qt6-declarative \
             kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
             kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
-            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt
+            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt \
+            ttf-dejavu noto-fonts
       - uses: actions/checkout@v4
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
