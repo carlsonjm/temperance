@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- A tray icon whose application quits while its menu is opening no longer
+  takes the panel down.
 - A notification too long for the ticker goes when its application's popup
   time ends instead of after half a minute, so today's event comes back
   without waiting behind it; the event fades in where it rests instead of
