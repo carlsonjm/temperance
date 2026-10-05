@@ -32,6 +32,12 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       XDG_RUNTIME_DIR: /tmp/runtime
+      # The same test environment as ci.yml: Qt logs to stderr, since a
+      # container has no journal, and the clock and calendar tests need a
+      # desktop's locale and a known time zone.
+      QT_FORCE_STDERR_LOGGING: "1"
+      LANG: en_US.UTF-8
+      TZ: UTC
     steps:
       - name: Enable kde-unstable and the testing repositories it builds on
         run: |
@@ -43,7 +49,9 @@ jobs:
             extra-cmake-modules qt6-base qt6-declarative qt6-tools \
             kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
             kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
-            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt
+            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt \
+            powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons \
+            ttf-dejavu noto-fonts
 
       - uses: actions/checkout@v5
 
