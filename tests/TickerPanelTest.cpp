@@ -389,7 +389,7 @@ private Q_SLOTS:
     auto *ticker =
         findItem(rightFace, QStringLiteral("temperance-ticker-content"));
     // Too long for the ticker, it comes in until its start reaches the far
-    // edge and, resting there, scrolls once to its end.
+    // edge and stops there, cut off; it scrolls only for a hover on the bell.
     if (rightFace->property("motionEnabled").toBool()) {
       QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationResting").toBool(), 8000);
       auto *arriving = findItem(rightFace, QStringLiteral("temperance-live-ticker"));
@@ -399,7 +399,8 @@ private Q_SLOTS:
       const qreal restStart = arrivingLabel->mapToScene({0, 0}).x();
       qInfo() << "T1_LONG_REST" << restStart << ticker->mapToScene({0, 0}).x();
       QVERIFY(qAbs(restStart - ticker->mapToScene({0, 0}).x()) <= 4);
-      QTRY_VERIFY_WITH_TIMEOUT(arrivingLabel->mapToScene({0, 0}).x() < restStart - 20, 5000);
+      QTest::qWait(3000);
+      QVERIFY(qAbs(arrivingLabel->mapToScene({0, 0}).x() - restStart) < 1);
     }
     QVERIFY(controls->setProperty("revealed", true));
     QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));

@@ -125,9 +125,9 @@ calendar. Linked calendars are read-only: writing would need a sign-in per servi
 and Google reviews apps that write to calendars.
 
 A new notification comes out from beside the bell and rests against it rather
-than crossing to the dock. A line too long for the ticker comes in until its
-start reaches the far edge, then scrolls once. It stays up 20 ms per pixel of
-gap and line, at least three seconds.
+than crossing to the dock, for 20 ms per pixel of gap and line, at least three
+seconds. A line too long stops cut off, scrolls only under a hover on the bell,
+and goes after 30 seconds.
 
 Today's next timed event rides the ticker rather than a line beside the time. It
 reads in as a notification does and holds still with a dot in its calendar's color
