@@ -1,0 +1,58 @@
+# Builds and tests Temperance against the next Plasma before it ships, from
+# Arch Linux's kde-unstable repository. Temperance links against Plasma's own
+# libraries, so a new Plasma needs a rebuild; a red run here is an early
+# warning about the coming release, not a failure of the released one.
+name: Next Plasma (kde-unstable)
+
+on:
+  schedule:
+    - cron: "27 7 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/kde-unstable.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kde-unstable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 60
+    env:
+      QT_QPA_PLATFORM: offscreen
+      XDG_RUNTIME_DIR: /tmp/runtime
+    steps:
+      - name: Enable kde-unstable and the testing repositories it builds on
+        run: |
+          # kde-unstable sits above the testing repositories, which sit above
+          # the stable ones, as Arch documents for this repository.
+          sed -i '0,/^\[core\]/s//[kde-unstable]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[core-testing]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[extra-testing]\nInclude = \/etc\/pacman.d\/mirrorlist\n\n[core]/' /etc/pacman.conf
+          grep -n '^\[' /etc/pacman.conf
+          pacman -Syu --noconfirm --needed git base-devel cmake ninja python \
+            extra-cmake-modules qt6-base qt6-declarative qt6-tools \
+            kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
+            kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
+            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt
+
+      - uses: actions/checkout@v5
+
+      - name: Record what was tested against
+        run: |
+          {
+            echo "### Tested against"
+            echo '```'
+            pacman -Q plasma-workspace libplasma layer-shell-qt kcoreaddons qt6-base
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p -m 0700 "$XDG_RUNTIME_DIR"
+          ./verify.sh
