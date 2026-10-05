@@ -39,8 +39,17 @@ if ! ldconfig -p | grep -q 'libKF6CalendarCore\.so\.6'; then
     exit 1
 fi
 
-sudo install -Dm755 "${package_dir}/${plugin_name}" "${plugin_target}"
-sudo install -Dm644 "${package_dir}/${icon_name}" "${icon_target}"
+# Shuffle's install key, where it is set up, places both files with no
+# password: a root-owned helper takes them as a stream and puts them only here.
+install_key=/usr/local/libexec/shuffle/install-step
+if [[ -z "${root}" && -x "${install_key}" ]] \
+        && sudo -n -l "${install_key}" temperance install >/dev/null 2>&1; then
+    tar -C "${package_dir}" -cf - "${plugin_name}" "${icon_name}" \
+        | sudo -n "${install_key}" temperance install
+else
+    sudo install -Dm755 "${package_dir}/${plugin_name}" "${plugin_target}"
+    sudo install -Dm644 "${package_dir}/${icon_name}" "${icon_target}"
+fi
 kbuildsycoca6
 
 # An earlier install leaves files in place, so their being there proves
