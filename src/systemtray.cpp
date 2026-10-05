@@ -34,6 +34,7 @@
 #include <QMenu>
 #include <QMetaMethod>
 #include <QMetaObject>
+#include <QPointer>
 #include <QQueue>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -1034,17 +1035,19 @@ void SystemTray::openContextMenu(const QString &service, QPoint pos, QQuickItem 
         source,
         &StatusNotifierItemSource::contextMenuReady,
         this,
-        [this, statusNotifierIcon, pos](QMenu *menu) {
-            if (menu && !menu->isEmpty()) {
+        // The icon can go before its menu arrives, when its application quits
+        // or the item hides, so it is held weakly.
+        [this, icon = QPointer<QQuickItem>(statusNotifierIcon), pos](QMenu *menu) {
+            if (icon && menu && !menu->isEmpty()) {
                 KAcceleratorManager::manage(menu);
 
                 if (KWindowSystem::isPlatformWayland()) {
-                    showSystemTrayMenuWayland(menu, statusNotifierIcon, location());
+                    showSystemTrayMenuWayland(menu, icon, location());
                 } else {
-                    showSystemTrayMenuX11(menu, statusNotifierIcon, pos, location());
+                    showSystemTrayMenuX11(menu, icon, pos, location());
 
                     // Workaround for QTBUG-59044
-                    if (auto item = statusNotifierIcon->window()->mouseGrabberItem()) {
+                    if (auto item = icon->window() ? icon->window()->mouseGrabberItem() : nullptr) {
                         item->ungrabMouse();
                     }
                 }
