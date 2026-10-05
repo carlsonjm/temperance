@@ -981,12 +981,23 @@ ContainmentItem {
         geocode.send();
     }
 
+    // Until a temperature arrives, ask again after 5 s, 30 s and 2 min, then
+    // every 10 min, the same as once one has arrived. Nothing runs without a
+    // weather widget, and a new widget or setting starts the steps over.
+    property int weatherAttempts: 0
+    readonly property var weatherRetryDelays: [5000, 5000, 30000, 120000, 600000]
+
     Timer {
-        interval: root.currentTemperature ? 600000 : 5000
-        running: root.weatherEnabled
+        interval: root.currentTemperature ? 600000
+            : root.weatherRetryDelays[Math.min(root.weatherAttempts, root.weatherRetryDelays.length - 1)]
+        running: root.weatherEnabled && !!root.appletsById["org.kde.plasma.weather"]
         repeat: true
         triggeredOnStart: true
-        onTriggered: root.requestCurrentTemperature()
+        onRunningChanged: if (running) root.weatherAttempts = 0
+        onTriggered: {
+            root.weatherAttempts += 1;
+            root.requestCurrentTemperature();
+        }
     }
 
     Connections {
@@ -994,11 +1005,13 @@ ContainmentItem {
         function onTemperatureUnitChanged() {
             root.currentTemperature = "";
             root.weatherRequestPending = false;
+            root.weatherAttempts = 0;
             Qt.callLater(root.requestCurrentTemperature);
         }
         function onUseOnlineWeatherFallbackChanged() {
             root.currentTemperature = "";
             root.weatherRequestPending = false;
+            root.weatherAttempts = 0;
             Qt.callLater(root.requestCurrentTemperature);
         }
     }
