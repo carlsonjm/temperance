@@ -1,7 +1,9 @@
 # Builds and tests Temperance against the next Plasma before it ships, from
 # Arch Linux's kde-unstable repository. Temperance links against Plasma's own
 # libraries, so a new Plasma needs a rebuild; a red run here is an early
-# warning about the coming release, not a failure of the released one.
+# warning about the coming release, not a failure of the released one. A push
+# that changes the source or the tests runs it too, so a port to the next
+# Plasma is checked before it merges.
 name: Next Plasma (kde-unstable)
 
 on:
@@ -11,6 +13,9 @@ on:
   push:
     paths:
       - ".github/workflows/kde-unstable.yml"
+      - "CMakeLists.txt"
+      - "src/**"
+      - "tests/**"
 
 permissions:
   contents: read
