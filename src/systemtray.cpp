@@ -349,15 +349,11 @@ void SystemTray::init()
 
     // Performance profiles are a capability-gated extension. A successful
     // helper discovery unlocks the control without creating a separate build
-    // or exposing device-specific setup to everyone else.
+    // or exposing device-specific setup to everyone else. The list is read
+    // once here, again whenever Control Center opens, and after a preset is
+    // applied; the helper is never run on a timer.
     m_performanceHelper = QStandardPaths::findExecutable(u"z13ctl-plus"_s);
-    if (!m_performanceHelper.isEmpty()) {
-        refreshPerformancePresets();
-        auto *presetRefreshTimer = new QTimer(this);
-        presetRefreshTimer->setInterval(5000);
-        connect(presetRefreshTimer, &QTimer::timeout, this, &SystemTray::refreshPerformancePresets);
-        presetRefreshTimer->start();
-    }
+    refreshPerformancePresets();
 
     // This applet replaces Plasma's notification presentation. Own the public
     // notification service directly so the stock popup UI is never created.

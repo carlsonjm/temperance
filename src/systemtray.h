@@ -111,6 +111,7 @@ public:
     QStringList performancePresets() const;
     QString activePerformancePreset() const;
     Q_INVOKABLE void applyPerformancePreset(const QString &name);
+    Q_INVOKABLE void refreshPerformancePresets();
     int volumePercent() const;
     bool volumeMuted() const;
     bool volumeAvailable() const;
@@ -137,7 +138,6 @@ private:
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
-    void refreshPerformancePresets();
     void updateDefaultAudioSink(PulseAudioQt::Sink *sink);
     void watchGeometryItem(QQuickItem *item);
 

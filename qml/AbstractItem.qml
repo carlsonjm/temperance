@@ -64,9 +64,13 @@ PlasmaCore.ToolTipArea {
 
     PulseAnimation {
         targetItem: iconContainer
+        // Only pulse where it can be seen: an item in a closed popup or a
+        // hidden window would otherwise animate unseen for as long as it asks.
         running: (abstractItem.status === PlasmaCore.Types.NeedsAttentionStatus
                 || abstractItem.status === PlasmaCore.Types.RequiresAttentionStatus)
             && Kirigami.Units.longDuration > 0
+            && abstractItem.visible
+            && !!abstractItem.Window.window && abstractItem.Window.window.visible
     }
 
     MouseArea {

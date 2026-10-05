@@ -84,14 +84,22 @@ Item {
         if (systemTrayState.expanded) Qt.callLater(playEntrance);
     }
 
+    // The performance preset can change outside Temperance, so read it each
+    // time Control Center comes into view rather than polling for it.
+    function refreshControlCenter() {
+        if (systemTrayState.expanded && systemTrayState.page === "control") Plasmoid.refreshPerformancePresets();
+    }
+
     Connections {
         target: systemTrayState
         function onExpandedChanged() {
             if (systemTrayState.expanded) Qt.callLater(popup.playEntrance);
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
+            popup.refreshControlCenter();
         }
         function onPageChanged() {
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
+            popup.refreshControlCenter();
         }
     }
 
