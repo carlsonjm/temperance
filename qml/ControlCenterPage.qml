@@ -18,7 +18,7 @@ Item {
     required property var controlCenterModel
     required property var performancePresets
     required property string activePerformancePreset
-    required property var applyPerformancePreset
+    required property var openPerformancePage
     required property color accentColor
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
@@ -45,14 +45,6 @@ Item {
     property int displayBrightnessMax: 100
     readonly property bool hasBattery: Boolean(battery.properties.IsPresent)
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
-    property bool presetEditorOpen: false
-    // The four AMD energy preferences, from most saving to fastest.
-    readonly property var eppChoices: [
-        { value: "power", label: i18n("Save most") },
-        { value: "balance_power", label: i18n("Save some") },
-        { value: "balance_performance", label: i18n("Respond faster") },
-        { value: "performance", label: i18n("Fastest") }
-    ]
     readonly property real batteryPercent: Number(battery.properties.Percentage || 0)
     readonly property int batteryState: Number(battery.properties.State || 0)
     readonly property real batterySeconds: batteryState === 1
@@ -429,174 +421,44 @@ Item {
                 TapHandler { onTapped: page.activateAppletById("org.kde.plasma.battery") }
             }
 
+            // The profile in use, drawn as an entry like Networks; a tap
+            // opens the Performance page.
             Rectangle {
+                id: performanceEntry
+                objectName: "temperance-performance-entry"
                 visible: page.hasPerformanceProfiles
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 0
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.07)
+                color: performanceTap.pressed || performanceHover.hovered
+                    ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: page.standardSpacing
-                    RowLayout {
-                        spacing: Kirigami.Units.smallSpacing
-                        SuiteIcon {
-                            glyph: "gauge"
-                            implicitWidth: Kirigami.Units.iconSizes.small
-                            implicitHeight: implicitWidth
-                        }
-                        PlasmaComponents.Label {
-                            text: i18n("Profile")
-                            font.weight: Font.Medium
-                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
-                        }
+                    width: Math.min(implicitWidth, performanceEntry.width - Kirigami.Units.largeSpacing * 2)
+                    spacing: 8
+                    SuiteIcon {
+                        glyph: "gauge"
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: implicitWidth
                     }
-                    PlasmaComponents.ComboBox {
-                        id: presetSelector
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 5.8
-                        Layout.preferredHeight: Kirigami.Units.gridUnit * 1.4
-                        model: page.performancePresets
-                        flat: true
-                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                        Kirigami.Theme.textColor: page.accentTextColor
-                        rightPadding: 30
-                        indicator: Canvas {
-                            implicitWidth: 12
-                            implicitHeight: 8
-                            anchors.right: parent.right
-                            anchors.rightMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            onPaint: {
-                                const ctx = getContext("2d");
-                                ctx.reset();
-                                ctx.fillStyle = page.accentTextColor;
-                                ctx.beginPath();
-                                ctx.moveTo(1, 1);
-                                ctx.lineTo(width - 1, 1);
-                                ctx.lineTo(width / 2, height - 1);
-                                ctx.closePath();
-                                ctx.fill();
-                            }
-                            Connections {
-                                target: page
-                                function onAccentTextColorChanged() { parent.requestPaint(); }
-                            }
-                        }
-                        background: Rectangle {
-                            radius: height / 2
-                            color: presetSelector.pressed ? Qt.darker(page.accentColor, 1.08) : page.accentColor
-                        }
-                        function syncSelection() {
-                            const index = page.performancePresets.indexOf(page.activePerformancePreset);
-                            if (index >= 0) currentIndex = index;
-                        }
-                        Component.onCompleted: syncSelection()
-                        onActivated: index => page.applyPerformancePreset(page.performancePresets[index])
-                        Connections {
-                            target: page
-                            function onActivePerformancePresetChanged() { presetSelector.syncSelection(); }
-                            function onPerformancePresetsChanged() { presetSelector.syncSelection(); }
-                        }
-                    }
-                    PlasmaComponents.ToolButton {
-                        text: page.presetEditorOpen ? i18n("Done tuning profiles") : i18n("Tune profiles")
-                        display: PlasmaComponents.AbstractButton.IconOnly
-                        checkable: true
-                        checked: page.presetEditorOpen
-                        onToggled: {
-                            page.presetEditorOpen = checked;
-                            if (checked) Plasmoid.refreshPerformancePresets();
-                        }
-                        contentItem: SuiteIcon {
-                            glyph: "sliders-horizontal"
-                            implicitWidth: Kirigami.Units.iconSizes.small
-                            implicitHeight: implicitWidth
-                        }
-                        PlasmaComponents.ToolTip { text: parent.text }
-                    }
-                }
-            }
-
-            // Profile tuning. Presets are changed one setting at a time through
-            // the Z13 helper, never by saving whatever is live, so a preset
-            // cannot pick up another tool's energy setting by accident.
-            ColumnLayout {
-                visible: page.hasPerformanceProfiles && page.presetEditorOpen
-                Layout.fillWidth: true
-                Layout.leftMargin: page.standardSpacing
-                Layout.rightMargin: page.standardSpacing
-                spacing: page.compactSpacing
-
-                RowLayout {
-                    Layout.fillWidth: true
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        text: i18n("Switch when plugged in or unplugged")
-                    }
-                    PlasmaComponents.Switch {
-                        checked: Plasmoid.performanceAutoSwitch
-                        onToggled: Plasmoid.setPerformancePowerPolicy(checked, Plasmoid.performanceAcPreset, Plasmoid.performanceBatteryPreset)
+                        text: page.activePerformancePreset || i18n("Performance")
+                        maximumLineCount: 1
+                        elide: Text.ElideRight
                     }
                 }
-
-                Repeater {
-                    model: [
-                        { label: i18n("Plugged in"), battery: false },
-                        { label: i18n("On battery"), battery: true }
-                    ]
-                    delegate: RowLayout {
-                        id: sourceRow
-                        required property var modelData
-                        Layout.fillWidth: true
-                        enabled: Plasmoid.performanceAutoSwitch
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: sourceRow.modelData.label
-                        }
-                        PlasmaComponents.ComboBox {
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 8
-                            model: page.performancePresets
-                            currentIndex: page.performancePresets.indexOf(sourceRow.modelData.battery
-                                ? Plasmoid.performanceBatteryPreset : Plasmoid.performanceAcPreset)
-                            onActivated: index => {
-                                const name = page.performancePresets[index];
-                                if (sourceRow.modelData.battery) {
-                                    Plasmoid.setPerformancePowerPolicy(true, Plasmoid.performanceAcPreset, name);
-                                } else {
-                                    Plasmoid.setPerformancePowerPolicy(true, name, Plasmoid.performanceBatteryPreset);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                PlasmaComponents.Label {
-                    Layout.fillWidth: true
-                    Layout.topMargin: page.compactSpacing
-                    text: i18n("Energy use")
-                    font.weight: Font.Medium
-                }
-
-                Repeater {
-                    model: page.performancePresets
-                    delegate: RowLayout {
-                        id: eppRow
-                        required property string modelData
-                        Layout.fillWidth: true
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: eppRow.modelData
-                            elide: Text.ElideRight
-                        }
-                        PlasmaComponents.ComboBox {
-                            Layout.preferredWidth: Kirigami.Units.gridUnit * 8
-                            model: page.eppChoices.map(choice => choice.label)
-                            currentIndex: page.eppChoices.findIndex(choice =>
-                                choice.value === Plasmoid.performancePresetEpps[eppRow.modelData])
-                            onActivated: index => Plasmoid.setPerformancePresetEpp(eppRow.modelData, page.eppChoices[index].value)
-                        }
-                    }
-                }
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: i18n("Performance")
+                Accessible.description: page.activePerformancePreset
+                Accessible.onPressAction: page.openPerformancePage()
+                Keys.onReturnPressed: page.openPerformancePage()
+                Keys.onSpacePressed: page.openPerformancePage()
+                HoverHandler { id: performanceHover }
+                TapHandler { id: performanceTap; onTapped: page.openPerformancePage() }
             }
         }
     }

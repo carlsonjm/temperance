@@ -66,7 +66,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
 | Tap or click the battery | Opens the battery page. |
-| Choose a Profile | Changes the power profile; shown only where the machine offers profiles. |
+| Tap or click the profile entry | Opens Performance, to apply or edit profiles. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
 | Tap or click Back | Returns to the page that opened this one. |
 | Tap, click, right-click, middle-click, scroll or press and hold a pill | The same as on that entry in the System Tray. |

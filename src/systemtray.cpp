@@ -486,9 +486,9 @@ void SystemTray::refreshPerformancePresets()
     refreshPerformanceState();
 }
 
-QVariantMap SystemTray::performancePresetEpps() const
+QVariantMap SystemTray::performancePresetSettings() const
 {
-    return m_performancePresetEpps;
+    return m_performancePresetSettings;
 }
 
 bool SystemTray::performanceAutoSwitch() const
@@ -504,6 +504,25 @@ QString SystemTray::performanceAcPreset() const
 QString SystemTray::performanceBatteryPreset() const
 {
     return m_performanceBatteryPreset;
+}
+
+int SystemTray::performanceBatteryLimit() const
+{
+    return m_performanceBatteryLimit;
+}
+
+bool SystemTray::performanceBusy() const
+{
+    return m_performanceBusy;
+}
+
+void SystemTray::setPerformanceBusy(bool busy)
+{
+    if (m_performanceBusy == busy) {
+        return;
+    }
+    m_performanceBusy = busy;
+    Q_EMIT performanceBusyChanged();
 }
 
 // Sends each request to the z13ctl-plus daemon in turn, one connection per
@@ -562,51 +581,159 @@ void SystemTray::refreshPerformanceState()
             return;
         }
         const QJsonObject state = reply.value(u"state"_s).toObject();
-        QVariantMap epps;
+        // Each preset as the Performance page edits it. A preset without
+        // power limits or a fan curve leaves them to the profile's firmware,
+        // so those keys are left out rather than filled with live values.
+        QVariantMap settings;
         const QJsonObject presets = state.value(u"presets"_s).toObject();
         for (auto it = presets.begin(); it != presets.end(); ++it) {
-            epps.insert(it.key(), it.value().toObject().value(u"cpu_power"_s).toObject().value(u"epp"_s).toString());
+            const QJsonObject preset = it.value().toObject();
+            QVariantMap entry;
+            entry.insert(u"profile"_s, preset.value(u"profile"_s).toString());
+            entry.insert(u"epp"_s, preset.value(u"cpu_power"_s).toObject().value(u"epp"_s).toString());
+            const QJsonObject tdp = preset.value(u"tdp"_s).toObject();
+            if (!tdp.isEmpty()) {
+                entry.insert(u"pl1"_s, tdp.value(u"pl1_spl"_s).toInt());
+                entry.insert(u"pl2"_s, tdp.value(u"pl2_sppt"_s).toInt());
+                entry.insert(u"pl3"_s, tdp.value(u"fppt"_s).toInt());
+            }
+            const QJsonArray points = preset.value(u"fan_curve"_s).toObject().value(u"points"_s).toArray();
+            if (points.size() == 8) {
+                QStringList curve;
+                for (qsizetype i = 0; i < points.size(); ++i) {
+                    const QJsonObject point = points.at(i).toObject();
+                    curve.append(u"%1:%2"_s.arg(point.value(u"temp"_s).toInt()).arg(point.value(u"pwm"_s).toInt()));
+                }
+                entry.insert(u"fanCurve"_s, curve.join(u','));
+            }
+            settings.insert(it.key(), entry);
         }
         const QJsonObject policy = state.value(u"power_policy"_s).toObject();
-        m_performancePresetEpps = epps;
+        // The live threshold first; the daemon's own record when the
+        // battery could not be read.
+        int batteryLimit = state.value(u"battery_detail"_s).toObject().value(u"threshold_pct"_s).toInt();
+        if (batteryLimit <= 0) {
+            batteryLimit = state.value(u"battery_limit"_s).toInt();
+        }
+        m_performancePresetSettings = settings;
         m_performanceAutoSwitch = policy.value(u"enabled"_s).toBool();
         m_performanceAcPreset = policy.value(u"ac_preset"_s).toString();
         m_performanceBatteryPreset = policy.value(u"battery_preset"_s).toString();
+        m_performanceBatteryLimit = batteryLimit;
         Q_EMIT performanceStateChanged();
     });
 }
 
-// The daemon can only save what is live, so a preset's energy preference is
-// changed by applying the preset, setting the preference, saving it under the
-// same name and returning to the preset that was active before. Nothing else
-// in the preset changes, and the live preference is never copied by accident.
-void SystemTray::setPerformancePresetEpp(const QString &name, const QString &epp)
+// The daemon can only save what is live, so a preset is changed by applying
+// it, setting only what the Performance page changed, saving it under the
+// same name and applying the preset that was active before. On any refusal
+// the earlier preset is applied again, so the machine never stays on a
+// half-edited preset. Nothing else saves a preset.
+void SystemTray::savePerformancePreset(const QString &name, const QVariantMap &settings)
 {
-    static const QStringList allowed{u"power"_s, u"balance_power"_s, u"balance_performance"_s, u"performance"_s};
-    if (m_performanceHelper.isEmpty() || m_performanceBusy || !m_performancePresets.contains(name) || !allowed.contains(epp)) {
+    static const QStringList profiles{u"quiet"_s, u"balanced"_s, u"performance"_s};
+    static const QStringList epps{u"power"_s, u"balance_power"_s, u"balance_performance"_s, u"performance"_s};
+    if (m_performanceHelper.isEmpty() || m_performanceBusy || !m_performancePresets.contains(name)) {
+        Q_EMIT performancePresetSaved(name, false, QString());
         return;
     }
-    const QString previous = m_activePerformancePreset;
-    QList<QJsonObject> requests{
-        QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, name}},
-        QJsonObject{{u"cmd"_s, u"cpu-epp"_s}, {u"set"_s, epp}},
-        QJsonObject{{u"cmd"_s, u"preset-save"_s}, {u"name"_s, name}},
-    };
-    if (!previous.isEmpty() && previous != name) {
-        requests.append(QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, previous}});
-    }
-    m_performanceBusy = true;
-    sendPerformanceRequests(requests, [this, previous](bool ok, const QJsonObject &) {
-        m_performanceBusy = false;
-        if (!ok && !previous.isEmpty()) {
-            // Leave the machine on the preset it was on, whatever failed.
-            sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, previous}}}, [this](bool, const QJsonObject &) {
-                refreshPerformancePresets();
-            });
+
+    QList<QJsonObject> changes;
+    if (settings.contains(u"profile"_s)) {
+        const QString profile = settings.value(u"profile"_s).toString();
+        if (!profiles.contains(profile)) {
+            Q_EMIT performancePresetSaved(name, false, QString());
             return;
         }
-        refreshPerformancePresets();
+        changes.append(QJsonObject{{u"cmd"_s, u"profile"_s}, {u"set"_s, profile}});
+    }
+    if (settings.value(u"tdpReset"_s).toBool()) {
+        changes.append(QJsonObject{{u"cmd"_s, u"tdp-reset"_s}});
+    } else if (settings.contains(u"pl1"_s)) {
+        const int pl1 = settings.value(u"pl1"_s).toInt();
+        const int pl2 = settings.value(u"pl2"_s).toInt();
+        const int pl3 = settings.value(u"pl3"_s).toInt();
+        // Sustained power stays where the helper allows it without force;
+        // the boosts within the hardware's maximum, as the helper checks.
+        if (pl1 < 5 || pl1 > 75 || pl2 < 5 || pl2 > 93 || pl3 < 5 || pl3 > 93) {
+            Q_EMIT performancePresetSaved(name, false, QString());
+            return;
+        }
+        changes.append(QJsonObject{{u"cmd"_s, u"tdp"_s},
+                                   {u"pl1"_s, QString::number(pl1)},
+                                   {u"pl2"_s, QString::number(pl2)},
+                                   {u"pl3"_s, QString::number(pl3)}});
+    }
+    if (settings.value(u"fanReset"_s).toBool()) {
+        changes.append(QJsonObject{{u"cmd"_s, u"fancurve-reset"_s}});
+    } else if (settings.contains(u"fanCurve"_s)) {
+        // Eight temp:pwm points, temperatures rising and speeds never falling.
+        const QStringList points = settings.value(u"fanCurve"_s).toString().split(u',');
+        bool valid = points.size() == 8;
+        int lastTemp = -1;
+        int lastPwm = 0;
+        for (const QString &point : points) {
+            const QStringList parts = point.split(u':');
+            bool tempOk = false;
+            bool pwmOk = false;
+            const int temp = parts.value(0).toInt(&tempOk);
+            const int pwm = parts.value(1).toInt(&pwmOk);
+            if (parts.size() != 2 || !tempOk || !pwmOk || temp <= lastTemp || temp > 120 || pwm < lastPwm || pwm > 255) {
+                valid = false;
+                break;
+            }
+            lastTemp = temp;
+            lastPwm = pwm;
+        }
+        if (!valid) {
+            Q_EMIT performancePresetSaved(name, false, QString());
+            return;
+        }
+        changes.append(QJsonObject{{u"cmd"_s, u"fancurve"_s}, {u"set"_s, points.join(u',')}});
+    }
+    if (settings.contains(u"epp"_s)) {
+        const QString epp = settings.value(u"epp"_s).toString();
+        if (!epps.contains(epp)) {
+            Q_EMIT performancePresetSaved(name, false, QString());
+            return;
+        }
+        changes.append(QJsonObject{{u"cmd"_s, u"cpu-epp"_s}, {u"set"_s, epp}});
+    }
+    if (changes.isEmpty()) {
+        Q_EMIT performancePresetSaved(name, true, QString());
+        return;
+    }
+
+    // With no preset active there is nothing to return to, so the edited
+    // preset stays applied.
+    const QString restore = m_activePerformancePreset.isEmpty() ? name : m_activePerformancePreset;
+    const QJsonObject restoreRequest{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, restore}};
+    QList<QJsonObject> requests{QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, name}}};
+    requests.append(changes);
+    requests.append(QJsonObject{{u"cmd"_s, u"preset-save"_s}, {u"name"_s, name}});
+    setPerformanceBusy(true);
+    sendPerformanceRequests(requests, [this, name, restoreRequest](bool saved, const QJsonObject &reply) {
+        const QString detail = saved ? QString() : reply.value(u"error"_s).toString();
+        sendPerformanceRequests({restoreRequest}, [this, name, saved, detail](bool, const QJsonObject &) {
+            setPerformanceBusy(false);
+            Q_EMIT performancePresetSaved(name, saved, detail);
+            refreshPerformancePresets();
+        });
     });
+}
+
+void SystemTray::setPerformanceBatteryLimit(int percent)
+{
+    // The helper accepts 40 to 100 percent.
+    if (m_performanceHelper.isEmpty() || m_performanceBusy || percent < 40 || percent > 100) {
+        return;
+    }
+    setPerformanceBusy(true);
+    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"batterylimit"_s}, {u"set"_s, QString::number(percent)}}},
+                            [this](bool, const QJsonObject &) {
+                                setPerformanceBusy(false);
+                                refreshPerformanceState();
+                            });
 }
 
 void SystemTray::setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset)
@@ -616,20 +743,20 @@ void SystemTray::setPerformancePowerPolicy(bool enabled, const QString &acPreset
         || (!batteryPreset.isEmpty() && !m_performancePresets.contains(batteryPreset))) {
         return;
     }
-    m_performanceBusy = true;
+    setPerformanceBusy(true);
     sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"power-policy-set"_s},
                               {u"enabled"_s, enabled},
                               {u"ac_preset"_s, acPreset},
                               {u"battery_preset"_s, batteryPreset}}},
                             [this](bool, const QJsonObject &) {
-                                m_performanceBusy = false;
+                                setPerformanceBusy(false);
                                 refreshPerformancePresets();
                             });
 }
 
 void SystemTray::applyPerformancePreset(const QString &name)
 {
-    if (m_performanceHelper.isEmpty() || name.isEmpty()
+    if (m_performanceHelper.isEmpty() || m_performanceBusy || name.isEmpty()
         || (!m_performancePresets.isEmpty() && !m_performancePresets.contains(name))) {
         return;
     }

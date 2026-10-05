@@ -32,6 +32,9 @@ Item {
         - headingBackground.bottomPadding - contentSafety * 2 - headerSafety)
     readonly property bool calendarShown: !systemTrayState.activeApplet
         && systemTrayState.page === "calendar"
+    // The Z13's Performance page, opened from Control Center's profile entry.
+    readonly property bool performanceShown: !systemTrayState.activeApplet
+        && systemTrayState.page === "performance"
     readonly property real desiredWidth: calendarShown
         ? calendarPage.implicitWidth + contentSafety * 2
         : Kirigami.Units.gridUnit * 24
@@ -45,6 +48,7 @@ Item {
         const pageHeight = systemTrayState.page === "control" ? controlPage.implicitHeight
             : systemTrayState.page === "notifications" ? notificationPage.implicitHeight
             : systemTrayState.page === "calendar" ? calendarPage.implicitHeight
+            : systemTrayState.page === "performance" ? performancePage.implicitHeight
             : organizedPage.implicitHeight;
         return pageHeight + heading.implicitHeight + headingBackground.bottomPadding
             + contentSafety * 2 + headerSafety;
@@ -85,9 +89,13 @@ Item {
     }
 
     // The performance preset can change outside Temperance, so read it each
-    // time Control Center comes into view rather than polling for it.
+    // time Control Center or the Performance page comes into view rather than
+    // polling for it.
     function refreshControlCenter() {
-        if (systemTrayState.expanded && systemTrayState.page === "control") Plasmoid.refreshPerformancePresets();
+        if (systemTrayState.expanded
+                && (systemTrayState.page === "control" || systemTrayState.page === "performance"))
+            Plasmoid.refreshPerformancePresets();
+        if (popup.performanceShown && systemTrayState.expanded) performancePage.open();
     }
 
     Connections {
@@ -138,6 +146,7 @@ Item {
         if (systemTrayState.page === "tray") return i18n("System Tray");
         if (systemTrayState.page === "notifications") return i18n("Notifications & Events");
         if (systemTrayState.page === "calendar") return calendarPage.title;
+        if (systemTrayState.page === "performance") return i18n("Performance");
         return i18n("Control Center");
     }
 
@@ -292,14 +301,17 @@ Item {
             Layout.rightMargin: popup.pageInset
             Layout.topMargin: popup.headerSafety
 
-            // A page an applet shows, Networks say, goes back to the page it
-            // was opened from.
+            // A page an entry opens, Networks or Performance say, goes back
+            // to the page it was opened from.
             HeaderCircle {
                 objectName: "temperance-header-back"
-                visible: systemTrayState.activeApplet !== null
+                visible: systemTrayState.activeApplet !== null || popup.performanceShown
                 glyph: "chevron-left"
                 text: i18n("Back")
-                onClicked: systemTrayState.setActiveApplet(null)
+                onClicked: {
+                    if (systemTrayState.activeApplet) systemTrayState.setActiveApplet(null);
+                    else systemTrayState.page = "control";
+                }
             }
 
             Kirigami.Heading {
@@ -564,8 +576,17 @@ Item {
             controlCenterModel: root.controlCenterModel
             performancePresets: Plasmoid.performancePresets
             activePerformancePreset: Plasmoid.activePerformancePreset
-            applyPerformancePreset: name => Plasmoid.applyPerformancePreset(name)
+            openPerformancePage: () => { systemTrayState.page = "performance"; }
             accentColor: root.accentColor
+        }
+
+        PerformancePage {
+            id: performancePage
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: popup.performanceShown
+            accentColor: root.accentColor
+            maximumHeight: popup.notificationPageHeightLimit
         }
 
         OrganizedTrayPage {
