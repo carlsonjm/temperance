@@ -361,7 +361,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
         case BaseRole::EffectiveStatus:
             return calculateEffectiveStatus(true, extractStatus(sniData), itemId);
         case BaseRole::ControlCenterOrder:
-            return 100;
+            return controlCenterOrder(itemId);
         default:
             return {};
         }
@@ -650,7 +650,7 @@ QVariant BackgroundAppsModel::data(const QModelIndex &index, int role) const
         case BaseRole::EffectiveStatus:
             return calculateEffectiveStatus(true, Plasma::Types::ItemStatus::ActiveStatus, app.appId);
         case BaseRole::ControlCenterOrder:
-            return 100;
+            return controlCenterOrder(app.appId);
         default:
             return QVariant();
         }
