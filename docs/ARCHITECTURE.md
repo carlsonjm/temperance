@@ -15,9 +15,8 @@ The release target is x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on
 a horizontal Wayland panel.
 
 The launcher, task manager, stock panel spacers and Ambient Tettegouche are
-independent applets. Temperance may measure their geometry but never configures
-or owns them. It reports what changed through notifications; Ambient owns what is
-ongoing.
+independent applets. Temperance may measure but never configures or owns them.
+It reports what changed through notifications; Ambient owns what is ongoing.
 
 ## Width
 
@@ -25,7 +24,7 @@ Adaptive mode measures from Temperance's right edge to the nearest visible
 non-spacer applet on its left, leaving the configured gap. Plasma can move an
 ancestor AppletContainer without changing a child root's local geometry, so the
 watcher observes each relevant root and its ancestor chain, including
-reparenting. Updates are event driven: no polling and no guessed target width.
+reparenting. Updates are event driven: no polling, no guessed width.
 
 Manual mode uses a fixed configured width. In both modes controls keep their
 minimum widths, and the ticker clips, scrolls or drops optional content inside the
@@ -151,11 +150,11 @@ calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
 themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
-Promoted tray entries become Control Center pills and leave the organized tray,
-which keeps the Apps, Devices, System order and drops empty sections from its
-spacing. Controls the machine cannot use are omitted: battery follows
-authoritative power state, and performance profiles appear only when the local
-helper is found.
+Promoted tray entries become Control Center pills in listed order and leave the
+organized tray, which keeps the Apps, Devices, System order and drops empty
+sections from its spacing. Controls the machine cannot use are omitted: battery
+follows authoritative power state, and the Performance pill, placed by
+`temperance.performance`, needs the local helper.
 
 ## Settings
 

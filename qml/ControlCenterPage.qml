@@ -44,6 +44,35 @@ Item {
     property int displayBrightnessMax: 100
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
 
+    // The Performance pill takes its place in Control Center's order from
+    // the same list as the tray entries; unlisted, it comes last.
+    readonly property string performanceItemId: "temperance.performance"
+    readonly property int performanceOrder: {
+        const position = (Plasmoid.configuration.controlCenterItems || []).indexOf(performanceItemId);
+        return position >= 0 ? position : 100;
+    }
+    property int controlOrderRevision: 0
+    readonly property int performanceSlot: {
+        controlOrderRevision;
+        const model = page.controlCenterModel;
+        const role = model.KItemModels.KRoleNames.role("controlCenterOrder");
+        let slot = 0;
+        for (let row = 0; row < model.rowCount(); ++row) {
+            if (model.data(model.index(row, 0), role) < performanceOrder) ++slot;
+        }
+        return slot;
+    }
+
+    Connections {
+        target: page.controlCenterModel
+        function onRowsInserted() { page.controlOrderRevision++; }
+        function onRowsRemoved() { page.controlOrderRevision++; }
+        function onRowsMoved() { page.controlOrderRevision++; }
+        function onModelReset() { page.controlOrderRevision++; }
+        function onLayoutChanged() { page.controlOrderRevision++; }
+        function onDataChanged() { page.controlOrderRevision++; }
+    }
+
     function updateBrightness() {
         const displays = screenBrightness.displays;
         if (!displays || displays.rowCount() < 1) {
@@ -291,7 +320,8 @@ Item {
 
         GridLayout {
             id: controlGrid
-            readonly property int visibleRows: Math.ceil(controlRepeater.count / columns)
+            readonly property int visibleRows: Math.ceil(
+                (controlRepeater.count + (page.hasPerformanceProfiles ? 1 : 0)) / columns)
             readonly property real tileHeight: Kirigami.Units.gridUnit * 2.75
             implicitHeight: visibleRows > 0
                 ? visibleRows * tileHeight + (visibleRows - 1) * rowSpacing : 0
@@ -310,6 +340,10 @@ Item {
                     required property int index
                     required property int effectiveStatus
                     required property var model
+                    readonly property int slot: index
+                        + (page.hasPerformanceProfiles && index >= page.performanceSlot ? 1 : 0)
+                    Layout.row: Math.floor(slot / controlGrid.columns)
+                    Layout.column: slot % controlGrid.columns
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                     Layout.preferredWidth: 0
@@ -325,26 +359,19 @@ Item {
                     }
                 }
             }
-        }
 
-        // Battery has its own icon in the bar, which opens its page, so
-        // Control Center keeps no battery entry of its own.
-        RowLayout {
-            visible: page.hasPerformanceProfiles
-            Layout.fillWidth: true
-            Layout.topMargin: visible ? page.compactSpacing : 0
-            spacing: page.compactSpacing
-
-            // The profile in use, drawn as an entry like Networks; a tap
-            // opens the Performance page.
+            // The profile in use, drawn as a pill among the others and
+            // ordered with them; a tap opens the Performance page.
             Rectangle {
                 id: performanceEntry
                 objectName: "temperance-performance-entry"
                 visible: page.hasPerformanceProfiles
+                Layout.row: Math.floor(page.performanceSlot / controlGrid.columns)
+                Layout.column: page.performanceSlot % controlGrid.columns
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 Layout.preferredWidth: 0
-                Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
+                Layout.preferredHeight: controlGrid.tileHeight
                 radius: height / 2
                 color: performanceTap.pressed || performanceHover.hovered
                     ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
