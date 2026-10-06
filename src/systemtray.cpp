@@ -12,6 +12,8 @@
 #include "config-X11.h"
 #include "debug.h"
 #include "systemtray.h"
+#include "suitesettings.h"
+#include <KLocalizedString>
 
 #include "calendarfeeds.h"
 
@@ -348,6 +350,8 @@ void SystemTray::init()
     migrateFromSystrayContainer();
 
     Containment::init();
+    openConfigureInSuiteSettings(this, QStringLiteral("status"));
+    useShuffleName(this, i18nc("@title Shuffle's name for this widget", "Status Bar"));
 
     initSettingsAndRegistry();
 

@@ -9,7 +9,6 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
-import org.kde.plasma.workspace.dbus as DBus
 
 Item {
     id: page
@@ -43,13 +42,36 @@ Item {
     }
     property int displayBrightness: 0
     property int displayBrightnessMax: 100
-    readonly property bool hasBattery: Boolean(battery.properties.IsPresent)
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
-    readonly property real batteryPercent: Number(battery.properties.Percentage || 0)
-    readonly property int batteryState: Number(battery.properties.State || 0)
-    readonly property real batterySeconds: batteryState === 1
-        ? Number(battery.properties.TimeToFull || 0)
-        : Number(battery.properties.TimeToEmpty || 0)
+
+    // The Performance pill takes its place in Control Center's order from
+    // the same list as the tray entries; unlisted, it comes last.
+    readonly property string performanceItemId: "temperance.performance"
+    readonly property int performanceOrder: {
+        const position = (Plasmoid.configuration.controlCenterItems || []).indexOf(performanceItemId);
+        return position >= 0 ? position : 100;
+    }
+    property int controlOrderRevision: 0
+    readonly property int performanceSlot: {
+        controlOrderRevision;
+        const model = page.controlCenterModel;
+        const role = model.KItemModels.KRoleNames.role("controlCenterOrder");
+        let slot = 0;
+        for (let row = 0; row < model.rowCount(); ++row) {
+            if (model.data(model.index(row, 0), role) < performanceOrder) ++slot;
+        }
+        return slot;
+    }
+
+    Connections {
+        target: page.controlCenterModel
+        function onRowsInserted() { page.controlOrderRevision++; }
+        function onRowsRemoved() { page.controlOrderRevision++; }
+        function onRowsMoved() { page.controlOrderRevision++; }
+        function onModelReset() { page.controlOrderRevision++; }
+        function onLayoutChanged() { page.controlOrderRevision++; }
+        function onDataChanged() { page.controlOrderRevision++; }
+    }
 
     function updateBrightness() {
         const displays = screenBrightness.displays;
@@ -63,21 +85,6 @@ Item {
         displayName = displays.data(idx, displays.KItemModels.KRoleNames.role("displayName"));
         displayBrightness = displays.data(idx, displays.KItemModels.KRoleNames.role("brightness"));
         displayBrightnessMax = displays.data(idx, displays.KItemModels.KRoleNames.role("maxBrightness")) || 100;
-    }
-
-    function batteryStateText() {
-        if (batteryState === 1) return i18n("Charging");
-        if (batteryState === 2) return i18n("On battery");
-        if (batteryState === 4) return i18n("Fully charged");
-        return i18n("Battery");
-    }
-
-    function durationText(seconds) {
-        if (!seconds || seconds < 60) return "";
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        if (hours > 0) return i18n("%1h %2m remaining", hours, minutes);
-        return i18n("%1m remaining", minutes);
     }
 
     component ActionTile: Rectangle {
@@ -139,31 +146,6 @@ Item {
                 inlinePresentation: true
             }
         }
-    }
-
-    component BatteryGlyph: Item {
-        property real level: 0
-        implicitWidth: 23
-        implicitHeight: 14
-        Rectangle {
-            x: 0
-            y: 1
-            width: 19
-            height: 12
-            radius: 3
-            color: "transparent"
-            border.width: 2
-            border.color: "white"
-            Rectangle {
-                x: 3
-                y: 3
-                width: Math.max(2, 11 * Math.min(100, Math.max(0, parent.parent.level)) / 100)
-                height: 6
-                radius: 1.5
-                color: "white"
-            }
-        }
-        Rectangle { x: 20; y: 4; width: 3; height: 6; radius: 1; color: "white" }
     }
 
     component AccentSlider: PlasmaComponents.Slider {
@@ -236,14 +218,6 @@ Item {
                 ctx.stroke();
             }
         }
-    }
-
-    DBus.Properties {
-        id: battery
-        busType: DBus.BusType.System
-        service: "org.freedesktop.UPower"
-        path: "/org/freedesktop/UPower/devices/DisplayDevice"
-        iface: "org.freedesktop.UPower.Device"
     }
 
     Brightness.ScreenBrightnessControl { id: screenBrightness; isSilent: true }
@@ -346,7 +320,8 @@ Item {
 
         GridLayout {
             id: controlGrid
-            readonly property int visibleRows: Math.ceil(controlRepeater.count / columns)
+            readonly property int visibleRows: Math.ceil(
+                (controlRepeater.count + (page.hasPerformanceProfiles ? 1 : 0)) / columns)
             readonly property real tileHeight: Kirigami.Units.gridUnit * 2.75
             implicitHeight: visibleRows > 0
                 ? visibleRows * tileHeight + (visibleRows - 1) * rowSpacing : 0
@@ -365,6 +340,10 @@ Item {
                     required property int index
                     required property int effectiveStatus
                     required property var model
+                    readonly property int slot: index
+                        + (page.hasPerformanceProfiles && index >= page.performanceSlot ? 1 : 0)
+                    Layout.row: Math.floor(slot / controlGrid.columns)
+                    Layout.column: slot % controlGrid.columns
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                     Layout.preferredWidth: 0
@@ -380,57 +359,19 @@ Item {
                     }
                 }
             }
-        }
 
-        RowLayout {
-            visible: page.hasBattery || page.hasPerformanceProfiles
-            Layout.fillWidth: true
-            Layout.topMargin: visible ? page.compactSpacing : 0
-            spacing: page.compactSpacing
-
-            Rectangle {
-                visible: page.hasBattery
-                Layout.fillWidth: true
-                Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
-                radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.07)
-                RowLayout {
-                    anchors.centerIn: parent
-                    spacing: page.standardSpacing
-                    BatteryGlyph { level: page.batteryPercent }
-                    ColumnLayout {
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 6.6
-                        spacing: 0
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            font.weight: Font.Medium
-                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
-                            text: Math.round(page.batteryPercent) + "% · " + page.batteryStateText()
-                        }
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            visible: text !== ""
-                            opacity: 0.65
-                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                            text: page.durationText(page.batterySeconds)
-                        }
-                    }
-                }
-                TapHandler { onTapped: page.activateAppletById("org.kde.plasma.battery") }
-            }
-
-            // The profile in use, drawn as an entry like Networks; a tap
-            // opens the Performance page.
+            // The profile in use, drawn as a pill among the others and
+            // ordered with them; a tap opens the Performance page.
             Rectangle {
                 id: performanceEntry
                 objectName: "temperance-performance-entry"
                 visible: page.hasPerformanceProfiles
+                Layout.row: Math.floor(page.performanceSlot / controlGrid.columns)
+                Layout.column: page.performanceSlot % controlGrid.columns
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 Layout.preferredWidth: 0
-                Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
+                Layout.preferredHeight: controlGrid.tileHeight
                 radius: height / 2
                 color: performanceTap.pressed || performanceHover.hovered
                     ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)

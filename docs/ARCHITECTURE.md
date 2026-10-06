@@ -15,9 +15,8 @@ The release target is x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on
 a horizontal Wayland panel.
 
 The launcher, task manager, stock panel spacers and Ambient Tettegouche are
-independent applets. Temperance may measure their geometry but never configures
-or owns them. It reports what changed through notifications; Ambient owns what is
-ongoing.
+independent applets. Temperance may measure but never configures or owns them.
+It reports what changed through notifications; Ambient owns what is ongoing.
 
 ## Width
 
@@ -25,7 +24,7 @@ Adaptive mode measures from Temperance's right edge to the nearest visible
 non-spacer applet on its left, leaving the configured gap. Plasma can move an
 ancestor AppletContainer without changing a child root's local geometry, so the
 watcher observes each relevant root and its ancestor chain, including
-reparenting. Updates are event driven: no polling and no guessed target width.
+reparenting. Updates are event driven: no polling, no guessed width.
 
 Manual mode uses a fixed configured width. In both modes controls keep their
 minimum widths, and the ticker clips, scrolls or drops optional content inside the
@@ -99,7 +98,7 @@ rows contribute their real height so controls stay inside the card.
 ## Clock and calendar
 
 Temperance draws the time over an optional date at the Status Bar's right end, so
-a Shuffle installation needs no separate clock applet. It uses the system UI font
+Shuffle needs no separate clock applet. It uses the system UI font
 or one you pick, in fixed cells that reserve the widest time and date the
 locale produces, so it never moves the layout. The day period is lowercase, light
 and smaller, on the time's baseline.
@@ -110,7 +109,7 @@ own pace whatever Plasma's animation speed, since nobody waits on the clock and 
 four times the default it could not be seen; only Instant, which counts as reduced
 motion, makes it a fade. Shuffle Lock shows the same clock as a block at a size
 the caller gives, a bold time over the long date set to the time's width, so lock
-and bar are one clock with one minute animation.
+and bar share one clock and animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
 (`org.kde.plasma.workspace.calendar`) and holiday plugin; a Keyboard-sized card
@@ -149,14 +148,18 @@ Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
 `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
-themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing is the installed KDE wizard; Temperance does not
-implement pairing.
+themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
-Promoted tray entries become Control Center pills and leave the organized tray,
-which keeps the Apps, Devices, System order and drops empty sections from its
-spacing. Controls the machine cannot use are omitted: battery follows
-authoritative power state, and performance profiles appear only when the local
-helper is found.
+Promoted tray entries become Control Center pills in listed order and leave the
+organized tray, which keeps the Apps, Devices, System order and drops empty
+sections from its spacing. Controls the machine cannot use are omitted: battery
+follows authoritative power state, and the Performance pill, placed by
+`temperance.performance`, needs the local helper.
+
+## Settings
+
+Where Shuffle Settings (`studio.warbler.Shuffle.Settings`) is installed, Configure
+opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 
 ## Popups
 
@@ -177,8 +180,7 @@ capped by the screen.
 
 ## Visual rules
 
-Temperance follows the suite's shared visual language and applies these rules
-itself:
+Temperance applies the suite's visual language:
 
 - Ghost White (`#F8F8FF`) is the primary foreground.
 - Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
@@ -195,8 +197,8 @@ itself:
 
 Plasma's installed Weather data comes first. With the online fallback on,
 Temperance may send the configured station coordinates or location name to
-Open-Meteo for current weather. The setting stays visible and can be turned off;
-no other network provider is added silently.
+Open-Meteo for current weather. The setting can be turned off, and no other
+provider is added.
 
 ## Licensing, packaging and checks
 

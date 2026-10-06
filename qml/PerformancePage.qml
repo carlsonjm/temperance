@@ -65,6 +65,8 @@ Item {
         { temp: 70, pwm: 120 }, { temp: 80, pwm: 170 }, { temp: 90, pwm: 220 }, { temp: 100, pwm: 255 }
     ]
 
+    // Profile editing stays folded away until asked for.
+    property bool editorOpen: false
     // The profile being edited and what is staged for it.
     property string editName: ""
     property string savedProfile: ""
@@ -124,11 +126,13 @@ Item {
         saveError = "";
     }
 
-    // Opens on the profile in use, unless an unsaved edit is waiting.
+    // Opens on the profile in use, unless an unsaved edit is waiting, which
+    // also keeps the editor unfolded.
     function open() {
         if (!dirty || presets.indexOf(editName) < 0) {
             loadEditor(presets.indexOf(activePreset) >= 0 ? activePreset : (presets.length > 0 ? presets[0] : ""));
         }
+        editorOpen = dirty;
     }
 
     function limitAt(index) {
@@ -374,66 +378,31 @@ Item {
             width: scrollView.availableWidth - 24
             spacing: page.compactSpacing
 
-            // 1. Profiles: a tap applies one.
-            PlasmaComponents.Label {
+            // 1. Profiles: choosing one applies it.
+            RowLayout {
                 Layout.fillWidth: true
-                text: i18n("Profile")
-                font.weight: Font.Medium
-            }
-
-            Repeater {
-                model: page.presets
-                delegate: Rectangle {
-                    id: presetRow
-                    required property string modelData
-                    readonly property bool active: modelData === page.activePreset
-                    readonly property var roles: {
-                        const names = [];
-                        if (modelData === Plasmoid.performanceAcPreset) names.push(i18n("Plugged in"));
-                        if (modelData === Plasmoid.performanceBatteryPreset) names.push(i18n("On battery"));
-                        return names;
-                    }
-                    function activate() {
-                        if (!presetRow.active && !page.busy) Plasmoid.applyPerformancePreset(presetRow.modelData);
-                    }
+                PlasmaComponents.Label {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 44
-                    radius: height / 2
-                    color: active ? page.accentColor
-                        : presetTap.pressed ? Qt.rgba(1, 1, 1, 0.18)
-                        : presetHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
-                    border.width: activeFocus ? 1 : 0
-                    border.color: "#F8F8FF"
-                    Behavior on color { ColorAnimation { duration: 120 } }
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 18
-                        anchors.rightMargin: 18
-                        spacing: page.compactSpacing
-                        PlasmaComponents.Label {
-                            Layout.fillWidth: true
-                            text: presetRow.modelData
-                            color: presetRow.active ? page.accentTextColor : "#F8F8FF"
-                            font.weight: presetRow.active ? Font.Medium : Font.Normal
-                            elide: Text.ElideRight
-                        }
-                        PlasmaComponents.Label {
-                            visible: Plasmoid.performanceAutoSwitch && presetRow.roles.length > 0
-                            text: presetRow.roles.join(" · ")
-                            color: presetRow.active ? page.accentTextColor : "#F8F8FF"
-                            opacity: 0.7
-                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                        }
+                    text: i18n("Profile")
+                    font.weight: Font.Medium
+                }
+                PlasmaComponents.ComboBox {
+                    id: presetPicker
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                    model: page.presets
+                    currentIndex: page.presets.indexOf(page.activePreset)
+                    enabled: !page.busy
+                    Accessible.name: i18n("Profile")
+                    onActivated: index => {
+                        const name = page.presets[index];
+                        if (name !== page.activePreset) Plasmoid.applyPerformancePreset(name);
                     }
-                    activeFocusOnTab: true
-                    Accessible.role: Accessible.RadioButton
-                    Accessible.name: modelData
-                    Accessible.checked: active
-                    Accessible.onPressAction: activate()
-                    Keys.onReturnPressed: activate()
-                    Keys.onSpacePressed: activate()
-                    HoverHandler { id: presetHover }
-                    TapHandler { id: presetTap; onTapped: presetRow.activate() }
+                    // A refused apply leaves the profile in use showing.
+                    Connections {
+                        target: page
+                        function onActivePresetChanged() { presetPicker.currentIndex = page.presets.indexOf(page.activePreset); }
+                        function onBusyChanged() { if (!page.busy) presetPicker.currentIndex = page.presets.indexOf(page.activePreset); }
+                    }
                 }
             }
 
@@ -535,27 +504,46 @@ Item {
                 }
             }
 
-            // 4. A profile's own settings, staged until Save.
+            // 4. A profile's own settings, staged until Save, folded until asked for.
             RowLayout {
+                id: editHeader
                 Layout.fillWidth: true
                 Layout.topMargin: page.surfaceSpacing - page.compactSpacing
-                PlasmaComponents.Label {
+                PlasmaComponents.ToolButton {
                     Layout.fillWidth: true
-                    text: i18n("Edit profile")
-                    font.weight: Font.Medium
+                    text: i18n("Edit a profile")
+                    contentItem: RowLayout {
+                        spacing: page.compactSpacing
+                        PlasmaComponents.Label {
+                            Layout.fillWidth: true
+                            text: i18n("Edit a profile")
+                            font.weight: Font.Medium
+                        }
+                        Kirigami.Icon {
+                            implicitWidth: Kirigami.Units.iconSizes.small
+                            implicitHeight: Kirigami.Units.iconSizes.small
+                            source: page.editorOpen ? "arrow-up-symbolic" : "arrow-down-symbolic"
+                        }
+                    }
+                    background: null
+                    Accessible.role: Accessible.Button
+                    Accessible.name: i18n("Edit a profile")
+                    Accessible.description: page.editorOpen ? i18n("Folds the profile editor away") : i18n("Shows the profile editor")
+                    onClicked: page.editorOpen = !page.editorOpen
                 }
                 PlasmaComponents.ComboBox {
+                    visible: page.editorOpen
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 9
                     model: page.presets
                     currentIndex: page.presets.indexOf(page.editName)
                     enabled: !page.saving
-                    Accessible.name: i18n("Edit profile")
+                    Accessible.name: i18n("Profile to edit")
                     onActivated: index => page.loadEditor(page.presets[index])
                 }
             }
 
             ColumnLayout {
-                visible: page.editName !== ""
+                visible: page.editorOpen && page.editName !== ""
                 Layout.fillWidth: true
                 spacing: page.compactSpacing
                 enabled: !page.saving

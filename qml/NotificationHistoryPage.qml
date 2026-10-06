@@ -9,6 +9,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.plasmoid
 
 Item {
     id: page
@@ -237,7 +238,7 @@ Item {
                     spacing: 2
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
-                        text: i18n("Temperance")
+                        text: Plasmoid.title
                         font.pixelSize: 15
                         font.weight: Font.Medium
                     }
