@@ -8,8 +8,9 @@ Read, in order:
 
 1. `AGENTS.md`
 2. `docs/ARCHITECTURE.md`
-3. `docs/ROADMAP.md`, then the suite plan and task detail, kept privately in
-   `../shuffle/docs/suite/`; when that checkout is absent, say so.
+3. `docs/ROADMAP.md`, then `ROADMAP-CC.md` § Current target and Block 7 only,
+   and task detail, kept privately in `../shuffle/docs/suite/`; when absent, say
+   so.
 
 Then read the task's source, and `docs/INPUT.md` for anything touched, clicked or
 typed. `docs/README.md` routes every other document.
