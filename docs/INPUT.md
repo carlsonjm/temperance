@@ -117,7 +117,7 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Input | What happens |
 | --- | --- |
-| Right-click Temperance, then Configure Temperance | Opens its settings: Tray Entries, Appearance and Calendar. |
+| Right-click Temperance, then Configure Temperance | Opens Tray Entries, Appearance and Calendar, or Shuffle Settings if installed. |
 | Paste a private calendar address, then Add | Links that calendar; its events appear within minutes. |
 | Choose a linked calendar's color | Its events' dot in the ticker takes that color. |
 | Remove a linked calendar | Unlinks it and forgets its color. |

@@ -12,6 +12,7 @@
 #include "config-X11.h"
 #include "debug.h"
 #include "systemtray.h"
+#include "suitesettings.h"
 
 #include "calendarfeeds.h"
 
@@ -348,6 +349,7 @@ void SystemTray::init()
     migrateFromSystrayContainer();
 
     Containment::init();
+    openConfigureInSuiteSettings(this, QStringLiteral("status"));
 
     initSettingsAndRegistry();
 

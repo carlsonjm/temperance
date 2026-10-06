@@ -149,14 +149,18 @@ Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
 `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
-themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing is the installed KDE wizard; Temperance does not
-implement pairing.
+themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
 Promoted tray entries become Control Center pills and leave the organized tray,
 which keeps the Apps, Devices, System order and drops empty sections from its
 spacing. Controls the machine cannot use are omitted: battery follows
 authoritative power state, and performance profiles appear only when the local
 helper is found.
+
+## Settings
+
+Where Shuffle Settings (`studio.warbler.Shuffle.Settings`) is installed, Configure
+opens its `status` page; elsewhere, Temperance's own page.
 
 ## Popups
 
@@ -177,8 +181,7 @@ capped by the screen.
 
 ## Visual rules
 
-Temperance follows the suite's shared visual language and applies these rules
-itself:
+Temperance applies the suite's visual language:
 
 - Ghost White (`#F8F8FF`) is the primary foreground.
 - Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
@@ -195,8 +198,8 @@ itself:
 
 Plasma's installed Weather data comes first. With the online fallback on,
 Temperance may send the configured station coordinates or location name to
-Open-Meteo for current weather. The setting stays visible and can be turned off;
-no other network provider is added silently.
+Open-Meteo for current weather. The setting can be turned off, and no other
+provider is added.
 
 ## Licensing, packaging and checks
 
