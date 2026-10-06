@@ -98,7 +98,7 @@ rows contribute their real height so controls stay inside the card.
 ## Clock and calendar
 
 Temperance draws the time over an optional date at the Status Bar's right end, so
-a Shuffle installation needs no separate clock applet. It uses the system UI font
+Shuffle needs no separate clock applet. It uses the system UI font
 or one you pick, in fixed cells that reserve the widest time and date the
 locale produces, so it never moves the layout. The day period is lowercase, light
 and smaller, on the time's baseline.
@@ -109,7 +109,7 @@ own pace whatever Plasma's animation speed, since nobody waits on the clock and 
 four times the default it could not be seen; only Instant, which counts as reduced
 motion, makes it a fade. Shuffle Lock shows the same clock as a block at a size
 the caller gives, a bold time over the long date set to the time's width, so lock
-and bar are one clock with one minute animation.
+and bar share one clock and animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
 (`org.kde.plasma.workspace.calendar`) and holiday plugin; a Keyboard-sized card
@@ -159,7 +159,7 @@ follows authoritative power state, and the Performance pill, placed by
 ## Settings
 
 Where Shuffle Settings (`studio.warbler.Shuffle.Settings`) is installed, Configure
-opens its `status` page; elsewhere, Temperance's own page.
+opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 
 ## Popups
 
