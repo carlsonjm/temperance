@@ -65,7 +65,6 @@ what you see happen. Other documents cite this one and do not restate it.
 | Tap or click the battery in the bar | Opens Plasma's Power and Battery page, else Control Center. |
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
-| Tap or click the battery | Opens the battery page. |
 | Tap or click the profile entry | Opens Performance, to apply or edit profiles. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
 | Tap or click Back | Returns to the page that opened this one. |
