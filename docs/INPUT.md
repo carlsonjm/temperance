@@ -77,7 +77,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Tap or click Lock | Locks the screen at once. |
 | Tap or click Restart | Plasma asks first, then restarts. |
 | Tap or click Shut down | Plasma asks first, then shuts down. |
-| Tap or click More, then Log out | Logs out at once, without asking. |
+| Tap or click More, then Log out | Plasma asks first, then logs out. |
 | Tap or click More, then Switch user | Opens the switch-user screen; shown only when turned on in settings. |
 
 ## System Tray
