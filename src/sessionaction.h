@@ -2,14 +2,12 @@
 #include <QDBusMessage>
 #include <QString>
 
-// Logout explicitly skips the greeter; power actions always retain confirmation.
+// Every session action that closes apps asks first, through Plasma's own
+// prompt: logging out ends the session's apps as surely as a restart does.
 inline QDBusMessage sessionActionPrompt(const QString &action)
 {
     QString method;
-    if (action == QStringLiteral("logout")) {
-        return QDBusMessage::createMethodCall(QStringLiteral("org.kde.Shutdown"),
-            QStringLiteral("/Shutdown"), QStringLiteral("org.kde.Shutdown"), QStringLiteral("logout"));
-    }
+    if (action == QStringLiteral("logout")) method = QStringLiteral("promptLogout");
     else if (action == QStringLiteral("restart")) method = QStringLiteral("promptReboot");
     else if (action == QStringLiteral("shutdown")) method = QStringLiteral("promptShutDown");
     else return {};
