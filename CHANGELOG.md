@@ -4,9 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
-- The battery in the bar opens Power and Battery again. Where the saved
-  settings had lost Plasma's battery widget, it opened Control Center, which no
-  longer shows the battery; Temperance now keeps that widget enabled.
+- The battery in the bar keeps opening Power and Battery after charging
+  starts or stops. Before, that change could leave the tap opening Control
+  Center, which no longer shows the battery, until the next sign-in.
 - Temperance is ready for translation: every word it shows comes from one
   catalog, `plasma_applet_studio.warbler.temperance`, and the build installs
   any translation added under `po/`.

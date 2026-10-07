@@ -133,12 +133,6 @@ void PlasmoidRegistry::registerPlugin(const KPluginMetaData &pluginMetaData)
         }
     }
 
-    // The bar draws the battery itself, and its tap opens this widget's page,
-    // so the widget stays enabled even where a saved list has lost it.
-    if (pluginId == QLatin1String("org.kde.plasma.battery") && !m_settings->isEnabledPlugin(pluginId)) {
-        m_settings->addEnabledPlugin(pluginId);
-    }
-
     if (m_settings->isEnabledPlugin(pluginId) && !m_dbusObserver->isDBusActivable(pluginId)) {
         Q_EMIT plasmoidEnabled(pluginId);
     }
