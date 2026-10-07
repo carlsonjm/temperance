@@ -1060,8 +1060,7 @@ ContainmentItem {
     }
 
     Component.onCompleted: {
-        activeInstantiator.active = true;
-        hiddenInstantiator.active = true;
+        appletInstantiator.active = true;
         Qt.callLater(refreshResponsiveWidth);
     }
 
@@ -1322,16 +1321,6 @@ ContainmentItem {
     }
 
     KItemModels.KSortFilterProxyModel {
-        id: activeModel
-        filterRoleName: "effectiveStatus"
-        filterRowCallback: (sourceRow, sourceParent) => {
-            const idx = sourceModel.index(sourceRow, 0, sourceParent);
-            return sourceModel.data(idx, filterRole) === PlasmaCore.Types.ActiveStatus;
-        }
-        Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
-    }
-
-    KItemModels.KSortFilterProxyModel {
         id: hiddenModel
         filterRoleName: "effectiveStatus"
         filterRowCallback: (sourceRow, sourceParent) => {
@@ -1412,31 +1401,29 @@ ContainmentItem {
         Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
     }
 
+    // Applets by id, for the controls that open their pages. One delegate per
+    // tray row, not one per shown or hidden list: a row moving between lists
+    // destroys its old delegate later than the new one registers, and that
+    // late destruction would take the applet back out.
     Instantiator {
-        id: hiddenInstantiator
+        id: appletInstantiator
         active: false
-        model: hiddenModel
-        delegate: Connections {
+        model: Plasmoid.systemTrayModel
+        delegate: QtObject {
             required property QtObject applet
             required property string itemId
-            required property int row
-            target: applet
-            Component.onCompleted: root.registerApplet(itemId, applet)
-            Component.onDestruction: root.unregisterApplet(itemId, applet)
-        }
-    }
-
-    Instantiator {
-        id: activeInstantiator
-        active: false
-        model: activeModel
-        delegate: Connections {
-            required property QtObject applet
-            required property string itemId
-            required property int row
-            target: applet
-            Component.onCompleted: root.registerApplet(itemId, applet)
-            Component.onDestruction: root.unregisterApplet(itemId, applet)
+            property QtObject registered: null
+            function sync() {
+                if (registered && registered !== applet)
+                    root.unregisterApplet(itemId, registered);
+                registered = applet;
+                if (applet) root.registerApplet(itemId, applet);
+            }
+            onAppletChanged: sync()
+            Component.onCompleted: sync()
+            Component.onDestruction: {
+                if (registered) root.unregisterApplet(itemId, registered);
+            }
         }
     }
 

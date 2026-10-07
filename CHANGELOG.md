@@ -8,6 +8,9 @@ This file records user-visible changes.
   A notification that arrives meanwhile goes to the history, the bell holds a
   check for it, and it does not play when Do Not Disturb ends. Critical
   notifications still raise their banner, as Plasma's own do by default.
+- The battery in the bar keeps opening Power and Battery after charging
+  starts or stops. Before, that change could leave the tap opening Control
+  Center, which no longer shows the battery, until the next sign-in.
 - Temperance is ready for translation: every word it shows comes from one
   catalog, `plasma_applet_studio.warbler.temperance`, and the build installs
   any translation added under `po/`.
