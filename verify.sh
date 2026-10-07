@@ -7,6 +7,7 @@ trap 'rm -rf -- "${build_dir}"' EXIT
 
 python3 "${project_root}/tests/verify-docs.py"
 python3 "${project_root}/tests/verify-public.py"
+python3 "${project_root}/tools/messages.py"
 bash "${project_root}/tests/verify-installer.sh"
 cmake -S "${project_root}" -B "${build_dir}" -DBUILD_TESTING=ON
 cmake --build "${build_dir}" -j2

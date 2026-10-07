@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Temperance is ready for translation: every word it shows comes from one
+  catalog, `plasma_applet_studio.warbler.temperance`, and the build installs
+  any translation added under `po/`.
 - On Z13 tablets with the z13ctl-plus helper, Control Center shows the
   profile in use as an entry like Networks, and a tap opens a Performance page
   with Back. Tap a profile to use it; set where the battery stops charging;
