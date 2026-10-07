@@ -157,11 +157,15 @@ plasma_add_applet(studio.warbler.temperance
         assets/icons/lucide/gauge.svg
 )
 
+# Translations, as po/<language>/plasma_applet_studio.warbler.temperance.po;
+# python3 tools/messages.py --templates po makes the template.
+ki18n_install(po)
+
 install(FILES assets/studio.warbler.temperance.png
     DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/512x512/apps)
 
 target_compile_definitions(studio.warbler.temperance PRIVATE
-    TRANSLATION_DOMAIN="temperance")
+    TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
 target_include_directories(studio.warbler.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(studio.warbler.temperance PRIVATE
@@ -198,7 +202,7 @@ if(BUILD_TESTING)
     target_link_libraries(temperance-calendar-feeds-test PRIVATE
         Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-feeds-test PRIVATE
-        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
     add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
     set_tests_properties(temperance_calendar_feeds PROPERTIES TIMEOUT 60)
     add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
@@ -207,7 +211,7 @@ if(BUILD_TESTING)
         Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-test PRIVATE
         CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
-        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="temperance")
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
     add_test(NAME temperance_calendar COMMAND temperance-calendar-test)
     set_tests_properties(temperance_calendar PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
