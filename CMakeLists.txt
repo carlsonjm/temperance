@@ -241,7 +241,8 @@ if(BUILD_TESTING)
     find_package(LayerShellQt REQUIRED)
     add_executable(temperance-ticker-panel-test tests/TickerPanelTest.cpp)
     target_link_libraries(temperance-ticker-panel-test PRIVATE Qt6::Widgets Qt6::Quick Qt6::Test
-        Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface)
+        Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface
+        PW::LibNotificationManager)
     add_dependencies(temperance-ticker-panel-test studio.warbler.temperance)
     # The real-panel fixture pairs Temperance with a separately built Tette plugin.
 endif()

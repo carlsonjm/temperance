@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Do Not Disturb keeps the ticker still, as it keeps Plasma's popups away.
+  A notification that arrives meanwhile goes to the history, the bell holds a
+  check for it, and it does not play when Do Not Disturb ends. Critical
+  notifications still raise their banner, as Plasma's own do by default.
 - Temperance is ready for translation: every word it shows comes from one
   catalog, `plasma_applet_studio.warbler.temperance`, and the build installs
   any translation added under `po/`.
