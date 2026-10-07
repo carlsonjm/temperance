@@ -2131,8 +2131,8 @@ ContainmentItem {
                 Layout.fillHeight: true
                 Accessible.name: i18n("Battery")
                 Accessible.role: Accessible.Button
-                // Plasma's Power and Battery page, as Control Center's battery
-                // row opens it; Control Center itself, where that page is missing.
+                // Plasma's Power and Battery page. Temperance keeps that widget
+                // enabled, so Control Center opens only where Plasma has none.
                 function activate() {
                     if (root.appletsById["org.kde.plasma.battery"])
                         root.activateAppletById("org.kde.plasma.battery");
@@ -2179,7 +2179,7 @@ ContainmentItem {
                 TapHandler { id: batteryStatusTap; onTapped: batteryStatusButton.activate() }
                 PlasmaComponents.ToolTip {
                     text: root.batteryOnAC ? i18n("AC power · %1", root.batteryLabel())
-                        : i18n("Battery and Control Center")
+                        : i18n("Battery")
                 }
             }
 
