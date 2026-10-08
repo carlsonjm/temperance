@@ -20,7 +20,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Your finger on an icon | The icon lifts until you let go. |
 | Pointer over the weather, network, tray or battery icon | The icon grows a little and shows its name. |
 | Escape, with a page open | Closes the page. |
-| Tap or click the pin in a page's header | Keeps the page open when focus leaves it; shown only when turned on in settings. |
+| Tap or click the pin in a page's header | Keeps the page open when focus leaves; shown only when turned on in settings. |
 
 ## Notifications & Events
 
@@ -42,10 +42,10 @@ what you see happen. Other documents cite this one and do not restate it.
 
 | Input | What happens |
 | --- | --- |
-| Pointer resting on the bell | The bell takes the highlight color, and the ticker shows its latest line again. A finger on the bell only opens the history. |
+| Pointer resting on the bell | The bell takes the highlight color and the ticker shows its latest line again. A finger only opens the history. |
 | Tap or click the ticker's line | Opens Notifications & Events. |
-| Flick the ticker's line sideways, or drag it, by finger or mouse | Checks it off: a notification leaves the ticker and waits unread in the history, today's event is marked seen, and the next line comes up. The bell counts the lines still waiting and, once all are checked off, shows ✓ until the history is opened. Let go early and the line springs back. |
-| Flick sideways over the ticker with no line showing | Brings up the latest line, and sets nothing aside. After a touch the line stays a few seconds. |
+| Flick the ticker's line sideways, or drag it, by finger or mouse | Checks it off: a notification waits unread in the history, today's event is marked seen, and the next line comes up. The bell counts lines still waiting, then shows ✓ until the history opens. Let go early and it springs back. |
+| Flick sideways over the ticker with no line showing | Brings up the latest line, setting nothing aside; after a touch it stays a few seconds. |
 
 ### Important banners
 
@@ -85,7 +85,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Input | What happens |
 | --- | --- |
 | Tap or click the tray icon | Opens the System Tray. |
-| Tap or click an entry | Opens its page, or acts as its application says and closes the popup, so the action reaches the window in use. |
+| Tap or click an entry | Opens its page, or acts as its application says and closes the popup so the action reaches the window in use. |
 | Right-click or press and hold an entry | Opens the entry's own menu. |
 | Middle-click an entry | Runs the entry's secondary action, as in Plasma's tray. |
 | Wheel over an entry | Passes the scroll to the entry, such as changing the volume. |
@@ -120,4 +120,5 @@ what you see happen. Other documents cite this one and do not restate it.
 | Paste a private calendar address, then Add | Links that calendar; its events appear within minutes. |
 | Choose a linked calendar's color | Its events' dot in the ticker takes that color. |
 | Remove a linked calendar | Unlinks it and forgets its color. |
+| Setting "Scroll notifications in the ticker", off | The bell counts what waits; nothing scrolls. |
 | Choose a clock font | Sets the clock's typeface from a searchable list. |
