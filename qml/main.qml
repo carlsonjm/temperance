@@ -1610,7 +1610,7 @@ ContainmentItem {
                                 NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
                             }
                             Behavior on scale {
-                                NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+                                NumberAnimation { duration: root.motionEnabled ? 180 : 0; easing.type: Easing.OutBack }
                             }
 
                             TextMetrics {
@@ -2069,7 +2069,7 @@ ContainmentItem {
                     property: "rippleProgress"
                     from: 0
                     to: 1
-                    duration: 320
+                    duration: root.motionEnabled ? 320 : 0
                     easing.type: Easing.OutCubic
                 }
                 StatusFace {
@@ -2375,13 +2375,13 @@ ContainmentItem {
                         property: "entranceProgress"
                         from: 0
                         to: 1
-                        duration: 180
+                        duration: root.motionEnabled ? 180 : 0
                         easing.type: Easing.OutCubic
                     }
                     onImplicitHeightChanged: Qt.callLater(bannerStack.reflow)
                     Behavior on y {
                         enabled: criticalCard.visible
-                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                        NumberAnimation { duration: root.motionEnabled ? 220 : 0; easing.type: Easing.OutCubic }
                     }
                     color: tone.surface
                     radius: 12

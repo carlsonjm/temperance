@@ -26,7 +26,7 @@ Canvas {
     onStrokeWidthChanged: requestPaint()
 
     Behavior on clapperProgress {
-        NumberAnimation { duration: 160; easing.type: Easing.InOutCubic }
+        NumberAnimation { duration: Kirigami.Units.longDuration > 0 ? 160 : 0; easing.type: Easing.InOutCubic }
     }
 
     onPaint: {

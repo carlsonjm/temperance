@@ -274,7 +274,7 @@ Item {
             removeDisplaced: Transition {
                 NumberAnimation {
                     properties: "x,y"
-                    duration: 220
+                    duration: Kirigami.Units.longDuration > 0 ? 220 : 0
                     easing.type: Easing.OutCubic
                 }
             }
