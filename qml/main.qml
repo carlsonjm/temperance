@@ -93,6 +93,7 @@ ContainmentItem {
             + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
     property int responsiveMeasuredWidth: responsiveMinimumWidth
     readonly property bool notificationsEnabled: Plasmoid.configuration.showNotifications !== false
+    readonly property bool doNotDisturb: NotificationManager.Server.inhibited
     readonly property bool weatherEnabled: Plasmoid.configuration.showWeather !== false
     readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
     readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
@@ -1246,7 +1247,12 @@ ContainmentItem {
                 && root.isPriorityNotificationCandidate(sourceModel, idx);
             // A minimized banner remains in history, but has already had its
             // presentation. Do not queue another automatic readout.
+            // Do not disturb stops the ticker as it stops Plasma's popups, and
+            // what arrived meanwhile waits in the history instead of playing
+            // once it ends.
             return unread && !reservedForBanner
+                && !root.doNotDisturb
+                && !root.addedDuringDoNotDisturb(sourceModel, idx)
                 && !root.isPriorityNotificationMinimized(sourceModel, idx)
                 && !root.isFiledQuietly(sourceModel, idx)
                 && !sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole);
@@ -1256,14 +1262,17 @@ ContainmentItem {
 
     // Lines checked off the ticker that the history has not shown yet: the bell
     // keeps a ✓ for them until the history is opened. A transfer's end, filed
-    // without crossing the ticker, was never checked and raises none.
+    // without crossing the ticker, was never checked and raises none. What
+    // arrived during do not disturb skipped the ticker, and the ✓ keeps it in
+    // view.
     KItemModels.KSortFilterProxyModel {
         id: checkedNotifications
         objectName: "temperance-checked-notifications"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
             return root.unreadInHistory(sourceModel, idx)
-                && Boolean(sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole))
+                && (Boolean(sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole))
+                    || root.addedDuringDoNotDisturb(sourceModel, idx))
                 && !root.isFiledQuietly(sourceModel, idx);
         }
         Component.onCompleted: sourceModel = notificationHistory
@@ -1274,6 +1283,16 @@ ContainmentItem {
             railNotifications.invalidateFilter();
             checkedNotifications.invalidateFilter();
         }
+    }
+    onDoNotDisturbChanged: {
+        railNotifications.invalidateFilter();
+        checkedNotifications.invalidateFilter();
+    }
+
+    // The server marks what arrives while do not disturb is on.
+    function addedDuringDoNotDisturb(model, modelIndex) {
+        return Boolean(model.data(modelIndex,
+            NotificationManager.Notifications.WasAddedDuringInhibitionRole));
     }
 
     // Unread as the history counts it: not marked read, and newer than the

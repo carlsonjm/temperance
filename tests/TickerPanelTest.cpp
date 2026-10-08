@@ -3,6 +3,7 @@
 #include <KPackage/Package>
 #include <KPackage/PackageLoader>
 #include <LayerShellQt/Window>
+#include <notificationmanager/server.h>
 #include <Plasma/Applet>
 #include <Plasma/Containment>
 #include <Plasma/Corona>
@@ -255,6 +256,25 @@ private Q_SLOTS:
     QTRY_COMPARE(checked->property("count").toInt(), 0);
     QTRY_VERIFY(count->parentItem()->opacity() < 0.1);
     QTRY_VERIFY(bell->property("clapperProgress").toReal() > 0.99);
+    // Do not disturb keeps the ticker still, as it keeps Plasma's popups
+    // away: a notification goes to the history, the bell holds a check for
+    // it, and it does not play when do not disturb ends. The next one does.
+    const int filedBefore = history->property("count").toInt();
+    NotificationManager::Server::self().setInhibited(true);
+    QVERIFY(notify(QStringLiteral("Quiet fixture")));
+    QTRY_COMPARE(history->property("count").toInt(), filedBefore + 1);
+    QTRY_COMPARE(checked->property("count").toInt(), 1);
+    QTest::qWait(400);
+    QCOMPARE(rail->property("count").toInt(), 0);
+    QVERIFY(!rightFace->property("notificationSequenceActive").toBool());
+    NotificationManager::Server::self().setInhibited(false);
+    QTest::qWait(400);
+    QCOMPARE(rail->property("count").toInt(), 0);
+    QVERIFY(notify(QStringLiteral("Loud fixture")));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QVERIFY(history->setProperty("lastRead", QDateTime::currentDateTime().addSecs(1)));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QTRY_COMPARE(checked->property("count").toInt(), 0);
     tickerControls->setProperty("revealed", false);
     QTest::qWait(300);
     // Plasma positions the AppletContainer ancestor, not the applet root.
