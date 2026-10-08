@@ -89,6 +89,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Right-click or press and hold an entry | Opens the entry's own menu. |
 | Middle-click an entry | Runs the entry's secondary action, as in Plasma's tray. |
 | Wheel over an entry | Passes the scroll to the entry, such as changing the volume. |
+| Pointer moving over an entry | Shows the entry's tooltip, such as the clipboard's contents. Opening the popup shows none until the pointer moves. |
 | Enter or Space on a focused entry | Same as tapping it. |
 | Menu key on a focused entry | Opens the entry's own menu. |
 | Tap or click Open system settings | Opens Plasma's System Settings. |

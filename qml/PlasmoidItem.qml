@@ -25,7 +25,7 @@ AbstractItem {
     subText: applet?.toolTipSubText ?? ""
     mainItem: applet?.toolTipItem ?? null
     textFormat: applet?.toolTipTextFormat ?? 0 /* Text.AutoText, the default value */
-    active: inVisibleLayout || (systemTrayState.activeApplet !== applet && (text != mainText || subText.length > 0))
+    active: inVisibleLayout || (pointerMoved && systemTrayState.activeApplet !== applet && (text != mainText || subText.length > 0))
     inlineIcon: presentationIcon || applet?.Plasmoid.icon || "application-x-executable"
 
     Kirigami.Icon {

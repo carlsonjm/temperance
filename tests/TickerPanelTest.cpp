@@ -17,6 +17,8 @@
 #include <QFileInfo>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <functional>
+
 #include <QQmlProperty>
 #include <QQuickItem>
 #include <QQuickItemGrabResult>
@@ -551,6 +553,63 @@ private Q_SLOTS:
     clickOn(QStringLiteral("temperance-clock"), QStringLiteral("calendar"));
     clickOn(QStringLiteral("temperance-tray"), QStringLiteral("tray"));
     hoverLightens(QStringLiteral("temperance-header-settings"));
+    // A tile's tooltip waits for the pointer to move over it. Opened again,
+    // the popup is handed the last pointer point as a hover with no pointer
+    // there, and no tooltip rises from it; a pointer moving over the tile
+    // still raises one.
+    {
+      QList<QQuickItem *> tiles;
+      const std::function<void(QQuickItem *)> collect = [&](QQuickItem *item) {
+        if (item->isVisible() && item->property("pointerMoved").isValid()
+            && item->property("inHiddenLayout").toBool() && item->width() > 0)
+          tiles.append(item);
+        for (auto *child : item->childItems()) collect(child);
+      };
+      collect(popupWindow->contentItem());
+      QVERIFY(!tiles.isEmpty());
+      QQuickItem *tile = tiles.first();
+      for (auto *candidate : std::as_const(tiles)) {
+        qInfo() << "T1_TILE" << candidate->property("text").toString()
+                << candidate->property("mainText").toString()
+                << candidate->property("subText").toString().size();
+        if (candidate->property("mainText").toString() != candidate->property("text").toString()
+            || !candidate->property("subText").toString().isEmpty())
+          tile = candidate;
+      }
+      const QString tileText = tile->property("text").toString();
+      const auto centreOf = [&] {
+        return tile->mapToScene({tile->width() / 2, tile->height() / 2}).toPoint();
+      };
+      // The pointer last stood on the tile, then the popup closed under it.
+      QTest::mouseMove(popupWindow, centreOf());
+      QTest::qWait(100);
+      state->setProperty("expanded", false);
+      QTRY_VERIFY(!popup->property("visible").toBool());
+      QTest::qWait(300);
+      state->setProperty("expanded", true);
+      QTRY_VERIFY(popupWindow->isExposed());
+      tiles.clear();
+      collect(popupWindow->contentItem());
+      for (auto *candidate : std::as_const(tiles))
+        if (candidate->isVisible() && candidate->property("text").toString() == tileText)
+          tile = candidate;
+      QSignalSpy shown(tile, SIGNAL(toolTipVisibleChanged(bool)));
+      QVERIFY(shown.isValid());
+      QTest::qWait(1500);
+      qInfo() << "T1_STALE_HOVER" << tileText << tile->property("containsMouse")
+              << tile->property("pointerMoved") << tile->property("active") << shown.count();
+      QVERIFY(!tile->property("pointerMoved").toBool());
+      QVERIFY(!tile->property("active").toBool());
+      QCOMPARE(shown.count(), 0);
+      const QPoint centre = centreOf();
+      for (int step = 1; step <= 4; ++step)
+        QTest::mouseMove(popupWindow, centre + QPoint(step * 4, 0));
+      QTRY_VERIFY(tile->property("pointerMoved").toBool());
+      qInfo() << "T1_MOVED_HOVER" << tileText << tile->property("active");
+      if (tile->property("active").toBool())
+        QTRY_VERIFY_WITH_TIMEOUT(!shown.isEmpty() && shown.last().first().toBool(), 3000);
+      QTest::mouseMove(popupWindow, {2, 2});
+    }
     backReturns(QStringLiteral("org.kde.plasma.volume"), QStringLiteral("tray"));
 
     // A finger on the bell opens the history; it is not a pointer resting
