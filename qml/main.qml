@@ -1320,8 +1320,19 @@ ContainmentItem {
         }
     }
 
+    // While the popup is open the tray holds still: an icon that changes
+    // status keeps its place under the finger, and the lists catch up when
+    // the popup closes. Arrivals and departures still show at once.
+    readonly property bool trayHeld: systemTrayState.expanded
+    onTrayHeldChanged: {
+        if (trayHeld) return;
+        hiddenModel.invalidateFilter();
+        organizedTrayModel.invalidateFilter();
+    }
+
     KItemModels.KSortFilterProxyModel {
         id: hiddenModel
+        dynamicSortFilter: !root.trayHeld
         filterRoleName: "effectiveStatus"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
@@ -1332,6 +1343,7 @@ ContainmentItem {
 
     KItemModels.KSortFilterProxyModel {
         id: organizedTrayModel
+        dynamicSortFilter: !root.trayHeld
         filterRoleName: "effectiveStatus"
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
