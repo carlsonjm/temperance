@@ -191,9 +191,10 @@ private Q_SLOTS:
           QStringLiteral("/org/freedesktop/Notifications"),
           QStringLiteral("org.freedesktop.Notifications"),
           QStringLiteral("Notify"));
+      // No timeout of its own, as notify-send sends: the server's default.
       posted.setArguments({QStringLiteral("T1 fixture"), uint(0), QString(),
                            summary, QStringLiteral("Body"), QStringList{},
-                           QVariantMap{}, 0});
+                           QVariantMap{}, -1});
       QDBusPendingCallWatcher sent(
           QDBusConnection::sessionBus().asyncCall(posted));
       QSignalSpy done(&sent, &QDBusPendingCallWatcher::finished);
