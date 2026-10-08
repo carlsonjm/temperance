@@ -4,8 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
-- Notification cards in the bell keep their app name and title. A card that
-  arrived while the bell was closed used to show only its message, so a
+- Notification cards in the bell keep their app name and title. After the
+  bell had been closed and opened again, a card showed only its message, so a
   calendar alert read "Today at noon" with no event.
 - A long notification arriving at the top of the bell no longer draws its
   Dismiss over the card below. New cards appear in place; the cards below a

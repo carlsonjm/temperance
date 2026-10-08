@@ -315,8 +315,8 @@ Item {
                 property bool detailsExpanded: false
                 // What the header shows, from the notification itself. Read
                 // through a label's visible, it would follow the page's own
-                // visibility: a card built while the bell is closed would hide
-                // its header and keep it hidden once the bell opens.
+                // visibility: closing the bell would hide the header, and it
+                // would stay hidden when the bell opens again.
                 readonly property bool showsApplication: !isInGroup && applicationName.length > 0
                 readonly property bool showsSummary: summary.length > 0
                 readonly property bool canOpen: !isGroup

@@ -387,13 +387,14 @@ private Q_SLOTS:
         item->setParentItem(nullptr);
     }
 
-    // A card built while the bell is closed keeps its header, and a long
-    // card arriving at the top pushes the cards below past its whole height,
-    // including the Show more it gains once its text is measured.
+    // A card keeps its header when the bell closes and opens again, and a
+    // long card arriving at the top pushes the cards below past its whole
+    // height, including the Show more it gains once its text is measured.
     void arrivalGeometry() {
         QQmlEngine engine;
         engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
         HistoryFixture model;
+        model.append(false);
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
         QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
             {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
@@ -409,19 +410,17 @@ private Q_SLOTS:
         window.resize(430, 900);
         item->setParentItem(window.contentItem());
         item->setSize(QSizeF(430, 900));
-        item->setVisible(false);
         window.show();
-        QVERIFY(QTest::qWaitForWindowExposed(&window));
-        model.append(false);
-        QTRY_VERIFY(findItem(item, QStringLiteral("notificationRow0")));
+        QQuickItem *closedRow = nullptr;
+        QTRY_VERIFY((closedRow = findItem(item, QStringLiteral("notificationRow0"))));
+        item->setVisible(false);
         QTest::qWait(50);
         item->setVisible(true);
-        auto *closedRow = findItem(item, QStringLiteral("notificationRow0"));
         auto *closedSummary = closedRow->findChild<QQuickItem *>("notificationSummary");
         auto *closedApplication = closedRow->findChild<QQuickItem *>("notificationApplication");
         QVERIFY(closedSummary && closedApplication);
         QTRY_VERIFY2(closedSummary->isVisible() && closedApplication->isVisible(),
-            "A card built while the bell was closed must show its title once it opens");
+            "A card must show its title again when the bell reopens");
         QCOMPARE(closedSummary->property("text").toString(), QStringLiteral("Test alert"));
 
         model.append(false, false, false, 0);
