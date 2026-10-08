@@ -1610,7 +1610,7 @@ ContainmentItem {
                                 NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
                             }
                             Behavior on scale {
-                                NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+                                NumberAnimation { duration: root.motionEnabled ? 180 : 0; easing.type: Easing.OutBack }
                             }
 
                             TextMetrics {
@@ -2069,7 +2069,7 @@ ContainmentItem {
                     property: "rippleProgress"
                     from: 0
                     to: 1
-                    duration: 320
+                    duration: root.motionEnabled ? 320 : 0
                     easing.type: Easing.OutCubic
                 }
                 StatusFace {
@@ -2307,6 +2307,13 @@ ContainmentItem {
                 // during a show/hide transition. Animate cards, not this host.
                 height: Math.max(1, stackHeight)
                 property real stackHeight: 0
+
+                // The alert's own window takes the look's colours, whatever
+                // ground the bar it comes from sits on.
+                StatusColors {
+                    id: bannerTone
+                    theme: bannerStack.Kirigami.Theme
+                }
                 readonly property real heightLimit: root.notificationPopupHeightLimit
                 clip: true
 
@@ -2375,18 +2382,18 @@ ContainmentItem {
                         property: "entranceProgress"
                         from: 0
                         to: 1
-                        duration: 180
+                        duration: root.motionEnabled ? 180 : 0
                         easing.type: Easing.OutCubic
                     }
                     onImplicitHeightChanged: Qt.callLater(bannerStack.reflow)
                     Behavior on y {
                         enabled: criticalCard.visible
-                        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+                        NumberAnimation { duration: root.motionEnabled ? 220 : 0; easing.type: Easing.OutCubic }
                     }
-                    color: tone.surface
+                    color: bannerTone.surface
                     radius: 12
                     border.width: 1
-                    border.color: tone.line
+                    border.color: bannerTone.line
 
                     MouseArea {
                         anchors.fill: parent
