@@ -67,10 +67,10 @@ public:
         Q_EMIT dataChanged(idx, idx, {Roles::IsGroupExpandedRole});
         return true;
     }
-    void append(bool grouped, bool group = false, bool actionable = false) {
-        const int row = rows.size();
+    void append(bool grouped, bool group = false, bool actionable = false, int at = -1) {
+        const int row = at < 0 ? rows.size() : at;
         beginInsertRows({}, row, row);
-        rows.append({{QStringLiteral("isGroup"), group}, {QStringLiteral("isInGroup"), grouped},
+        rows.insert(row, {{QStringLiteral("isGroup"), group}, {QStringLiteral("isInGroup"), grouped},
             {QStringLiteral("isGroupExpanded"), true}, {QStringLiteral("groupChildrenCount"), group ? 2 : 0},
             {QStringLiteral("summary"), QStringLiteral("Test alert")},
             {QStringLiteral("body"), QString(QStringLiteral("<html><b>Long formatted body</b><br>")
@@ -384,6 +384,58 @@ private Q_SLOTS:
         QTRY_COMPARE(model.closeCalls, 2);
         QCOMPARE(model.closedRow, 0); // Group clear keeps the group API semantics.
         QCOMPARE(model.defaultCalls, 1);
+        item->setParentItem(nullptr);
+    }
+
+    // A card keeps its header when the bell closes and opens again, and a
+    // long card arriving at the top pushes the cards below past its whole
+    // height, including the Show more it gains once its text is measured.
+    void arrivalGeometry() {
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        HistoryFixture model;
+        model.append(false);
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 900}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        QQuickWindow window;
+        window.resize(430, 900);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 900));
+        window.show();
+        QQuickItem *closedRow = nullptr;
+        QTRY_VERIFY((closedRow = findItem(item, QStringLiteral("notificationRow0"))));
+        item->setVisible(false);
+        QTest::qWait(50);
+        item->setVisible(true);
+        auto *closedSummary = closedRow->findChild<QQuickItem *>("notificationSummary");
+        auto *closedApplication = closedRow->findChild<QQuickItem *>("notificationApplication");
+        QVERIFY(closedSummary && closedApplication);
+        QTRY_VERIFY2(closedSummary->isVisible() && closedApplication->isVisible(),
+            "A card must show its title again when the bell reopens");
+        QCOMPARE(closedSummary->property("text").toString(), QStringLiteral("Test alert"));
+
+        model.append(false, false, false, 0);
+        QQuickItem *arrived = nullptr;
+        QTRY_VERIFY((arrived = findItem(item, QStringLiteral("notificationRow0"))) && arrived != closedRow);
+        QTRY_VERIFY(arrived->findChild<QQuickItem *>("notificationReadMore")->isVisible());
+        QTest::qWait(400);
+        const auto *arrivedCard = arrived->findChild<QQuickItem *>("notificationCard");
+        const QRectF arrivedRect = arrivedCard->mapRectToItem(item, arrivedCard->boundingRect());
+        auto *dismiss = findItem(arrived, QStringLiteral("notificationDismiss"));
+        const QRectF dismissRect = dismiss->mapRectToItem(item, dismiss->boundingRect());
+        QVERIFY2(dismissRect.bottom() <= arrivedRect.bottom() + 0.5, "Dismiss must stay inside its own card");
+        const QRectF belowRect = closedRow->mapRectToItem(item, closedRow->boundingRect());
+        QVERIFY2(belowRect.top() >= arrivedRect.bottom(),
+            "The card below a new arrival must start after the arrival's whole card");
         item->setParentItem(nullptr);
     }
 

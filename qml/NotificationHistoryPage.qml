@@ -260,19 +260,16 @@ Item {
         ListView {
             id: historyView
             objectName: "notificationHistoryView"
-            displaced: Transition {
+            // Cards below a dismissed one slide up. Arrivals take no
+            // transition: a new card settles its height a frame after it is
+            // placed (Show more appears once its text measures as cut off), and
+            // the list leaves a card under transition where the transition
+            // put it, so the cards below would keep the shorter height's place
+            // and draw under the new card's Dismiss.
+            removeDisplaced: Transition {
                 NumberAnimation {
                     properties: "x,y"
                     duration: 220
-                    easing.type: Easing.OutCubic
-                }
-            }
-            add: Transition {
-                NumberAnimation {
-                    property: "opacity"
-                    from: 0
-                    to: 1
-                    duration: 140
                     easing.type: Easing.OutCubic
                 }
             }
@@ -316,6 +313,12 @@ Item {
                     return actions;
                 }
                 property bool detailsExpanded: false
+                // What the header shows, from the notification itself. Read
+                // through a label's visible, it would follow the page's own
+                // visibility: closing the bell would hide the header, and it
+                // would stay hidden when the bell opens again.
+                readonly property bool showsApplication: !isInGroup && applicationName.length > 0
+                readonly property bool showsSummary: summary.length > 0
                 readonly property bool canOpen: !isGroup
                     && (hasDefaultAction || desktopEntry.length > 0)
                 function openNotification() {
@@ -459,17 +462,16 @@ Item {
                                 id: notificationHeader
                                 objectName: "notificationHeader"
                                 Layout.fillWidth: true
-                                visible: applicationLabel.visible || summaryLabel.visible
+                                visible: historyItem.showsApplication || historyItem.showsSummary
                                 spacing: 4
 
                                 PlasmaComponents.Label {
                                     id: applicationLabel
                                     objectName: "notificationApplication"
-                                    Layout.fillWidth: !summaryLabel.visible
-                                    Layout.maximumWidth: summaryLabel.visible
+                                    Layout.fillWidth: !historyItem.showsSummary
+                                    Layout.maximumWidth: historyItem.showsSummary
                                         ? Kirigami.Units.gridUnit * 8 : Number.POSITIVE_INFINITY
-                                    visible: !historyItem.isInGroup
-                                        && historyItem.applicationName.length > 0
+                                    visible: historyItem.showsApplication
                                     text: historyItem.applicationName
                                     font.pixelSize: 13
                                     font.weight: Font.Medium
@@ -479,7 +481,7 @@ Item {
 
                                 PlasmaComponents.Label {
                                     objectName: "notificationHeaderSeparator"
-                                    visible: applicationLabel.visible && summaryLabel.visible
+                                    visible: historyItem.showsApplication && historyItem.showsSummary
                                     text: "·"
                                     opacity: 0.42
                                 }
@@ -488,7 +490,7 @@ Item {
                                     id: summaryLabel
                                     objectName: "notificationSummary"
                                     Layout.fillWidth: true
-                                    visible: text.length > 0
+                                    visible: historyItem.showsSummary
                                     text: historyItem.summary
                                     textFormat: Text.PlainText
                                     font.pixelSize: 15

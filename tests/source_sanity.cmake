@@ -50,7 +50,7 @@ if(NOT notification_history_qml MATCHES "property bool detailsExpanded: false"
     message(FATAL_ERROR "Truncated notification history cards must expand in place")
 endif()
 if(NOT notification_history_qml MATCHES "id: notificationHeader"
-   OR NOT notification_history_qml MATCHES "visible: applicationLabel.visible && summaryLabel.visible"
+   OR NOT notification_history_qml MATCHES "visible: historyItem.showsApplication && historyItem.showsSummary"
    OR NOT notification_history_qml MATCHES "anchors.topMargin: page.cardPaddingV"
    OR NOT notification_history_qml MATCHES "implicitHeight: Math.max\\(44, actionFlow.childrenRect.height\\)"
    OR NOT notification_history_qml MATCHES "color: pill.hovered \\|\\| pill.down"
