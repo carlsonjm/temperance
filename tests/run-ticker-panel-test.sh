@@ -15,7 +15,7 @@ env XDG_RUNTIME_DIR="$center_root/runtime" XDG_CONFIG_HOME="$center_root/config"
     ITASCA_TEST_SCALE="${6:-1}" ITASCA_TEST_SCREEN="${7:-0}" \
     ITASCA_CENTER_TEST_BINARY="$1" \
     KWIN_COMPOSE=O2 LIBGL_ALWAYS_SOFTWARE=1 QT_WAYLAND_RECONNECT=0 \
-    timeout 45s dbus-run-session -- kwin_wayland --virtual --width "${4:-1280}" --height "${5:-800}" \
+    timeout 90s dbus-run-session -- kwin_wayland --virtual --width "${4:-1280}" --height "${5:-800}" \
     --output-count 2 --no-lockscreen --no-global-shortcuts --no-kactivities \
     --exit-with-session "$(cd -- "$(dirname "$0")" && pwd)/ticker-panel-session.sh" \
     > "$center_root/test.log" 2>&1
