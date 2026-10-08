@@ -628,6 +628,14 @@ private Q_SLOTS:
     QVERIFY(shortLabel->width() < shortTicker->width() - 40);
     QVERIFY(gapToBell() >= 0);
     QVERIFY(gapToBell() <= 12);
+    // With the ticker off the bell stays and nothing scrolls beside it.
+    auto *tickerContent = findItem(rightFace, QStringLiteral("temperance-ticker-content"));
+    QVERIFY(tickerContent);
+    hint(rightFace, "plasmoid.configuration.showTicker", false);
+    QTRY_VERIFY(!tickerContent->isVisible());
+    QVERIFY(tickerControls->isVisible());
+    hint(rightFace, "plasmoid.configuration.showTicker", true);
+    QTRY_VERIFY(tickerContent->isVisible());
     face->setParentItem(nullptr);
     qInfo() << "T1_ERRORS" << boundaryError << surfaceError;
     QVERIFY(boundaryError <= 2.);
