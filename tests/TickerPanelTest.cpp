@@ -388,6 +388,7 @@ private Q_SLOTS:
     hint(rightFace, "plasmoid.configuration.adaptiveWidth", true);
     hint(taskFace, "Layout.preferredWidth", 216.);
     hint(taskFace, "Layout.maximumWidth", 216.);
+    const int filedBeforeLong = history->property("count").toInt();
     auto message = QDBusMessage::createMethodCall(
         QStringLiteral("org.freedesktop.Notifications"),
         QStringLiteral("/org/freedesktop/Notifications"),
@@ -409,7 +410,7 @@ private Q_SLOTS:
     QTRY_VERIFY(rightFace->property("lastLiveNotificationCount").toInt() > 0);
     // The ordinary notice plays alone.
     QCOMPARE(rightFace->property("lastLiveNotificationCount").toInt(), 1);
-    QCOMPARE(history->property("count").toInt(), 5);
+    QTRY_COMPARE(history->property("count").toInt(), filedBeforeLong + 1);
     auto *controls =
         findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *ticker =
