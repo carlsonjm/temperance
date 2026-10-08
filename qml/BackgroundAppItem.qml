@@ -22,7 +22,7 @@ AbstractItem {
     mainText: inVisibleLayout ? model.name : ""
     subText: model.message
     textFormat: Text.AutoText
-    active: inVisibleLayout || text != mainText || subText.length > 0
+    active: inVisibleLayout || (pointerMoved && (text != mainText || subText.length > 0))
     inlineIcon: presentationIcon || model.icon
 
     Kirigami.Icon {

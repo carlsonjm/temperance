@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- A short notification leaves the ticker when its application's popup time
+  ends, five seconds where it names none, as a long one does. Before, it
+  stayed longer the wider the ticker was, up to half a minute.
+- A tray entry's tooltip, such as the clipboard's contents, appears only once
+  the pointer moves over it. Before, reopening the System Tray could raise one
+  by itself about a second later, under where the last tap had been.
 - Notification cards in the bell keep their app name and title. After the
   bell had been closed and opened again, a card showed only its message, so a
   calendar alert read "Today at noon" with no event.

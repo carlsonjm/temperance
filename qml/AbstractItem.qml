@@ -37,6 +37,43 @@ PlasmaCore.ToolTipArea {
     readonly property bool inVisibleLayout: effectiveStatus === PlasmaCore.Types.ActiveStatus
 
     property bool effectivePressed: false
+    // A tile's tooltip waits for the pointer to move over it. A popup shown
+    // again is handed the point of the last tap or click as a hover, with no
+    // pointer there, and that alone must not raise a tooltip.
+    property bool pointerMoved: false
+    property var pointerOrigin: null
+
+    function notePointer(x, y) {
+        const point = mouseArea.mapToItem(null, x, y);
+        if (!pointerOrigin) {
+            pointerOrigin = point;
+            return;
+        }
+        if (pointerMoved || mouseArea.pressed
+                || Math.hypot(point.x - pointerOrigin.x, point.y - pointerOrigin.y) <= Kirigami.Units.smallSpacing)
+            return;
+        pointerMoved = true;
+        tooltipDelay.restart();
+    }
+
+    function forgetPointer() {
+        pointerMoved = false;
+        pointerOrigin = null;
+        tooltipDelay.stop();
+    }
+
+    Timer {
+        id: tooltipDelay
+        interval: Kirigami.Units.toolTipDelay
+        onTriggered: if (mouseArea.containsMouse && !mouseArea.pressed && abstractItem.active) {
+            abstractItem.showToolTip()
+        }
+    }
+
+    Connections {
+        target: abstractItem.Window.window
+        function onVisibleChanged() { abstractItem.forgetPointer() }
+    }
     property bool cardBackground: false
     property string presentationIcon: ""
     property string presentationText: ""
@@ -89,15 +126,21 @@ PlasmaCore.ToolTipArea {
         // index in a scrollable view also changes the view position.
         // onEntered will change the index while the items are scrolling,
         // making it harder to scroll.
-        onPositionChanged: if (abstractItem.inHiddenLayout) {
-            root.hiddenLayout.currentIndex = abstractItem.index
+        onPositionChanged: mouse => {
+            abstractItem.notePointer(mouse.x, mouse.y)
+            if (abstractItem.inHiddenLayout) {
+                root.hiddenLayout.currentIndex = abstractItem.index
+            }
         }
+        onEntered: abstractItem.notePointer(mouseX, mouseY)
+        onExited: abstractItem.forgetPointer()
         onClicked: mouse => { abstractItem.clicked(mouse) }
         onPressed: mouse => {
             if (abstractItem.inHiddenLayout) {
                 root.hiddenLayout.currentIndex = abstractItem.index
             }
             abstractItem.hideImmediately()
+            abstractItem.forgetPointer()
             abstractItem.pressed(mouse)
         }
         onPressAndHold: mouse => {

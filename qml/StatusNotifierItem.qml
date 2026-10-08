@@ -20,7 +20,7 @@ AbstractItem {
     mainText: inVisibleLayout || (model?.ToolTipTitle !== "" && model?.ToolTipTitle !== text) ? model?.ToolTipTitle ?? "" : ""
     subText: model?.ToolTipSubTitle ?? ""
     textFormat: Text.AutoText
-    active: inVisibleLayout || text != mainText || subText.length > 0
+    active: inVisibleLayout || (pointerMoved && (text != mainText || subText.length > 0))
     inlineIcon: {
         if (presentationIcon) return presentationIcon;
         if (model?.status === PlasmaCore.Types.NeedsAttentionStatus) {
