@@ -254,13 +254,17 @@ private Q_SLOTS:
     QCOMPARE(history->property("count").toInt(), 4);
     QTRY_COMPARE(checked->property("count").toInt(), 2);
     // Opening the history reads them, and the check goes.
-    QVERIFY(history->setProperty("lastRead", QDateTime::currentDateTime().addSecs(1)));
+    const QDateTime readMark = QDateTime::currentDateTime().addSecs(1);
+    QVERIFY(history->setProperty("lastRead", readMark));
     QTRY_COMPARE(checked->property("count").toInt(), 0);
     QTRY_VERIFY(count->parentItem()->opacity() < 0.1);
     QTRY_VERIFY(bell->property("clapperProgress").toReal() > 0.99);
     // Do not disturb keeps the ticker still, as it keeps Plasma's popups
     // away: a notification goes to the history, the bell holds a check for
     // it, and it does not play when do not disturb ends. The next one does.
+    // The read mark is a second ahead, so a notification sent before it
+    // passes counts as read already; wait it out.
+    QTRY_VERIFY(QDateTime::currentDateTime() > readMark.addMSecs(50));
     const int filedBefore = history->property("count").toInt();
     NotificationManager::Server::self().setInhibited(true);
     QVERIFY(notify(QStringLiteral("Quiet fixture")));
