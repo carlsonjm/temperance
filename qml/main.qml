@@ -1709,13 +1709,12 @@ ContainmentItem {
 
                         // A new line comes out from beside the bell, as today's
                         // event does, and rests against it rather than crossing
-                        // the gap to the dock. A short line is up as long as a
-                        // pass across the gap took, then goes. A line too long
-                        // for the ticker comes in until its start reaches the
-                        // far edge and stops there, cut off, as an event waits
-                        // for review: it scrolls only for a hover on the bell,
-                        // and goes when the application's own popup time ends,
-                        // so today's event is not held behind it.
+                        // the gap to the dock. A line too long for the ticker
+                        // comes in until its start reaches the far edge and
+                        // stops there, cut off, as an event waits for review: it
+                        // scrolls only for a hover on the bell. Short or long, it
+                        // goes when the application's own popup time ends, so
+                        // today's event is not held behind it.
                         SequentialAnimation {
                             id: notificationIntro
                             readonly property real arrival: root.motionEnabled
@@ -1732,10 +1731,8 @@ ContainmentItem {
                                 const timeout = railNotifications.count > 0 && item ? item.timeout : -1;
                                 return timeout > 0 ? timeout : timeout === 0 ? 30000 : 5000;
                             }
-                            readonly property int restDuration: longLine
-                                ? Math.max(1500, popupTime - arrivalDuration) : Math.max(3000,
-                                (notificationContentArea.width + notificationMessageLayer.flybyWidth) * 20
-                                    - arrivalDuration)
+                            readonly property int restDuration:
+                                Math.max(1500, popupTime - arrivalDuration)
                             onRunningChanged: if (!running) root.notificationResting = false
                             ScriptAction {
                                 script: {
