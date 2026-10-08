@@ -31,7 +31,7 @@ REPO = "temperance"
 # Each catalog, and the sources that ask it for words. A Plasma applet's QML
 # asks plasma_applet_<id>, so the applet's C++ asks the same catalog.
 DOMAINS = {
-    "plasma_applet_studio.warbler.temperance": ["qml/*.qml", "src/*.cpp", "src/*.h"],
+    "plasma_applet_co.goodinput.temperance": ["qml/*.qml", "src/*.cpp", "src/*.h"],
 }
 
 # QML a person sees.

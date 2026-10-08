@@ -26,9 +26,9 @@ fi
 
 cmake -E rm -rf "${package_dir}"
 install -d "${package_dir}"
-install -m755 -s "${build_dir}/bin/plasma/applets/studio.warbler.temperance.so" \
-    "${package_dir}/studio.warbler.temperance.so"
-install -m644 "${repo_dir}/assets/studio.warbler.temperance.png" "${package_dir}/"
+install -m755 -s "${build_dir}/bin/plasma/applets/co.goodinput.temperance.so" \
+    "${package_dir}/co.goodinput.temperance.so"
+install -m644 "${repo_dir}/assets/co.goodinput.temperance.png" "${package_dir}/"
 install -m755 "${repo_dir}/packaging/install-system.sh" \
     "${repo_dir}/packaging/uninstall-system.sh" "${package_dir}/"
 install -m644 "${repo_dir}/packaging/README.md" "${repo_dir}/CHANGELOG.md" \

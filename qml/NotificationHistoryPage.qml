@@ -378,7 +378,7 @@ Item {
                         id: clearGroupButton
                         objectName: "notificationClearGroup"
                         text: i18n("Clear")
-                        icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/trash-2.svg"
+                        icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/trash-2.svg"
                         icon.color: tone.text
                         contentItem: SuiteIcon {
                             glyph: "trash-2"
@@ -397,8 +397,8 @@ Item {
                         id: expandGroupButton
                         objectName: "notificationExpandGroup"
                         icon.source: historyItem.isGroupExpanded
-                            ? "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-up.svg"
-                            : "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-down.svg"
+                            ? "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-up.svg"
+                            : "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-down.svg"
                         icon.color: tone.text
                         contentItem: SuiteIcon {
                             glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"

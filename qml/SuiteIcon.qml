@@ -26,7 +26,7 @@ Item {
         objectName: "suiteIconImage"
         anchors.fill: parent
         anchors.margins: suiteIcon.glyphInset
-        source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/"
+        source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/"
             + suiteIcon.glyph + ".svg"
         fillMode: Image.PreserveAspectFit
         smooth: true

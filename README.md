@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/studio.warbler.temperance.png" width="180" alt="Temperance">
+  <img src="assets/co.goodinput.temperance.png" width="180" alt="Temperance">
 </p>
 
 # Temperance

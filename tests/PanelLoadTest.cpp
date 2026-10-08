@@ -37,13 +37,13 @@ int main(int argc, char **argv)
     if (!panel) return 1;
     panel->setFormFactor(Plasma::Types::Horizontal);
     panel->setLocation(Plasma::Types::BottomEdge);
-    auto *applet = panel->createApplet(QStringLiteral("studio.warbler.temperance"));
+    auto *applet = panel->createApplet(QStringLiteral("co.goodinput.temperance"));
     if (!applet || applet->failedToLaunch()) return 2;
     // Test Temperance itself, not embedded third-party tray applets which
     // may require real display-server services (for example Klipper).
     applet->config().writeEntry("extraItems", QStringList{});
     const QString expected = QString::fromLocal8Bit(qgetenv("QT_PLUGIN_PATH"))
-        + QStringLiteral("/plasma/applets/studio.warbler.temperance.so");
+        + QStringLiteral("/plasma/applets/co.goodinput.temperance.so");
     if (QFileInfo(applet->pluginMetaData().fileName()).canonicalFilePath()
         != QFileInfo(expected).canonicalFilePath()) return 3;
     // Load the complete packaged component graph without instantiating
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     // Unlike qmlcachegen, this rejects assignments to read-only properties
     // in nested components before the package reaches the live panel.
     QQmlEngine engine;
-    QFile source(QStringLiteral(":/qt/qml/plasma/applet/studio/warbler/temperance/main.qml"));
+    QFile source(QStringLiteral(":/qt/qml/plasma/applet/co/goodinput/temperance/main.qml"));
     if (!source.open(QIODevice::ReadOnly)) return 6;
     const QString qml = QString::fromUtf8(source.readAll());
     if (!qml.contains(QStringLiteral("Plasmoid.watchPanelGeometry(root)"))
@@ -142,21 +142,21 @@ int main(int argc, char **argv)
         return 8;
     }
     QQmlComponent component(&engine,
-        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/studio/warbler/temperance/main.qml")),
+        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/co/goodinput/temperance/main.qml")),
         QQmlComponent::PreferSynchronous);
     if (!component.isReady()) {
         qCritical() << component.errors();
         return 4;
     }
     QQmlComponent iconComponent(&engine,
-        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/studio/warbler/temperance/SuiteIcon.qml")),
+        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/co/goodinput/temperance/SuiteIcon.qml")),
         QQmlComponent::PreferSynchronous);
     if (!iconComponent.isReady()) {
         qCritical() << iconComponent.errors();
         return 14;
     }
     QQmlComponent anchorComponent(&engine,
-        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/studio/warbler/temperance/PanelPopupAnchor.qml")),
+        QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/co/goodinput/temperance/PanelPopupAnchor.qml")),
         QQmlComponent::PreferSynchronous);
     if (!anchorComponent.isReady()) {
         qCritical() << anchorComponent.errors();

@@ -296,7 +296,7 @@ Item {
             Layout.topMargin: page.compactSpacing
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
-                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sun.svg"
+                icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/sun.svg"
                 icon.color: tone.text
                 contentItem: SuiteIcon {
                     glyph: "sun"

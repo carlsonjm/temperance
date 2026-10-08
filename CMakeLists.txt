@@ -42,7 +42,7 @@ set(libdbusmenu_SRCS
 ecm_qt_declare_logging_category(libdbusmenu_SRCS
     HEADER libdbusmenuqt/debug.h
     IDENTIFIER DBUSMENUQT
-    CATEGORY_NAME studio.warbler.temperance.dbusmenu
+    CATEGORY_NAME co.goodinput.temperance.dbusmenu
     DEFAULT_SEVERITY Info
 )
 
@@ -90,7 +90,7 @@ qt_add_dbus_interface(statusarea_SRCS ${statusnotifieritem_xml} statusnotifierit
 ecm_qt_declare_logging_category(statusarea_SRCS
     HEADER src/debug.h
     IDENTIFIER SYSTEM_TRAY
-    CATEGORY_NAME studio.warbler.temperance
+    CATEGORY_NAME co.goodinput.temperance
     DEFAULT_SEVERITY Info
 )
 
@@ -105,7 +105,7 @@ target_link_libraries(temperance_core PUBLIC
     Plasma::Plasma Plasma::PlasmaQuick temperance_dbusmenu
 )
 
-plasma_add_applet(studio.warbler.temperance
+plasma_add_applet(co.goodinput.temperance
     CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp
     QML_SOURCES
         qml/AbstractItem.qml
@@ -158,18 +158,18 @@ plasma_add_applet(studio.warbler.temperance
         assets/icons/lucide/gauge.svg
 )
 
-# Translations, as po/<language>/plasma_applet_studio.warbler.temperance.po;
+# Translations, as po/<language>/plasma_applet_co.goodinput.temperance.po;
 # python3 tools/messages.py --templates po makes the template.
 ki18n_install(po)
 
-install(FILES assets/studio.warbler.temperance.png
+install(FILES assets/co.goodinput.temperance.png
     DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/512x512/apps)
 
-target_compile_definitions(studio.warbler.temperance PRIVATE
-    TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
-target_include_directories(studio.warbler.temperance PRIVATE
+target_compile_definitions(co.goodinput.temperance PRIVATE
+    TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
+target_include_directories(co.goodinput.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
-target_link_libraries(studio.warbler.temperance PRIVATE
+target_link_libraries(co.goodinput.temperance PRIVATE
     temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt Qt6::Network
     PW::LibNotificationManager PW::KWorkspace)
 
@@ -203,7 +203,7 @@ if(BUILD_TESTING)
     target_link_libraries(temperance-calendar-feeds-test PRIVATE
         Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-feeds-test PRIVATE
-        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
     add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
     set_tests_properties(temperance_calendar_feeds PROPERTIES TIMEOUT 60)
     add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
@@ -212,7 +212,7 @@ if(BUILD_TESTING)
         Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-test PRIVATE
         CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
-        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_studio.warbler.temperance")
+        FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
     add_test(NAME temperance_calendar COMMAND temperance-calendar-test)
     set_tests_properties(temperance_calendar PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 60)
@@ -230,7 +230,7 @@ if(BUILD_TESTING)
     add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
     target_link_libraries(temperance-panel-load-test PRIVATE
         Qt6::Widgets Qt6::Quick Plasma::Plasma Plasma::PlasmaQuick KF6::Package)
-    add_dependencies(temperance-panel-load-test studio.warbler.temperance)
+    add_dependencies(temperance-panel-load-test co.goodinput.temperance)
     add_test(NAME temperance_panel_load
         COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
             $<TARGET_FILE:temperance-panel-load-test>
@@ -244,6 +244,6 @@ if(BUILD_TESTING)
     target_link_libraries(temperance-ticker-panel-test PRIVATE Qt6::Widgets Qt6::Quick Qt6::Test
         Qt6::DBus Plasma::Plasma Plasma::PlasmaQuick KF6::Package LayerShellQt::Interface
         PW::LibNotificationManager)
-    add_dependencies(temperance-ticker-panel-test studio.warbler.temperance)
+    add_dependencies(temperance-ticker-panel-test co.goodinput.temperance)
     # The real-panel fixture pairs Temperance with a separately built Tette plugin.
 endif()
