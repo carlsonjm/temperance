@@ -89,6 +89,10 @@
       <label>Whether the notification ticker and launcher are shown in the status area</label>
       <default>true</default>
     </entry>
+    <entry name="showTicker" type="Bool">
+      <label>Whether notifications and today's events scroll in the ticker beside the bell</label>
+      <default>true</default>
+    </entry>
     <entry name="showWeather" type="Bool">
       <label>Whether current weather is shown in the status area</label>
       <default>true</default>

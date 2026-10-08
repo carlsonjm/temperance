@@ -98,6 +98,10 @@ ContainmentItem {
             + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
     property int responsiveMeasuredWidth: responsiveMinimumWidth
     readonly property bool notificationsEnabled: Plasmoid.configuration.showNotifications !== false
+    // With the ticker off the bell stays and counts what waits; nothing
+    // scrolls beside it.
+    readonly property bool tickerEnabled: notificationsEnabled
+        && Plasmoid.configuration.showTicker !== false
     readonly property bool doNotDisturb: NotificationManager.Server.inhibited
     readonly property bool weatherEnabled: Plasmoid.configuration.showWeather !== false
     readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
@@ -1632,7 +1636,7 @@ ContainmentItem {
                     Item {
                         id: notificationContentArea
                         objectName: "temperance-ticker-content"
-                        visible: root.notificationsEnabled
+                        visible: root.tickerEnabled
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.topMargin: 4

@@ -24,6 +24,7 @@ KCMUtils.ScrollViewKCM {
     property int cfg_compactWidth
     property bool cfg_adaptiveWidth
     property bool cfg_showNotifications
+    property bool cfg_showTicker
     property bool cfg_showWeather
     property bool cfg_showTime
     property bool cfg_showDate
@@ -123,6 +124,13 @@ KCMUtils.ScrollViewKCM {
             text: i18n("Show the notification ticker and bell")
             checked: page.cfg_showNotifications
             onToggled: page.cfg_showNotifications = checked
+        }
+
+        QQC2.CheckBox {
+            text: i18n("Scroll notifications in the ticker")
+            checked: page.cfg_showTicker
+            enabled: page.cfg_showNotifications
+            onToggled: page.cfg_showTicker = checked
         }
 
         QQC2.CheckBox {
