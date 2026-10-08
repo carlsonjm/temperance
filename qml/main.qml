@@ -2307,6 +2307,13 @@ ContainmentItem {
                 // during a show/hide transition. Animate cards, not this host.
                 height: Math.max(1, stackHeight)
                 property real stackHeight: 0
+
+                // The alert's own window takes the look's colours, whatever
+                // ground the bar it comes from sits on.
+                StatusColors {
+                    id: bannerTone
+                    theme: bannerStack.Kirigami.Theme
+                }
                 readonly property real heightLimit: root.notificationPopupHeightLimit
                 clip: true
 
@@ -2383,10 +2390,10 @@ ContainmentItem {
                         enabled: criticalCard.visible
                         NumberAnimation { duration: root.motionEnabled ? 220 : 0; easing.type: Easing.OutCubic }
                     }
-                    color: tone.surface
+                    color: bannerTone.surface
                     radius: 12
                     border.width: 1
-                    border.color: tone.line
+                    border.color: bannerTone.line
 
                     MouseArea {
                         anchors.fill: parent
