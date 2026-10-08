@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- With Plasma's animations set to Instant, which Plasma also reports as
+  reduced motion, the bell's swing, its count, the tray's ripple, an alert
+  card's arrival and the bell's cards closing up after a dismissal no longer
+  move; they change in place as the rest of the Status Bar already did.
 - The Status Bar and its popups follow a light Plasma style: the clock, the
   ticker, the status icons, the bell, the tray, Control Center, the calendar
   and the alert card take their ink and ground from it. A dark Plasma style
