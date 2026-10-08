@@ -19,6 +19,11 @@ import org.kde.plasma.plasmoid
 Item {
     id: popup
 
+    StatusColors {
+        id: tone
+        theme: popup.Kirigami.Theme
+    }
+
     readonly property int nativePagePadding: 12
     readonly property int contentSafety: 4
     readonly property int headerSafety: 4
@@ -133,11 +138,11 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        color: "#141414"
+        color: tone.surface
         // Shuffle's note corner: it floats above everything and closes.
         radius: 12
         border.width: 1
-        border.color: "#333333"
+        border.color: tone.line
         z: -10000
     }
 
@@ -183,10 +188,10 @@ Item {
         }
         background: Rectangle {
             radius: height / 2
-            color: arrow.down ? Qt.rgba(1, 1, 1, 0.18)
-                : arrowHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: arrow.down ? tone.wash(0.18)
+                : arrowHover.hovered ? tone.wash(0.12) : "transparent"
             border.width: arrow.visualFocus ? 1 : 0
-            border.color: "#F8F8FF"
+            border.color: tone.text
             Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
         }
         PointerHover { id: arrowHover }
@@ -221,10 +226,10 @@ Item {
         }
         background: Rectangle {
             radius: height / 2
-            color: powerPill.down || powerPill.checked ? "#4A4A4A"
-                : pillHover.hovered ? "#333333" : "#242424"
+            color: powerPill.down || powerPill.checked ? tone.controlPressed
+                : pillHover.hovered ? tone.controlHover : tone.control
             border.width: powerPill.visualFocus ? 1 : 0
-            border.color: "#F8F8FF"
+            border.color: tone.text
             Behavior on color { ColorAnimation { duration: 120 } }
         }
         PointerHover { id: pillHover }
@@ -253,10 +258,10 @@ Item {
         }
         background: Rectangle {
             radius: height / 2
-            color: headerCircle.down || headerCircle.held ? "#4A4A4A"
-                : circleHover.hovered ? "#333333" : "#242424"
+            color: headerCircle.down || headerCircle.held ? tone.controlPressed
+                : circleHover.hovered ? tone.controlHover : tone.control
             border.width: headerCircle.visualFocus ? 1 : 0
-            border.color: "#F8F8FF"
+            border.color: tone.text
             Behavior on color { ColorAnimation { duration: 120 } }
         }
         PointerHover { id: circleHover }
@@ -274,7 +279,7 @@ Item {
         }
         background: Rectangle {
             radius: height / 2
-            color: sessionOption.highlighted ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: sessionOption.highlighted ? tone.wash(0.12) : "transparent"
         }
     }
 
@@ -339,16 +344,16 @@ Item {
                         text: calendarToday.text
                         font.pixelSize: 13
                         font.weight: Font.Medium
-                        color: "#F8F8FF"
+                        color: tone.text
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     background: Rectangle {
                         radius: height / 2
-                        color: calendarToday.down ? Qt.rgba(1, 1, 1, 0.18)
-                            : todayHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                        color: calendarToday.down ? tone.wash(0.18)
+                            : todayHover.hovered ? tone.wash(0.12) : "transparent"
                         border.width: 1
-                        border.color: calendarToday.visualFocus ? "#F8F8FF" : "#5a5a5a"
+                        border.color: calendarToday.visualFocus ? tone.text : tone.divider
                         Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                     }
                     onClicked: calendarPage.reset()
@@ -412,10 +417,10 @@ Item {
                         padding: 6
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
                         background: Rectangle {
-                            color: "#141414"
+                            color: tone.surface
                             radius: 12
                             border.width: 1
-                            border.color: "#5a5a5a"
+                            border.color: tone.divider
                         }
                         SessionMenuItem {
                             visible: Plasmoid.configuration.showLogout
@@ -457,7 +462,7 @@ Item {
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
                 text: i18n("Add new device")
                 icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/plus.svg"
-                icon.color: "#F8F8FF"
+                icon.color: tone.text
                 contentItem: Row {
                     spacing: 6
                     SuiteIcon {
@@ -480,10 +485,10 @@ Item {
                         width: parent.width
                         height: 30
                         radius: height / 2
-                        color: addBluetoothDevice.down ? "#4A4A4A"
-                            : addBluetoothHover.hovered ? "#333333" : "#242424"
+                        color: addBluetoothDevice.down ? tone.controlPressed
+                            : addBluetoothHover.hovered ? tone.controlHover : tone.control
                         border.width: addBluetoothDevice.visualFocus ? 1 : 0
-                        border.color: "#F8F8FF"
+                        border.color: tone.text
                         Behavior on color { ColorAnimation { duration: 120 } }
                     }
                 }
@@ -516,7 +521,7 @@ Item {
                     text: i18n("do not disturb")
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     font.weight: Font.Medium
-                    color: "#F8F8FF"
+                    color: tone.text
                     opacity: doNotDisturbPill.checked ? 1 : 0.78
                     Behavior on opacity { NumberAnimation { duration: 140 } }
                 }
@@ -533,14 +538,14 @@ Item {
                     radius: height / 2
                     clip: true
                     color: checked ? root.accentColor
-                        : dndTap.pressed ? "#4A4A4A" : dndHover.hovered ? "#333333" : "#242424"
+                        : dndTap.pressed ? tone.controlPressed : dndHover.hovered ? tone.controlHover : tone.control
                     Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                     BellGlyph {
                         width: 18
                         height: 18
                         anchors.centerIn: parent
-                        glyphColor: doNotDisturbPill.checked ? "#102729" : "#F8F8FF"
+                        glyphColor: doNotDisturbPill.checked ? "#102729" : tone.text
                         slashed: doNotDisturbPill.checked
                         strokeWidth: 1.55
                     }

@@ -5,11 +5,17 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import org.kde.kirigami as Kirigami
 
 Canvas {
     id: glyph
 
-    property color glyphColor: "#F8F8FF"
+    StatusColors {
+        id: tone
+        theme: glyph.Kirigami.Theme
+    }
+
+    property color glyphColor: tone.text
     property bool slashed: false
     property real clapperProgress: 1
     property real strokeWidth: 1.65

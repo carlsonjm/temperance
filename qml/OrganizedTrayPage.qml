@@ -13,6 +13,11 @@ import org.kde.plasma.core as PlasmaCore
 
 Item {
     id: page
+
+    StatusColors {
+        id: tone
+        theme: page.Kirigami.Theme
+    }
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
@@ -91,7 +96,7 @@ Item {
                         text: section.modelData.title
                         font.pixelSize: 13
                         font.weight: Font.Medium
-                        color: "#A8FFFFFF"
+                        color: tone.secondaryText
                     }
 
                     Item {

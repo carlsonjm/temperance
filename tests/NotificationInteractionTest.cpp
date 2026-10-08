@@ -325,6 +325,23 @@ private Q_SLOTS:
         QTRY_COMPARE(actionBackground->height(), 30.0);
         QVERIFY(actionBackground->height() < accept->height());
         QCOMPARE(accept->property("visualOutlineWidth").toReal(), 1.0);
+        // The outline is the page's text: the theme's own on a light ground,
+        // and Ghost White on a dark one whatever the theme's text is.
+        auto *tone = item->findChild<QObject *>(QStringLiteral("temperanceStatusColors"), Qt::FindDirectChildrenOnly);
+        QVERIFY(tone);
+        const auto makeTheme = [&](const QString &ground, const QString &text) {
+            QQmlComponent themeComponent(&engine);
+            themeComponent.setData(QStringLiteral("import QtQuick\nQtObject { property color backgroundColor: \"%1\"; "
+                "property color textColor: \"%2\"; property color negativeTextColor: \"#DA4453\" }")
+                .arg(ground, text).toUtf8(), QUrl());
+            return themeComponent.create();
+        };
+        QScopedPointer<QObject> lightTheme(makeTheme(QStringLiteral("#F2F2F2"), QStringLiteral("#102729")));
+        QScopedPointer<QObject> darkTheme(makeTheme(QStringLiteral("#141414"), QStringLiteral("#E0E0E0")));
+        QVERIFY(lightTheme && darkTheme);
+        tone->setProperty("theme", QVariant::fromValue(lightTheme.data()));
+        QCOMPARE(accept->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#102729")));
+        tone->setProperty("theme", QVariant::fromValue(darkTheme.data()));
         QCOMPARE(accept->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#F8F8FF")));
         QCOMPARE(accept->property("visualFill").value<QColor>().alpha(), 0);
         QCOMPARE(accept->property("leftPadding").toReal(), 14.0);

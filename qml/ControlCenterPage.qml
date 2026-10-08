@@ -13,6 +13,11 @@ import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 Item {
     id: page
 
+    StatusColors {
+        id: tone
+        theme: page.Kirigami.Theme
+    }
+
     required property var activateAppletById
     required property var controlCenterModel
     required property var performancePresets
@@ -98,7 +103,7 @@ Item {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
         clip: true
         radius: height / 2
-        color: actionHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
+        color: actionHover.hovered ? tone.wash(0.12) : tone.wash(0.07)
         RowLayout {
             anchors.centerIn: parent
             spacing: Kirigami.Units.smallSpacing
@@ -158,7 +163,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.07)
+                color: tone.wash(0.07)
             }
             Rectangle {
                 width: Math.max(height, accentSlider.visualPosition * parent.width)
@@ -182,12 +187,14 @@ Item {
         property bool muted: false
         implicitWidth: Kirigami.Units.iconSizes.smallMedium
         implicitHeight: implicitWidth
+        readonly property color ink: tone.text
         onMutedChanged: requestPaint()
+        onInkChanged: requestPaint()
         onPaint: {
             const ctx = getContext("2d");
             ctx.reset();
-            ctx.strokeStyle = Kirigami.Theme.textColor;
-            ctx.fillStyle = Kirigami.Theme.textColor;
+            ctx.strokeStyle = ink;
+            ctx.fillStyle = ink;
             ctx.lineWidth = 1.8;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
@@ -290,7 +297,7 @@ Item {
             spacing: Kirigami.Units.smallSpacing
             PlasmaComponents.ToolButton {
                 icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/sun.svg"
-                icon.color: "#F8F8FF"
+                icon.color: tone.text
                 contentItem: SuiteIcon {
                     glyph: "sun"
                     implicitWidth: 20; implicitHeight: 20
@@ -374,7 +381,7 @@ Item {
                 Layout.preferredHeight: controlGrid.tileHeight
                 radius: height / 2
                 color: performanceTap.pressed || performanceHover.hovered
-                    ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
+                    ? tone.wash(0.12) : tone.wash(0.07)
                 RowLayout {
                     anchors.centerIn: parent
                     width: Math.min(implicitWidth, performanceEntry.width - Kirigami.Units.largeSpacing * 2)

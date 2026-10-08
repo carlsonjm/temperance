@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The Status Bar and its popups follow a light Plasma style: the clock, the
+  ticker, the status icons, the bell, the tray, Control Center, the calendar
+  and the alert card take their ink and ground from it. A dark Plasma style
+  looks as before, and the clock on the lock screen stays white.
 - A short notification leaves the ticker when its application's popup time
   ends, five seconds where it names none, as a long one does. Before, it
   stayed longer the wider the ticker was, up to half a minute.

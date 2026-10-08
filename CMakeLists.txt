@@ -130,6 +130,7 @@ plasma_add_applet(studio.warbler.temperance
         qml/PlasmoidItem.qml
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml
+        qml/StatusColors.qml
         qml/StatusClock.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml

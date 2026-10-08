@@ -19,6 +19,11 @@ import org.kde.plasma.plasmoid
 PlasmaCore.ToolTipArea {
     id: abstractItem
 
+    StatusColors {
+        id: tone
+        theme: abstractItem.Kirigami.Theme
+    }
+
     required property int index
     required property var model
     required property int status
@@ -162,8 +167,8 @@ PlasmaCore.ToolTipArea {
         radius: abstractItem.cardBackground ? height / 2 : Kirigami.Units.cornerRadius
         visible: abstractItem.inHiddenLayout
         color: abstractItem.effectivePressed || mouseArea.containsMouse
-            ? Qt.rgba(1, 1, 1, 0.12)
-            : (abstractItem.cardBackground ? Qt.rgba(1, 1, 1, 0.07) : "transparent")
+            ? tone.wash(0.12)
+            : (abstractItem.cardBackground ? tone.wash(0.07) : "transparent")
     }
 
     ColumnLayout {
