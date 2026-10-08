@@ -187,3 +187,7 @@ string(REGEX MATCH "void SystemTray::init\\(\\)[^}]+}" systemtray_init "${system
 if(systemtray_init MATCHES "QTimer")
     message(FATAL_ERROR "The performance helper must not be run on a timer")
 endif()
+if(NOT main_qml MATCHES "id: hiddenModel\n        dynamicSortFilter: !root.trayHeld"
+   OR NOT main_qml MATCHES "id: organizedTrayModel\n        dynamicSortFilter: !root.trayHeld")
+    message(FATAL_ERROR "The tray must hold its order while the popup is open")
+endif()
