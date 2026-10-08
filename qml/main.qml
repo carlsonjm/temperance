@@ -22,6 +22,11 @@ import org.kde.plasma.workspace.dbus as DBus
 ContainmentItem {
     id: root
 
+    StatusColors {
+        id: tone
+        theme: root.Kirigami.Theme
+    }
+
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property int itemSize: Kirigami.Units.iconSizes.smallMedium
     // The status icons are drawn a third larger than the panel's small icons
@@ -342,7 +347,7 @@ ContainmentItem {
     component RailControlButton: PlasmaComponents.ToolButton {
         id: railControlButton
         property color glyphColor: railControlButton.pressed ? Qt.lighter(root.accentColor, 1.18)
-            : railControlButton.hovered ? root.accentColor : "#F8F8FF"
+            : railControlButton.hovered ? root.accentColor : tone.text
         implicitWidth: root.statusPitch
         implicitHeight: 32
         display: PlasmaComponents.AbstractButton.IconOnly
@@ -392,9 +397,9 @@ ContainmentItem {
             height: 28
             radius: height / 2
             color: bannerActionButton.hovered || bannerActionButton.pressed
-                ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                ? tone.wash(0.12) : "transparent"
             border.width: bannerActionButton.activeFocus ? 1 : 0
-            border.color: "#F8F8FF"
+            border.color: tone.text
             Behavior on color { ColorAnimation { duration: 120 } }
 
             Canvas {
@@ -403,11 +408,13 @@ ContainmentItem {
                 width: 18
                 height: 18
                 antialiasing: true
+                readonly property color ink: tone.text
+                onInkChanged: requestPaint()
                 onPaint: {
                     const ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
                     ctx.beginPath();
-                    ctx.strokeStyle = "#F8F8FF";
+                    ctx.strokeStyle = ink;
                     ctx.lineWidth = 2.2;
                     ctx.lineCap = "round";
                     if (bannerActionButton.closeGlyph) {
@@ -488,7 +495,7 @@ ContainmentItem {
                 // Some themes' symbolic drawings carry a fixed colour rather
                 // than the text colour Kirigami replaces.
                 isMask: statusIconButton.symbolic
-                color: "#F8F8FF"
+                color: tone.text
             }
         }
         HoverHandler { id: statusIconButtonHover }
@@ -1617,7 +1624,7 @@ ContainmentItem {
                                 // reads at arm's length under the smaller bell.
                                 font.pixelSize: 13
                                 font.weight: Font.Medium
-                                color: "#F8F8FF"
+                                color: tone.text
                             }
                         }
                     }
@@ -1905,7 +1912,7 @@ ContainmentItem {
                                     Layout.alignment: Qt.AlignBaseline
                                     text: period ? lead.slice(0, lead.length - period.length - 1) : lead
                                     textFormat: Text.PlainText
-                                    color: "#A8FFFFFF"
+                                    color: tone.secondaryText
                                 }
                                 PlasmaComponents.Label {
                                     id: eventPeriodLabel
@@ -1915,7 +1922,7 @@ ContainmentItem {
                                     text: eventTimeLabel.period
                                     textFormat: Text.PlainText
                                     font: Kirigami.Theme.smallFont
-                                    color: "#A8FFFFFF"
+                                    color: tone.secondaryText
                                 }
                                 PlasmaComponents.Label {
                                     Layout.fillWidth: true
@@ -1926,7 +1933,7 @@ ContainmentItem {
                                             + eventLine.spacing / 2 : 0))
                                     text: root.tickerEvent ? root.tickerEvent.title : ""
                                     textFormat: Text.PlainText
-                                    color: "#F8F8FF"
+                                    color: tone.text
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
                                 }
@@ -1941,7 +1948,7 @@ ContainmentItem {
                                     Layout.alignment: Qt.AlignVCenter
                                     radius: 3
                                     color: root.tickerEvent && root.tickerEvent.color
-                                        ? root.tickerEvent.color : "#A8FFFFFF"
+                                        ? root.tickerEvent.color : tone.secondaryText
                                 }
                             }
 
@@ -1997,7 +2004,7 @@ ContainmentItem {
                         // Kirigami would round 21 down to 16.
                         roundToIconSize: false
                         source: root.weatherIcon()
-                        color: "#F8F8FF"
+                        color: tone.text
                     }
 
                     // Below the icon, and inside the panel where the panel is
@@ -2015,7 +2022,7 @@ ContainmentItem {
                             text: root.weatherText()
                             font.pixelSize: 10
                             font.weight: Font.Medium
-                            color: "#F8F8FF"
+                            color: tone.text
                         }
                     }
                 }
@@ -2079,6 +2086,8 @@ ContainmentItem {
                             function onRippleProgressChanged() { trayGlyph.requestPaint(); }
                             function onActiveChanged() { trayGlyph.requestPaint(); }
                         }
+                        readonly property color ink: tone.text
+                        onInkChanged: requestPaint()
                         onPaint: {
                             const ctx = getContext("2d");
                             ctx.reset();
@@ -2107,8 +2116,8 @@ ContainmentItem {
                                 ctx.closePath();
                             }
                             ctx.lineJoin = "round";
-                            ctx.fillStyle = "#F8F8FF";
-                            ctx.strokeStyle = "#F8F8FF";
+                            ctx.fillStyle = trayGlyph.ink;
+                            ctx.strokeStyle = trayGlyph.ink;
                             if (trayButton.active) {
                                 // Offset the SAME path with a stroke band, rather than
                                 // scaling vertices. This keeps clearance uniform around
@@ -2169,19 +2178,21 @@ ContainmentItem {
                         font.pixelSize: 15
                         // The clock's weight: a status is not louder than the time.
                         font.weight: Font.Normal
-                        color: "#F8F8FF"
+                        color: tone.text
                     }
                     Canvas {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
                         visible: root.batteryOnAC
+                        readonly property color ink: tone.text
+                        onInkChanged: requestPaint()
                         onPaint: {
                             const ctx = getContext("2d");
                             ctx.reset();
                             // The bolt is drawn on an 18 px grid.
                             ctx.scale(width / 18, height / 18);
-                            ctx.fillStyle = "#F8F8FF";
+                            ctx.fillStyle = ink;
                             ctx.beginPath();
                             ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
                             ctx.lineTo(8, 10); ctx.lineTo(7, 17);
@@ -2368,10 +2379,10 @@ ContainmentItem {
                         enabled: criticalCard.visible
                         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
                     }
-                    color: "#141414"
+                    color: tone.surface
                     radius: 12
                     border.width: 1
-                    border.color: "#333333"
+                    border.color: tone.line
 
                     MouseArea {
                         anchors.fill: parent

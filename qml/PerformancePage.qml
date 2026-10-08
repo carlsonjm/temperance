@@ -19,6 +19,11 @@ import org.kde.plasma.plasmoid
 Item {
     id: page
 
+    StatusColors {
+        id: tone
+        theme: page.Kirigami.Theme
+    }
+
     required property color accentColor
     required property real maximumHeight
     readonly property int compactSpacing: 8
@@ -255,17 +260,17 @@ Item {
         radius: height / 2
         opacity: enabled ? 1 : 0.5
         color: selected ? page.accentColor
-            : choiceTap.pressed ? Qt.rgba(1, 1, 1, 0.18)
-            : choiceHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.07)
+            : choiceTap.pressed ? tone.wash(0.18)
+            : choiceHover.hovered ? tone.wash(0.12) : tone.wash(0.07)
         border.width: activeFocus ? 1 : 0
-        border.color: "#F8F8FF"
+        border.color: tone.text
         Behavior on color { ColorAnimation { duration: 120 } }
         PlasmaComponents.Label {
             anchors.fill: parent
             anchors.leftMargin: 10
             anchors.rightMargin: 10
             text: choice.label
-            color: choice.selected ? page.accentTextColor : "#F8F8FF"
+            color: choice.selected ? page.accentTextColor : tone.text
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
@@ -289,15 +294,15 @@ Item {
         rightPadding: 12
         contentItem: PlasmaComponents.Label {
             text: textPill.text
-            color: "#F8F8FF"
+            color: tone.text
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
             radius: height / 2
-            color: textPill.down ? "#4A4A4A" : textPill.hovered ? "#333333" : "#242424"
+            color: textPill.down ? tone.controlPressed : textPill.hovered ? tone.controlHover : tone.control
             border.width: textPill.visualFocus ? 1 : 0
-            border.color: "#F8F8FF"
+            border.color: tone.text
             Behavior on color { ColorAnimation { duration: 120 } }
         }
     }
@@ -312,7 +317,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: height / 2
-                color: Qt.rgba(1, 1, 1, 0.07)
+                color: tone.wash(0.07)
             }
             Rectangle {
                 width: Math.max(height, accentSlider.visualPosition * parent.width)
@@ -687,6 +692,11 @@ Item {
                         function onFanAxisMaxChanged() { fanCanvas.requestPaint(); }
                         function onAccentColorChanged() { fanCanvas.requestPaint(); }
                     }
+                    Connections {
+                        target: tone
+                        function onDarkChanged() { fanCanvas.requestPaint(); }
+                        function onInkChanged() { fanCanvas.requestPaint(); }
+                    }
 
                     Canvas {
                         id: fanCanvas
@@ -702,8 +712,8 @@ Item {
 
                             ctx.lineWidth = 1;
                             ctx.font = "11px sans-serif";
-                            ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.08);
-                            ctx.fillStyle = Qt.rgba(1, 1, 1, 0.55);
+                            ctx.strokeStyle = tone.wash(0.08);
+                            ctx.fillStyle = tone.wash(0.55);
                             ctx.textAlign = "center";
                             ctx.textBaseline = "top";
                             for (let temp = Math.ceil(page.fanAxisMin / 10) * 10; temp <= page.fanAxisMax; temp += 10) {
@@ -757,7 +767,7 @@ Item {
                                 ctx.fillStyle = i === graph.dragIndex ? Qt.lighter(accent, 1.18) : accent;
                                 ctx.fill();
                                 ctx.lineWidth = 2;
-                                ctx.strokeStyle = "#141414";
+                                ctx.strokeStyle = tone.surface;
                                 ctx.stroke();
                             }
                             ctx.globalAlpha = 1;
@@ -802,7 +812,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.topMargin: page.compactSpacing
                     text: page.saveError
-                    color: "#FFB4A9"
+                    color: tone.errorText
                     wrapMode: Text.Wrap
                 }
 
@@ -814,17 +824,17 @@ Item {
                     Layout.preferredHeight: 44
                     radius: height / 2
                     opacity: ready || page.saving ? 1 : 0.45
-                    color: !ready ? Qt.rgba(1, 1, 1, 0.07)
+                    color: !ready ? tone.wash(0.07)
                         : saveTap.pressed ? Qt.darker(page.accentColor, 1.08) : page.accentColor
                     border.width: activeFocus ? 1 : 0
-                    border.color: "#F8F8FF"
+                    border.color: tone.text
                     Behavior on color { ColorAnimation { duration: 120 } }
                     PlasmaComponents.Label {
                         anchors.fill: parent
                         anchors.leftMargin: 18
                         anchors.rightMargin: 18
                         text: page.saving ? i18n("Saving to %1…", page.editName) : i18n("Save to %1", page.editName)
-                        color: saveButton.ready ? page.accentTextColor : "#F8F8FF"
+                        color: saveButton.ready ? page.accentTextColor : tone.text
                         font.weight: Font.Medium
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter

@@ -514,7 +514,7 @@ private Q_SLOTS:
       QVERIFY(state->property("expanded").toBool());
     };
     clickOn(QStringLiteral("temperance-control-center"), QStringLiteral("control"));
-    // A mouse over a header control lightens it, in tablet mode too, where
+    // A mouse over a header control lifts it off the panel, in tablet mode too, where
     // Plasma's own buttons stop hearing the pointer.
     auto *popupWindow = qobject_cast<QQuickWindow *>(popup);
     QVERIFY(popupWindow);
@@ -530,7 +530,12 @@ private Q_SLOTS:
           {control->width() / 2, control->height() / 2}).toPoint();
       QTest::mouseMove(popupWindow, centre + QPoint(0, 1));
       QTest::mouseMove(popupWindow, centre);
-      QTRY_VERIFY(face->property("color").value<QColor>().lightness() > resting.lightness());
+      // Lighter over a dark panel, darker over a light one: either way the
+      // control stands further from its ground.
+      const bool darkGround = resting.lightness() < 128;
+      QTRY_VERIFY(darkGround
+          ? face->property("color").value<QColor>().lightness() > resting.lightness()
+          : face->property("color").value<QColor>().lightness() < resting.lightness());
       qInfo() << "T1_HOVER" << name << resting.name()
               << face->property("color").value<QColor>().name();
       QTest::mouseMove(popupWindow, {2, 2});

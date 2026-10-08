@@ -21,6 +21,11 @@ import org.kde.plasma.workspace.calendar as PlasmaCalendar
 Item {
     id: page
 
+    StatusColors {
+        id: tone
+        theme: page.Kirigami.Theme
+    }
+
     required property date today
     property color accentColor: Kirigami.Theme.highlightColor
     // The linked calendars (CalendarFeeds), or null where there are none.
@@ -159,7 +164,7 @@ Item {
                     font.family: Kirigami.Theme.defaultFont.family
                     font.pixelSize: 11
                     font.weight: Font.Medium
-                    color: "#A8FFFFFF"
+                    color: tone.secondaryText
                 }
             }
         }
@@ -230,8 +235,8 @@ Item {
                             height: page.markSize
                             radius: width / 2
                             color: cell.isToday ? page.accentColor
-                                : cell.isSelected ? Qt.rgba(1, 1, 1, 0.24)
-                                : dayHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                                : cell.isSelected ? tone.wash(0.24)
+                                : dayHover.hovered ? tone.wash(0.12) : "transparent"
                             Behavior on color {
                                 ColorAnimation { duration: 120; easing.type: Easing.OutCubic }
                             }
@@ -246,7 +251,7 @@ Item {
                             font.pixelSize: 15
                             font.weight: cell.isToday ? Font.Medium : Font.Normal
                             font.features: { "tnum": 1 }
-                            color: cell.isToday ? "#102729" : "#F8F8FF"
+                            color: cell.isToday ? "#102729" : tone.text
                         }
 
                         // A day with anything on it carries a dot beneath its number.
@@ -258,7 +263,7 @@ Item {
                             radius: 2
                             anchors.horizontalCenter: mark.horizontalCenter
                             y: mark.y + mark.height / 2 + 9
-                            color: cell.isToday ? "#102729" : "#A8FFFFFF"
+                            color: cell.isToday ? "#102729" : tone.secondaryText
                         }
 
                         HoverHandler { id: dayHover; enabled: cell.inMonth }
@@ -326,7 +331,7 @@ Item {
                 font.family: Kirigami.Theme.defaultFont.family
                 font.pixelSize: 13
                 font.weight: Font.Medium
-                color: "#A8FFFFFF"
+                color: tone.secondaryText
                 elide: Text.ElideRight
             }
 
@@ -360,7 +365,7 @@ Item {
                         Layout.alignment: Qt.AlignBaseline
                         text: eventRow.modelData.allDay ? allDayWidth.text : page.formatTime(eventRow.modelData.start)
                         font: widestStart.font
-                        color: "#A8FFFFFF"
+                        color: tone.secondaryText
                     }
                     Text {
                         id: titleText
@@ -370,7 +375,7 @@ Item {
                         text: eventRow.modelData.title
                         font.family: Kirigami.Theme.defaultFont.family
                         font.pixelSize: 15
-                        color: "#F8F8FF"
+                        color: tone.text
                         elide: Text.ElideRight
                     }
                 }
@@ -382,7 +387,7 @@ Item {
                 text: i18ncp("@info events not listed", "%1 more", "%1 more",
                              page.selectedEvents.length - page.shownEventLimit + 1)
                 font: widestStart.font
-                color: "#A8FFFFFF"
+                color: tone.secondaryText
             }
 
             Text {
@@ -391,7 +396,7 @@ Item {
                 text: page.hasLinks ? i18n("Nothing scheduled") : i18n("No holidays")
                 font.family: Kirigami.Theme.defaultFont.family
                 font.pixelSize: 15
-                color: "#88FFFFFF"
+                color: tone.faintText
             }
         }
     }

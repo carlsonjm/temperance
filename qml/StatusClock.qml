@@ -47,8 +47,16 @@ Item {
         pixelSize: block ? Math.round(timePixelSize * 0.36) : 11, weight: Font.Light })
     readonly property font secondaryFont: Qt.font({ family: family, pixelSize: 11,
         weight: Font.Normal, features: { "tnum": 1 } })
-    readonly property color primaryColor: "#F8F8FF"
-    readonly property color secondaryColor: "#A8FFFFFF"
+    // White on a dark panel, the theme's text on a light one. The block keeps
+    // white, since the lock it is drawn on is dark in either look. The clock
+    // reads its own theme rather than Temperance's shared colours because the
+    // lock takes this one file alone.
+    readonly property bool lightGround: !block
+        && Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Light
+    readonly property color primaryColor: lightGround ? Kirigami.Theme.textColor : "#F8F8FF"
+    readonly property color secondaryColor: lightGround
+        ? Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.66)
+        : "#A8FFFFFF"
 
     readonly property string timeText: timeString(dateTime)
     readonly property string dateText: formatDate(dateTime)

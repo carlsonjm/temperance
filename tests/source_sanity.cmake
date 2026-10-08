@@ -55,7 +55,7 @@ if(NOT notification_history_qml MATCHES "id: notificationHeader"
    OR NOT notification_history_qml MATCHES "implicitHeight: Math.max\\(44, actionFlow.childrenRect.height\\)"
    OR NOT notification_history_qml MATCHES "color: pill.hovered \\|\\| pill.down"
    OR NOT notification_history_qml MATCHES "border.width: 1"
-   OR NOT notification_history_qml MATCHES "border.color: \"#F8F8FF\""
+   OR NOT notification_history_qml MATCHES "border.color: tone.text"
    OR NOT notification_history_qml MATCHES "height: 30"
    OR NOT notification_history_qml MATCHES "implicitHeight: 44")
     message(FATAL_ERROR "Notification cards must retain the compact header/body/action geometry")
@@ -87,7 +87,7 @@ if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*
 endif()
 if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
    OR NOT expanded_qml MATCHES "bluetoothPairingPill"
-   OR NOT expanded_qml MATCHES "addBluetoothHover.hovered \\? \"#333333\""
+   OR NOT expanded_qml MATCHES "addBluetoothHover.hovered \\? tone.controlHover"
    OR NOT expanded_qml MATCHES "org.kde.plasma.bluetooth"
    OR NOT expanded_qml MATCHES "Add new device")
     message(FATAL_ERROR "Bluetooth must offer the native pairing wizard")

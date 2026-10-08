@@ -182,7 +182,8 @@ capped by the screen.
 
 Temperance applies the suite's visual language:
 
-- Ghost White (`#F8F8FF`) is the primary foreground.
+- Ghost White (`#F8F8FF`) leads on a dark style;
+  `StatusColors.qml` follows a light one.
 - Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
   vendored here. Application, provider, weather and tray icons stay with their
   sources.

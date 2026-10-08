@@ -3,6 +3,7 @@
     SPDX-License-Identifier: ISC
 */
 import QtQuick
+import org.kde.kirigami as Kirigami
 
 // Lucide's ethernet port, drawn with the bell's line: its geometry is
 // Lucide's 24 px grid, scaled to the box, and its stroke keeps the width it
@@ -11,7 +12,12 @@ import QtQuick
 Canvas {
     id: glyph
 
-    property color glyphColor: "#F8F8FF"
+    StatusColors {
+        id: tone
+        theme: glyph.Kirigami.Theme
+    }
+
+    property color glyphColor: tone.text
     property real strokeWidth: 2
 
     onGlyphColorChanged: requestPaint()

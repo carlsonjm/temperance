@@ -14,6 +14,11 @@ import org.kde.plasma.plasmoid
 Item {
     id: page
 
+    StatusColors {
+        id: tone
+        theme: page.Kirigami.Theme
+    }
+
     required property var notificationModel
     required property var clearHistory
     required property var resolveApplicationIcon
@@ -55,7 +60,7 @@ Item {
         contentItem: PlasmaComponents.Label {
             text: pill.text
             textFormat: Text.PlainText
-            color: "#F8F8FF"
+            color: tone.text
             font.pixelSize: Kirigami.Theme.smallFont.pixelSize
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
@@ -70,9 +75,9 @@ Item {
                 height: 30
                 radius: height / 2
                 color: pill.hovered || pill.down
-                    ? Qt.rgba(1, 1, 1, pill.down ? 0.20 : 0.12) : "transparent"
+                    ? tone.wash(pill.down ? 0.20 : 0.12) : "transparent"
                 border.width: 1
-                border.color: "#F8F8FF"
+                border.color: tone.text
                 opacity: pill.activeFocus ? 1 : 0.62
                 Behavior on color { ColorAnimation { duration: 120 } }
                 Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -105,7 +110,7 @@ Item {
                 text: i18nc("@title the day's calendar events", "Today")
                 font.pixelSize: 13
                 font.weight: Font.Medium
-                color: "#A8FFFFFF"
+                color: tone.secondaryText
             }
 
             Repeater {
@@ -117,7 +122,7 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: eventCardContent.implicitHeight + page.cardPaddingV * 2
                     radius: 8
-                    color: Qt.rgba(1, 1, 1, 0.07)
+                    color: tone.wash(0.07)
                     border.width: 0
                     Accessible.role: Accessible.StaticText
                     Accessible.name: [eventCard.modelData.title, eventTimes.text].join(", ")
@@ -146,7 +151,7 @@ Item {
                                     text: eventCard.modelData.calendar || ""
                                     font.pixelSize: 13
                                     font.weight: Font.Medium
-                                    color: "#A8FFFFFF"
+                                    color: tone.secondaryText
                                     elide: Text.ElideRight
                                 }
                                 PlasmaComponents.Label {
@@ -170,7 +175,7 @@ Item {
                                 text: page.formatTime(eventCard.modelData.start)
                                     + " – " + page.formatTime(eventCard.modelData.end)
                                 font.pixelSize: 13
-                                color: "#A8FFFFFF"
+                                color: tone.secondaryText
                             }
                             Item {
                                 implicitHeight: 44
@@ -204,7 +209,7 @@ Item {
                     : i18n("Recent")
                 font.pixelSize: 13
                 font.weight: Font.Medium
-                color: "#A8FFFFFF"
+                color: tone.secondaryText
             }
 
             PlasmaComponents.ToolButton {
@@ -219,7 +224,7 @@ Item {
             Layout.preferredHeight: demoContent.implicitHeight + Kirigami.Units.largeSpacing * 2
             visible: page.demoNotificationVisible
             radius: 8
-            color: Qt.rgba(1, 1, 1, 0.07)
+            color: tone.wash(0.07)
 
             RowLayout {
                 id: demoContent
@@ -250,7 +255,7 @@ Item {
                         Layout.fillWidth: true
                         text: i18n("The adaptive rail and notification history are working.")
                         font.pixelSize: 13
-                        color: "#A8FFFFFF"
+                        color: tone.secondaryText
                         wrapMode: Text.Wrap
                     }
                 }
@@ -374,7 +379,7 @@ Item {
                         objectName: "notificationClearGroup"
                         text: i18n("Clear")
                         icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/trash-2.svg"
-                        icon.color: "#F8F8FF"
+                        icon.color: tone.text
                         contentItem: SuiteIcon {
                             glyph: "trash-2"
                             implicitWidth: 20; implicitHeight: 20
@@ -394,7 +399,7 @@ Item {
                         icon.source: historyItem.isGroupExpanded
                             ? "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-up.svg"
                             : "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/chevron-down.svg"
-                        icon.color: "#F8F8FF"
+                        icon.color: tone.text
                         contentItem: SuiteIcon {
                             glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
                             implicitWidth: 20; implicitHeight: 20
@@ -435,7 +440,7 @@ Item {
                     height: notificationCardContent.implicitHeight
                         + page.cardPaddingV * 2
                     radius: 8
-                    color: Qt.rgba(1, 1, 1, 0.07)
+                    color: tone.wash(0.07)
                     border.width: 0
 
                     RowLayout {
@@ -475,7 +480,7 @@ Item {
                                     text: historyItem.applicationName
                                     font.pixelSize: 13
                                     font.weight: Font.Medium
-                                    color: "#A8FFFFFF"
+                                    color: tone.secondaryText
                                     elide: Text.ElideRight
                                 }
 
@@ -511,7 +516,7 @@ Item {
                                 // AutoText may choose RichText, which does not.
                                 textFormat: Text.StyledText
                                 font.pixelSize: 13
-                                color: "#A8FFFFFF"
+                                color: tone.secondaryText
                                 wrapMode: Text.Wrap
                                 maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
                                 elide: historyItem.detailsExpanded
@@ -535,10 +540,10 @@ Item {
                                 background: Rectangle {
                                     radius: height / 2
                                     color: detailsButton.hovered || detailsButton.down
-                                        ? Qt.rgba(1, 1, 1, 0.12)
-                                        : Qt.rgba(1, 1, 1, 0.07)
+                                        ? tone.wash(0.12)
+                                        : tone.wash(0.07)
                                     border.width: detailsButton.activeFocus ? 1 : 0
-                                    border.color: "#F8F8FF"
+                                    border.color: tone.text
                                     Behavior on color { ColorAnimation { duration: 120 } }
                                 }
                             }
@@ -604,7 +609,7 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.preferredWidth: Kirigami.Units.iconSizes.huge
                     Layout.preferredHeight: Kirigami.Units.iconSizes.huge
-                    glyphColor: "#F8F8FF"
+                    glyphColor: tone.text
                     strokeWidth: 1.4
                     opacity: 0.34
                 }

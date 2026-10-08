@@ -230,19 +230,22 @@ int main(int argc, char **argv)
         grabTimeout.start(3000);
         grabLoop.exec();
         const QImage rendered = grab->image();
+        // Ghost White on a dark ground, the theme's text on a light one.
+        const QColor ink = item->property("ink").value<QColor>();
         bool hasVisibleInk = false;
         for (int y = 0; y < rendered.height() && !hasVisibleInk; ++y) {
             for (int x = 0; x < rendered.width(); ++x) {
                 const QColor pixel = rendered.pixelColor(x, y);
-                if (pixel.alpha() > 32 && pixel.red() > 180
-                    && pixel.green() > 180 && pixel.blue() > 180) {
+                if (pixel.alpha() > 32 && qAbs(pixel.red() - ink.red()) < 75
+                    && qAbs(pixel.green() - ink.green()) < 75
+                    && qAbs(pixel.blue() - ink.blue()) < 75) {
                     hasVisibleInk = true;
                     break;
                 }
             }
         }
         if (!hasVisibleInk) {
-            qCritical() << "SuiteIcon rendered without visible Ghost White ink:" << glyph;
+            qCritical() << "SuiteIcon rendered without visible ink:" << glyph << ink.name();
             return 17;
         }
         item->setParentItem(nullptr);
