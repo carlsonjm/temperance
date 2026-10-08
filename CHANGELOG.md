@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Notification cards in the bell keep their app name and title. A card that
+  arrived while the bell was closed used to show only its message, so a
+  calendar alert read "Today at noon" with no event.
+- A long notification arriving at the top of the bell no longer draws its
+  Dismiss over the card below. New cards appear in place; the cards below a
+  dismissed one still slide up.
 - Do Not Disturb keeps the ticker still, as it keeps Plasma's popups away.
   A notification that arrives meanwhile goes to the history, the bell holds a
   check for it, and it does not play when Do Not Disturb ends. Critical
