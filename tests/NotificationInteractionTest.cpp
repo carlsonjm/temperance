@@ -331,7 +331,7 @@ private Q_SLOTS:
         QVERIFY(tone);
         const auto makeTheme = [&](const QString &ground, const QString &text) {
             QQmlComponent themeComponent(&engine);
-            themeComponent.setData(QStringLiteral("import QtQml\nQtObject { property color backgroundColor: \"%1\"; "
+            themeComponent.setData(QStringLiteral("import QtQuick\nQtObject { property color backgroundColor: \"%1\"; "
                 "property color textColor: \"%2\"; property color negativeTextColor: \"#DA4453\" }")
                 .arg(ground, text).toUtf8(), QUrl());
             return themeComponent.create();
