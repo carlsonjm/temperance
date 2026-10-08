@@ -195,6 +195,22 @@ int main(int argc, char **argv)
         QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"), QStringLiteral("cloud-sun"),
         QStringLiteral("gauge")
     };
+    // Stand-ins for a dark and a light Plasma style. The software renderer
+    // the test runs on draws no layer effects, so the light glyph's recolour
+    // is checked by its settings and the drawing by the dark one.
+    const auto makeTheme = [&](const QString &ground, const QString &text) {
+        QQmlComponent themeComponent(&engine);
+        themeComponent.setData(QStringLiteral("import QtQuick\nQtObject { property color backgroundColor: \"%1\"; "
+            "property color textColor: \"%2\"; property color negativeTextColor: \"#DA4453\" }")
+            .arg(ground, text).toUtf8(), QUrl());
+        return std::unique_ptr<QObject>(themeComponent.create());
+    };
+    const auto darkTheme = makeTheme(QStringLiteral("#141414"), QStringLiteral("#E0E0E0"));
+    const auto lightTheme = makeTheme(QStringLiteral("#F2F2F2"), QStringLiteral("#102729"));
+    if (!darkTheme || !lightTheme) {
+        qCritical() << "Could not make the stand-in themes";
+        return 18;
+    }
     for (const QString &glyph : glyphs) {
         std::unique_ptr<QObject> icon(iconComponent.createWithInitialProperties(
             {{QStringLiteral("glyph"), glyph}}));
@@ -206,6 +222,24 @@ int main(int argc, char **argv)
         }
         item->setParentItem(iconWindow.contentItem());
         auto *imageItem = item->findChild<QQuickItem *>(QStringLiteral("suiteIconImage"));
+        auto *tone = item->findChild<QObject *>(QStringLiteral("temperanceStatusColors"),
+            Qt::FindDirectChildrenOnly);
+        if (!imageItem || !tone) {
+            qCritical() << "SuiteIcon lost its image or its colours:" << glyph;
+            return 16;
+        }
+        tone->setProperty("theme", QVariant::fromValue(lightTheme.get()));
+        auto *layer = imageItem->property("layer").value<QObject *>();
+        if (!layer || !layer->property("enabled").toBool()
+            || item->property("ink").value<QColor>() != QColor(QStringLiteral("#102729"))) {
+            qCritical() << "SuiteIcon is not recoloured to a light style's text:" << glyph;
+            return 17;
+        }
+        tone->setProperty("theme", QVariant::fromValue(darkTheme.get()));
+        if (layer->property("enabled").toBool()) {
+            qCritical() << "SuiteIcon is recoloured on a dark style:" << glyph;
+            return 17;
+        }
         QElapsedTimer loadTimer;
         loadTimer.start();
         while (imageItem && imageItem->property("status").toInt() != 1
@@ -230,22 +264,19 @@ int main(int argc, char **argv)
         grabTimeout.start(3000);
         grabLoop.exec();
         const QImage rendered = grab->image();
-        // Ghost White on a dark ground, the theme's text on a light one.
-        const QColor ink = item->property("ink").value<QColor>();
         bool hasVisibleInk = false;
         for (int y = 0; y < rendered.height() && !hasVisibleInk; ++y) {
             for (int x = 0; x < rendered.width(); ++x) {
                 const QColor pixel = rendered.pixelColor(x, y);
-                if (pixel.alpha() > 32 && qAbs(pixel.red() - ink.red()) < 75
-                    && qAbs(pixel.green() - ink.green()) < 75
-                    && qAbs(pixel.blue() - ink.blue()) < 75) {
+                if (pixel.alpha() > 32 && pixel.red() > 180
+                    && pixel.green() > 180 && pixel.blue() > 180) {
                     hasVisibleInk = true;
                     break;
                 }
             }
         }
         if (!hasVisibleInk) {
-            qCritical() << "SuiteIcon rendered without visible ink:" << glyph << ink.name();
+            qCritical() << "SuiteIcon rendered without visible Ghost White ink:" << glyph;
             return 17;
         }
         item->setParentItem(nullptr);
