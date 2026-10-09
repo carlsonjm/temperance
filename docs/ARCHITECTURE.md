@@ -141,9 +141,9 @@ and all-day events stay in the calendar card.
 
 ## Control Center and tray
 
-Session controls live in the Control Center header. Lock, Restart and Shut Down
-stand in the row; Log Out and Switch User wait behind More. All are on by default
-except Switch User, which is opt-in. Lock asks nothing, since it loses no work;
+Session controls live in the Control Center header: Shut Down always, others as
+`sessionRow` and room allow (Sleep, Restart), the rest behind More. Switch User
+is opt-in. Lock and Sleep ask nothing;
 Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
 `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
@@ -196,7 +196,7 @@ Temperance applies the suite's visual language:
 
 ## Weather
 
-Plasma's installed Weather data comes first. With the online fallback on,
+Weather starts off. Plasma's Weather data comes first, hourly. With the online fallback on,
 Temperance may send the configured station coordinates or location name to
 Open-Meteo for current weather. The setting can be turned off, and no other
 provider is added.

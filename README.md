@@ -90,8 +90,8 @@ weather sections are turned off.
   Control Center entries.
 - **Calendar** links calendars by their private address and sets each one's color.
 
-When online weather fallback is enabled, Temperance sends the configured station
-coordinates or location name to Open-Meteo for the current temperature. Disable
+Weather starts off. When online weather fallback is enabled, Temperance sends the
+configured station coordinates or location name to Open-Meteo hourly. Disable
 the fallback to keep weather data local to Plasma's installed Weather widget.
 
 ## Compatibility

@@ -40,6 +40,66 @@ Item {
     // The Z13's Performance page, opened from Control Center's profile entry.
     readonly property bool performanceShown: !systemTrayState.activeApplet
         && systemTrayState.page === "performance"
+    // Control Center's session actions. Shut down always shows; the rest
+    // follow their switches, and Sleep also needs a machine that can sleep.
+    readonly property var sessionActionInfo: ({
+        "sleep": { "id": "sleep", "glyph": "moon", "text": i18n("Sleep") },
+        "lock": { "id": "lock", "glyph": "lock", "text": i18n("Lock") },
+        "restart": { "id": "restart", "glyph": "rotate-cw", "text": i18n("Restart") },
+        "logout": { "id": "logout", "glyph": "log-out", "text": i18n("Log out") },
+        "switchUser": { "id": "switchUser", "glyph": "users", "text": i18n("Switch user") },
+        "shutdown": { "id": "shutdown", "glyph": "power", "text": i18n("Shut down") }
+    })
+    readonly property var sessionOrder: ["sleep", "lock", "restart", "logout", "switchUser", "shutdown"]
+    readonly property int sessionSpacing: 4
+    readonly property int sessionPillWidth: 42
+    readonly property int sessionMoreWidth: 30
+    function sessionShown(id) {
+        const config = Plasmoid.configuration;
+        switch (id) {
+        case "sleep": return config.showSleep && Plasmoid.canSleep();
+        case "lock": return config.showLock;
+        case "restart": return config.showRestart;
+        case "logout": return config.showLogout;
+        case "switchUser": return config.showSwitchUser;
+        case "shutdown": return true;
+        }
+        return false;
+    }
+    function sessionText(id) {
+        return sessionActionInfo[id].text;
+    }
+    // What fits beside the title, at its full width.
+    TextMetrics {
+        id: titleMetrics
+        font: pageHeading.font
+        text: i18n("Control Center")
+    }
+    readonly property real sessionRoom: heading.width - titleMetrics.advanceWidth
+        - Kirigami.Units.largeSpacing - heading.spacing
+    // The row and the menu, as ids: the row in the order chosen, Shut down
+    // last when it was not placed; the menu in the fixed order. Whatever
+    // the row has no room for moves to the front of the menu, from the
+    // row's end, never Shut down.
+    readonly property var sessionLayout: {
+        const placed = (Plasmoid.configuration.sessionRow || []).filter(
+            (id, index, list) => sessionActionInfo[id] && list.indexOf(id) === index && sessionShown(id));
+        if (placed.indexOf("shutdown") < 0) placed.push("shutdown");
+        let menu = sessionOrder.filter(id => sessionShown(id) && placed.indexOf(id) < 0);
+        const fits = (count, withMore) => count * sessionPillWidth + (count - 1) * sessionSpacing
+            + (withMore ? sessionSpacing + sessionMoreWidth : 0) <= sessionRoom;
+        while (placed.length > 1 && !fits(placed.length, menu.length > 0)) {
+            let last = placed.length - 1;
+            if (placed[last] === "shutdown") --last;
+            menu.unshift(placed.splice(last, 1)[0]);
+        }
+        menu = sessionOrder.filter(id => menu.indexOf(id) >= 0);
+        return { "row": placed.map(id => sessionActionInfo[id]), "menu": menu };
+    }
+    function inSessionMenu(id) {
+        return sessionLayout.menu.indexOf(id) >= 0;
+    }
+
     readonly property real desiredWidth: calendarShown
         ? calendarPage.implicitWidth + contentSafety * 2
         : Kirigami.Units.gridUnit * 24
@@ -320,6 +380,7 @@ Item {
             }
 
             Kirigami.Heading {
+                id: pageHeading
                 Layout.fillWidth: true
                 leftPadding: Kirigami.Units.largeSpacing
                 level: 1
@@ -378,32 +439,23 @@ Item {
             RowLayout {
                 id: sessionActions
                 visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
-                    && (Plasmoid.configuration.showLock || Plasmoid.configuration.showRestart || Plasmoid.configuration.showShutdown || Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser)
-                spacing: 4
-                // The device's own actions stand in the row; the session's,
-                // log out and switch user, wait behind the ellipsis.
-                HeaderPill {
-                    visible: Plasmoid.configuration.showLock
-                    glyph: "lock"
-                    text: i18n("Lock")
-                    onClicked: controlPage.requestSessionAction("lock")
-                }
-                HeaderPill {
-                    visible: Plasmoid.configuration.showRestart
-                    glyph: "rotate-cw"
-                    text: i18n("Restart")
-                    onClicked: controlPage.requestSessionAction("restart")
-                }
-                HeaderPill {
-                    visible: Plasmoid.configuration.showShutdown
-                    glyph: "power"
-                    text: i18n("Shut down")
-                    onClicked: controlPage.requestSessionAction("shutdown")
+                spacing: popup.sessionSpacing
+                // The actions placed in the row stand here, as many as fit
+                // beside the title; every other shown one waits behind the
+                // ellipsis. Shut down always stands in the row.
+                Repeater {
+                    model: popup.sessionLayout.row
+                    delegate: HeaderPill {
+                        required property var modelData
+                        glyph: modelData.glyph
+                        text: modelData.text
+                        onClicked: controlPage.requestSessionAction(modelData.id)
+                    }
                 }
                 HeaderCircle {
                     id: sessionMore
                     objectName: "temperance-session-more"
-                    visible: Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser
+                    visible: popup.sessionLayout.menu.length > 0
                     glyph: "ellipsis-vertical"
                     icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/ellipsis-vertical.svg"
                     held: sessionMenu.visible
@@ -423,13 +475,28 @@ Item {
                             border.color: tone.divider
                         }
                         SessionMenuItem {
-                            visible: Plasmoid.configuration.showLogout
-                            text: i18n("Log out")
+                            visible: popup.inSessionMenu("sleep")
+                            text: popup.sessionText("sleep")
+                            onTriggered: controlPage.requestSessionAction("sleep")
+                        }
+                        SessionMenuItem {
+                            visible: popup.inSessionMenu("lock")
+                            text: popup.sessionText("lock")
+                            onTriggered: controlPage.requestSessionAction("lock")
+                        }
+                        SessionMenuItem {
+                            visible: popup.inSessionMenu("restart")
+                            text: popup.sessionText("restart")
+                            onTriggered: controlPage.requestSessionAction("restart")
+                        }
+                        SessionMenuItem {
+                            visible: popup.inSessionMenu("logout")
+                            text: popup.sessionText("logout")
                             onTriggered: controlPage.requestSessionAction("logout")
                         }
                         SessionMenuItem {
-                            visible: Plasmoid.configuration.showSwitchUser
-                            text: i18n("Switch user")
+                            visible: popup.inSessionMenu("switchUser")
+                            text: popup.sessionText("switchUser")
                             onTriggered: controlPage.requestSessionAction("switchUser")
                         }
                     }

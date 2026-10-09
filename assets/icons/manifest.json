@@ -19,6 +19,8 @@
     "session-logout": "log-out",
     "session-restart": "rotate-cw",
     "session-shutdown": "power",
+    "session-sleep": "moon",
+    "session-switch-user": "users",
     "configure": "sliders-horizontal",
     "brightness": "sun",
     "open-weather": "cloud-sun",

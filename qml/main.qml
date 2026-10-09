@@ -103,16 +103,20 @@ ContainmentItem {
     readonly property bool tickerEnabled: notificationsEnabled
         && Plasmoid.configuration.showTicker !== false
     readonly property bool doNotDisturb: NotificationManager.Server.inhibited
-    readonly property bool weatherEnabled: Plasmoid.configuration.showWeather !== false
+    readonly property bool weatherEnabled: Plasmoid.configuration.showWeather === true
     readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
     readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
     readonly property bool clockEnabled: timeEnabled || dateEnabled
     readonly property int priorityAlertFreshnessMs: Math.max(5,
         Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20)) * 1000
+    // Unset, the unit follows the region: Fahrenheit where the region
+    // measures in US units, Celsius everywhere else.
+    readonly property string regionTemperatureUnit:
+        Qt.locale().measurementSystem === Locale.ImperialUSSystem ? "fahrenheit" : "celsius"
     readonly property string temperatureUnit: {
-        const configured = String(Plasmoid.configuration.temperatureUnit || "fahrenheit");
+        const configured = String(Plasmoid.configuration.temperatureUnit || "");
         return ["weather", "fahrenheit", "celsius"].includes(configured)
-            ? configured : "fahrenheit";
+            ? configured : regionTemperatureUnit;
     }
     property string currentTemperature: ""
     property bool weatherRequestPending: false
@@ -992,14 +996,14 @@ ContainmentItem {
         geocode.send();
     }
 
-    // Until a temperature arrives, ask again after 5 s, 30 s and 2 min, then
-    // every 10 min, the same as once one has arrived. Nothing runs without a
+    // Until a temperature arrives, ask again after 5 s, 30 s, 2 min and
+    // 10 min, then once an hour, the same as once one has arrived. Nothing runs without a
     // weather widget, and a new widget or setting starts the steps over.
     property int weatherAttempts: 0
-    readonly property var weatherRetryDelays: [5000, 5000, 30000, 120000, 600000]
+    readonly property var weatherRetryDelays: [5000, 5000, 30000, 120000, 600000, 3600000]
 
     Timer {
-        interval: root.currentTemperature ? 600000
+        interval: root.currentTemperature ? 3600000
             : root.weatherRetryDelays[Math.min(root.weatherAttempts, root.weatherRetryDelays.length - 1)]
         running: root.weatherEnabled && !!root.appletsById["org.kde.plasma.weather"]
         repeat: true

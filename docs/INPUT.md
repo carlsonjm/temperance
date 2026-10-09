@@ -75,11 +75,12 @@ documents cite this one.
 
 | Input | What happens |
 | --- | --- |
+| Tap or click Sleep | Sleeps at once. |
 | Tap or click Lock | Locks the screen at once. |
 | Tap or click Restart | Plasma asks first, then restarts. |
 | Tap or click Shut down | Plasma asks first, then shuts down. |
-| Tap or click More, then Log out | Plasma asks first, then logs out. |
-| Tap or click More, then Switch user | Opens the switch-user screen; shown only when turned on in settings. |
+| Tap or click More | Opens the other actions; Plasma confirms Log out. |
+| Tap or click Switch user | Opens the switch-user screen. |
 
 ## System Tray
 

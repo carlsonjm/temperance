@@ -540,7 +540,7 @@ private Q_SLOTS:
               << face->property("color").value<QColor>().name();
       QTest::mouseMove(popupWindow, {2, 2});
     };
-    hoverLightens(QStringLiteral("temperance-header-lock"));
+    hoverLightens(QStringLiteral("temperance-header-power"));
     hoverLightens(QStringLiteral("temperance-session-more"));
     // A page an applet shows, opened from a page, has Back, which returns
     // to that page.

@@ -4,6 +4,15 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center's power row holds Sleep, Restart and Shut down out of the box,
+  and Lock waits behind More with Log out. Shut down always stands in the row;
+  each of the others can stand in the row, wait behind More or be hidden, and
+  the row keeps as many as fit beside the title. Sleep shows only where the
+  machine can sleep.
+- Weather starts off, and once on it asks for the temperature once an hour
+  rather than every ten minutes. The temperature unit follows the region
+  until one is chosen: Fahrenheit where the region uses US units, Celsius
+  elsewhere.
 - On Z13 tablets with the z13ctl-plus helper, a right-click or press and hold
   on Control Center's profile entry drops down the profiles, and choosing one
   applies it. A switch on the Performance page sets the built-in screen to its
