@@ -4,9 +4,9 @@ set -euo pipefail
 package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # TEMPERANCE_ROOT stages the files under another folder instead of the system.
 root="${TEMPERANCE_ROOT:-}"
-plugin_name="studio.warbler.temperance.so"
+plugin_name="co.goodinput.temperance.so"
 plugin_target="${root}/usr/lib/qt6/plugins/plasma/applets/${plugin_name}"
-icon_name="studio.warbler.temperance.png"
+icon_name="co.goodinput.temperance.png"
 icon_target="${root}/usr/share/icons/hicolor/512x512/apps/${icon_name}"
 
 # File managers launch scripts without a terminal, which makes sudo fail out of

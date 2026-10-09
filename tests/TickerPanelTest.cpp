@@ -95,7 +95,7 @@ private Q_SLOTS:
       }
       return a;
     };
-    auto *left = add("studio.warbler.tettegouche");
+    auto *left = add("co.goodinput.tettegouche");
     QVERIFY(left);
     QCOMPARE(
         QFileInfo(left->pluginMetaData().fileName()).canonicalFilePath(),
@@ -112,7 +112,7 @@ private Q_SLOTS:
     QVERIFY(spacer);
     spacerFace = PlasmaQuick::AppletQuickItem::itemForApplet(spacer);
     hint(spacerFace, "plasmoid.configuration.expanding", true);
-    auto *right = add("studio.warbler.temperance");
+    auto *right = add("co.goodinput.temperance");
     QVERIFY(right);
     QCOMPARE(QFileInfo(right->pluginMetaData().fileName()).canonicalFilePath(),
              QFileInfo(QString::fromLocal8Bit(

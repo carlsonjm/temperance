@@ -105,7 +105,7 @@ endif()
 file(READ "${SOURCE_DIR}/metadata.json" root_metadata)
 file(READ "${SOURCE_DIR}/src/metadata.json" plugin_metadata)
 
-if(NOT EXISTS "${SOURCE_DIR}/assets/studio.warbler.temperance.png")
+if(NOT EXISTS "${SOURCE_DIR}/assets/co.goodinput.temperance.png")
     message(FATAL_ERROR "The Temperance widget icon is missing")
 endif()
 
@@ -179,7 +179,7 @@ if(NOT root_metadata STREQUAL plugin_metadata)
     message(FATAL_ERROR "Root and native-plugin metadata must remain identical")
 endif()
 
-if(NOT root_metadata MATCHES "\"Icon\"[ ]*:[ ]*\"studio.warbler.temperance\"")
+if(NOT root_metadata MATCHES "\"Icon\"[ ]*:[ ]*\"co.goodinput.temperance\"")
     message(FATAL_ERROR "Widget metadata does not reference the Temperance icon")
 endif()
 file(READ "${SOURCE_DIR}/src/systemtray.cpp" systemtray_cpp)

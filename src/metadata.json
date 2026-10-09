@@ -9,8 +9,8 @@
         "Description": "Stay informed and in control with quiet notifications and everyday essentials",
         "EnabledByDefault": true,
         "FormFactors": ["desktop"],
-        "Icon": "studio.warbler.temperance",
-        "Id": "studio.warbler.temperance",
+        "Icon": "co.goodinput.temperance",
+        "Id": "co.goodinput.temperance",
         "License": "GPL-2.0+",
         "Name": "Temperance",
         "Version": "1.1.0"

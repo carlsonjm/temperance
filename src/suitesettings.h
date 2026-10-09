@@ -31,7 +31,7 @@ inline void openConfigureInSuiteSettings(Plasma::Applet *applet, const QString &
         return;
     }
     QObject::connect(configure, &QAction::triggered, applet, [applet, page] {
-        const KService::Ptr settings = KService::serviceByDesktopName(QStringLiteral("studio.warbler.Shuffle.Settings"));
+        const KService::Ptr settings = KService::serviceByDesktopName(QStringLiteral("co.goodinput.Shuffle.Settings"));
         const QString program = settings ? KShell::splitArgs(settings->exec()).value(0) : QString();
         if (program.isEmpty()) {
             QMetaObject::invokeMethod(applet, "requestConfiguration");
@@ -49,7 +49,7 @@ inline void openConfigureInSuiteSettings(Plasma::Applet *applet, const QString &
 inline void useShuffleName(Plasma::Applet *applet, const QString &name)
 {
     if (QStandardPaths::locate(QStandardPaths::GenericDataLocation,
-                               QStringLiteral("plasma/plasmoids/studio.warbler.shuffle.bottomsurface"),
+                               QStringLiteral("plasma/plasmoids/co.goodinput.shuffle.bottomsurface"),
                                QStandardPaths::LocateDirectory)
             .isEmpty()) {
         return;

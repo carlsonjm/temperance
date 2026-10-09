@@ -405,7 +405,7 @@ Item {
                     objectName: "temperance-session-more"
                     visible: Plasmoid.configuration.showLogout || Plasmoid.configuration.showSwitchUser
                     glyph: "ellipsis-vertical"
-                    icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/ellipsis-vertical.svg"
+                    icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/ellipsis-vertical.svg"
                     held: sessionMenu.visible
                     text: i18n("More session options")
                     onClicked: sessionMenu.open()
@@ -440,7 +440,7 @@ Item {
             HeaderPill {
                 visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
                 glyph: "settings"
-                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/settings.svg"
+                icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/settings.svg"
                 text: i18n("Open system settings")
                 onClicked: {
                     systemTrayState.expanded = false;
@@ -461,7 +461,7 @@ Item {
                 visible: systemTrayState.activeApplet
                     && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
                 text: i18n("Add new device")
-                icon.source: "qrc:/qt/qml/plasma/applet/studio/warbler/temperance/plus.svg"
+                icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/plus.svg"
                 icon.color: tone.text
                 contentItem: Row {
                     spacing: 6

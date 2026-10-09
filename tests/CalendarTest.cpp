@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 {
     QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedStates));
     QGuiApplication app(argc, argv);
-    KLocalizedString::setApplicationDomain("plasma_applet_studio.warbler.temperance");
+    KLocalizedString::setApplicationDomain("plasma_applet_co.goodinput.temperance");
     QQmlEngine engine;
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
 

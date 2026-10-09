@@ -158,7 +158,7 @@ follows authoritative power state, and the Performance pill, placed by
 
 ## Settings
 
-Where Shuffle Settings (`studio.warbler.Shuffle.Settings`) is installed, Configure
+Where Shuffle Settings (`co.goodinput.Shuffle.Settings`) is installed, Configure
 opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 
 ## Popups
