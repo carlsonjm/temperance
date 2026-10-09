@@ -35,6 +35,9 @@ Item {
     readonly property var presets: Plasmoid.performancePresets
     readonly property string activePreset: Plasmoid.activePerformancePreset
     readonly property bool busy: Plasmoid.performanceBusy
+    readonly property var refreshRates: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rates : []
+    readonly property int refreshRate: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rate : 0
+    readonly property bool refreshHeld: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.held : false
 
     implicitWidth: Kirigami.Units.gridUnit * 24
     implicitHeight: Math.min(maximumHeight, pageContent.implicitHeight + standardSpacing + surfaceSpacing)
@@ -460,7 +463,42 @@ Item {
                 text: i18n("The battery stops charging here. A lower limit keeps it healthy longer.")
             }
 
-            // 3. Automatic switching between the plugged-in and battery profiles.
+            // 3. Refresh rate: the profile sets it; a rate chosen here holds
+            // until the profile changes.
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: page.surfaceSpacing - page.compactSpacing
+                visible: page.refreshRates.length > 1
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Refresh rate")
+                    font.weight: Font.Medium
+                }
+                PlasmaComponents.Label {
+                    text: page.refreshHeld ? i18n("Held") : i18n("From profile")
+                    opacity: 0.65
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: page.refreshRates.length > 1
+                spacing: page.compactSpacing
+                Repeater {
+                    model: page.refreshRates
+                    delegate: ChoicePill {
+                        required property int modelData
+                        label: i18n("%1 Hz", modelData)
+                        selected: modelData === page.refreshRate
+                        onTriggered: Plasmoid.screenRefresh.choose(modelData)
+                    }
+                }
+            }
+            DetailLabel {
+                visible: page.refreshRates.length > 1
+                text: i18n("Your profile sets the screen's rate. A rate chosen here holds until the profile changes.")
+            }
+
+            // 4. Automatic switching between the plugged-in and battery profiles.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: page.surfaceSpacing - page.compactSpacing
@@ -509,7 +547,7 @@ Item {
                 }
             }
 
-            // 4. A profile's own settings, staged until Save, folded until asked for.
+            // 5. A profile's own settings, staged until Save, folded until asked for.
             RowLayout {
                 id: editHeader
                 Layout.fillWidth: true

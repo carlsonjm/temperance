@@ -23,6 +23,7 @@ find_package(PlasmaQuick REQUIRED)
 find_package(LibNotificationManager REQUIRED)
 find_package(LibKWorkspace REQUIRED)
 find_package(KF6PulseAudioQt REQUIRED)
+find_package(KF6Screen REQUIRED)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -106,7 +107,7 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(co.goodinput.temperance
-    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp
+    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp src/screenrefresh.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
@@ -170,7 +171,7 @@ target_compile_definitions(co.goodinput.temperance PRIVATE
 target_include_directories(co.goodinput.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(co.goodinput.temperance PRIVATE
-    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt Qt6::Network
+    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt KF6::Screen Qt6::Network
     PW::LibNotificationManager PW::KWorkspace)
 
 add_test(NAME temperance_source_sanity

@@ -110,7 +110,7 @@ previous package and add Temperance to the panel as a new widget.
 
 Install a C++20 compiler, CMake, Ninja, ECM, Plasma and PlasmaQuick development
 files, Qt 6 Core/DBus/Gui/Network/Quick/Widgets development files, KDE Frameworks 6
-development files including KCalendarCore, PulseAudioQt, and Plasma Workspace's
+development files including KCalendarCore, PulseAudioQt, libkscreen, and Plasma Workspace's
 NotificationManager and KWorkspace development files. The installed system also
 needs KCalendarCore.
 

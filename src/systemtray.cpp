@@ -16,6 +16,7 @@
 #include <KLocalizedString>
 
 #include "calendarfeeds.h"
+#include "screenrefresh.h"
 
 #include <QScreen>
 #include <optional>
@@ -361,6 +362,10 @@ void SystemTray::init()
     // once here, again whenever Control Center opens, and after a preset is
     // applied; the helper is never run on a timer.
     m_performanceHelper = QStandardPaths::findExecutable(u"z13ctl-plus"_s);
+    if (!m_performanceHelper.isEmpty()) {
+        m_screenRefresh = new ScreenRefresh([this](std::function<void()> done) { readPerformancePresets(std::move(done)); }, this);
+        Q_EMIT screenRefreshChanged();
+    }
     refreshPerformancePresets();
 
     // This applet replaces Plasma's notification presentation. Own the public
@@ -447,13 +452,23 @@ QString SystemTray::activePerformancePreset() const
     return m_activePerformancePreset;
 }
 
+ScreenRefresh *SystemTray::screenRefresh() const
+{
+    return m_screenRefresh;
+}
+
 void SystemTray::refreshPerformancePresets()
+{
+    readPerformancePresets({});
+}
+
+void SystemTray::readPerformancePresets(std::function<void()> done)
 {
     if (m_performanceHelper.isEmpty()) {
         return;
     }
     auto *process = new QProcess(this);
-    connect(process, &QProcess::finished, this, [this, process](int exitCode, QProcess::ExitStatus status) {
+    connect(process, &QProcess::finished, this, [this, process, done](int exitCode, QProcess::ExitStatus status) {
         if (status == QProcess::NormalExit && exitCode == 0) {
             QStringList presets;
             QString active;
@@ -483,8 +498,14 @@ void SystemTray::refreshPerformancePresets()
                 m_activePerformancePreset = active;
                 Q_EMIT activePerformancePresetChanged();
             }
+            if (m_screenRefresh && !active.isEmpty()) {
+                m_screenRefresh->setProfile(active);
+            }
         }
         process->deleteLater();
+        if (done) {
+            done();
+        }
     });
     process->start(m_performanceHelper, {u"preset"_s, u"list"_s});
     refreshPerformanceState();

@@ -1,7 +1,7 @@
 # Input
 
-Every touch, click and key Temperance answers, destination by destination, and
-what you see happen. Other documents cite this one and do not restate it.
+Every touch, click and key Temperance answers, and what you see happen. Other
+documents cite this one.
 
 | Task | Touch | Keyboard |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Input | What happens |
 | --- | --- |
 | Tap or click the icon of the page already open | Closes the page. |
-| Tap or click above or below an icon, anywhere in the panel's height | Counts as that icon. |
+| Tap or click above or below an icon | Counts as that icon. |
 | Your finger on an icon | The icon lifts until you let go. |
 | Pointer over the weather, network, tray or battery icon | The icon grows a little and shows its name. |
 | Escape, with a page open | Closes the page. |
@@ -66,6 +66,7 @@ what you see happen. Other documents cite this one and do not restate it.
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
 | Tap or click the profile entry | Opens Performance, to apply or edit profiles. |
+| Right-click or hold it | Lists the profiles to apply. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
 | Tap or click Back | Returns to the page that opened this one. |
 | Tap, click, right-click, middle-click, scroll or press and hold a pill | The same as on that entry in the System Tray. |

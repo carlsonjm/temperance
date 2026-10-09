@@ -49,7 +49,7 @@ jobs:
             extra-cmake-modules qt6-base qt6-declarative qt6-tools \
             kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
             kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
-            kpackage libplasma plasma-workspace pulseaudio-qt layer-shell-qt \
+            kpackage libplasma plasma-workspace pulseaudio-qt libkscreen layer-shell-qt \
             powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons \
             ttf-dejavu noto-fonts
 
