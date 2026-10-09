@@ -79,6 +79,13 @@ void SystemTray::requestSessionAction(const QString &action)
         else Q_EMIT sessionActionFailed();
         return;
     }
+    // Sleeping asks nothing first either: everything open is there on waking.
+    if (action == u"sleep"_s) {
+        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
+        if (session && session->canSuspend()) session->suspend();
+        else Q_EMIT sessionActionFailed();
+        return;
+    }
     // Locking asks nothing first: it loses no work.
     if (action == u"lock"_s) {
         auto *session = static_cast<SessionManagement *>(m_sessionManagement);
@@ -98,6 +105,12 @@ void SystemTray::requestSessionAction(const QString &action)
         }
         watcher->deleteLater();
     });
+}
+
+bool SystemTray::canSleep() const
+{
+    auto *session = static_cast<SessionManagement *>(m_sessionManagement);
+    return session && session->canSuspend();
 }
 
 void SystemTray::launchApplication(const QString &desktopName)

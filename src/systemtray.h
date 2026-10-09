@@ -122,6 +122,8 @@ public:
     Q_INVOKABLE void scroll(const QString &service, int delta, const QString &direction);
     Q_INVOKABLE void launchApplication(const QString &desktopName);
     Q_INVOKABLE void requestSessionAction(const QString &action);
+    // Whether the machine can sleep now, as the session manager reports it.
+    Q_INVOKABLE bool canSleep() const;
     Q_INVOKABLE QString resolveApplicationIcon(const QString &applicationName,
                                                const QString &desktopEntry,
                                                const QString &fallbackIcon) const;

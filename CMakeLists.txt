@@ -153,6 +153,8 @@ plasma_add_applet(co.goodinput.temperance
         assets/icons/lucide/log-out.svg
         assets/icons/lucide/rotate-cw.svg
         assets/icons/lucide/power.svg
+        assets/icons/lucide/moon.svg
+        assets/icons/lucide/users.svg
         assets/icons/lucide/sliders-horizontal.svg
         assets/icons/lucide/sun.svg
         assets/icons/lucide/cloud-sun.svg

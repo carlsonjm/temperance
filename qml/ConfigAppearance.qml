@@ -20,6 +20,8 @@ KCMUtils.ScrollViewKCM {
     property bool cfg_showSwitchUser
     property bool cfg_showRestart
     property bool cfg_showShutdown
+    property bool cfg_showSleep
+    property list<string> cfg_sessionRow: []
     property bool cfg_showPinButton
     property int cfg_compactWidth
     property bool cfg_adaptiveWidth
@@ -49,6 +51,34 @@ KCMUtils.ScrollViewKCM {
                     Kirigami.Theme.defaultFont.family);
     }
 
+    // Each session action but Shut down stands in the row, waits in the
+    // menu, or is hidden. The row keeps its order; one newly placed there
+    // goes before Shut down.
+    readonly property var sessionPlacements: [
+        { "id": "sleep", "label": i18n("Sleep:") },
+        { "id": "lock", "label": i18n("Lock:") },
+        { "id": "restart", "label": i18n("Restart:") },
+        { "id": "logout", "label": i18n("Log out:") },
+        { "id": "switchUser", "label": i18n("Switch user:") }
+    ]
+    readonly property var sessionShownKeys: ({
+        "sleep": "cfg_showSleep", "lock": "cfg_showLock", "restart": "cfg_showRestart",
+        "logout": "cfg_showLogout", "switchUser": "cfg_showSwitchUser"
+    })
+    function sessionPlacement(id) {
+        if (!page[sessionShownKeys[id]]) return 2;
+        return cfg_sessionRow.indexOf(id) >= 0 ? 0 : 1;
+    }
+    function setSessionPlacement(id, placement) {
+        page[sessionShownKeys[id]] = placement !== 2;
+        const row = Array.from(cfg_sessionRow).filter(item => item !== id);
+        if (placement === 0) {
+            const end = row.indexOf("shutdown");
+            row.splice(end >= 0 ? end : row.length, 0, id);
+        }
+        cfg_sessionRow = row;
+    }
+
     function setControlCenterItem(itemId, enabled) {
         const next = Array.from(cfg_controlCenterItems);
         const index = next.indexOf(itemId);
@@ -58,31 +88,21 @@ KCMUtils.ScrollViewKCM {
     }
 
     header: Kirigami.FormLayout {
-        QQC2.CheckBox {
+        QQC2.Label {
             Kirigami.FormData.label: i18n("Session controls:")
-            text: i18n("Show lock")
-            checked: page.cfg_showLock
-            onToggled: page.cfg_showLock = checked
+            text: i18n("Shut down always shows. The others stand beside it as room allows, or wait in the menu.")
+            wrapMode: Text.Wrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 20
         }
-        QQC2.CheckBox {
-            text: i18n("Show restart")
-            checked: page.cfg_showRestart
-            onToggled: page.cfg_showRestart = checked
-        }
-        QQC2.CheckBox {
-            text: i18n("Show shut down")
-            checked: page.cfg_showShutdown
-            onToggled: page.cfg_showShutdown = checked
-        }
-        QQC2.CheckBox {
-            text: i18n("Show log out in the session menu")
-            checked: page.cfg_showLogout
-            onToggled: page.cfg_showLogout = checked
-        }
-        QQC2.CheckBox {
-            text: i18n("Show switch user in the session menu")
-            checked: page.cfg_showSwitchUser
-            onToggled: page.cfg_showSwitchUser = checked
+        Repeater {
+            model: page.sessionPlacements
+            delegate: QQC2.ComboBox {
+                required property var modelData
+                Kirigami.FormData.label: modelData.label
+                model: [i18n("In the row"), i18n("In the menu"), i18n("Hidden")]
+                currentIndex: page.sessionPlacement(modelData.id)
+                onActivated: index => page.setSessionPlacement(modelData.id, index)
+            }
         }
         KQC.ColorButton {
             Kirigami.FormData.label: i18n("Highlight color:")
@@ -146,6 +166,7 @@ KCMUtils.ScrollViewKCM {
             textRole: "label"
             valueRole: "value"
             model: [
+                { "label": i18n("Your region's"), "value": "" },
                 { "label": i18n("Weather widget setting"), "value": "weather" },
                 { "label": i18n("Fahrenheit"), "value": "fahrenheit" },
                 { "label": i18n("Celsius"), "value": "celsius" }

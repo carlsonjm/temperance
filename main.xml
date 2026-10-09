@@ -58,24 +58,32 @@
       <default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth</default>
     </entry>
     <entry name="showLock" type="Bool">
-      <label>Show Lock at the top of Control Center</label>
+      <label>Show Lock in Control Center</label>
       <default>true</default>
     </entry>
     <entry name="showLogout" type="Bool">
-      <label>Show Log Out in the Control Center session menu</label>
+      <label>Show Log Out in Control Center</label>
       <default>true</default>
     </entry>
     <entry name="showSwitchUser" type="Bool">
-      <label>Show Switch User in the Control Center session menu</label>
+      <label>Show Switch User in Control Center</label>
       <default>false</default>
     </entry>
     <entry name="showRestart" type="Bool">
-      <label>Show Restart at the top of Control Center</label>
+      <label>Show Restart in Control Center</label>
       <default>true</default>
     </entry>
     <entry name="showShutdown" type="Bool">
-      <label>Show Shut Down at the top of Control Center</label>
+      <label>Kept for older settings; Shut Down always shows in Control Center</label>
       <default>true</default>
+    </entry>
+    <entry name="showSleep" type="Bool">
+      <label>Show Sleep in Control Center, where the machine can sleep</label>
+      <default>true</default>
+    </entry>
+    <entry name="sessionRow" type="StringList">
+      <label>Session actions that stand in Control Center's header row, in order; any other shown action waits in the More menu. Shut Down always stands in the row, and actions the row has no room for move to the menu</label>
+      <default>sleep,restart,shutdown</default>
     </entry>
     <entry name="compactWidth" type="Int">
       <label>Manual width of the panel widget in pixels when responsive layout is disabled</label>
@@ -95,7 +103,7 @@
     </entry>
     <entry name="showWeather" type="Bool">
       <label>Whether current weather is shown in the status area</label>
-      <default>true</default>
+      <default>false</default>
     </entry>
     <entry name="showTime" type="Bool">
       <label>Whether the time is shown at the right end of the status area</label>
@@ -126,8 +134,8 @@
       <default></default>
     </entry>
     <entry name="temperatureUnit" type="String">
-      <label>Temperature unit shown in the compact weather readout</label>
-      <default>fahrenheit</default>
+      <label>Temperature unit shown in the compact weather readout: weather, fahrenheit or celsius; empty follows the region</label>
+      <default></default>
     </entry>
     <entry name="useOnlineWeatherFallback" type="Bool">
       <label>Whether an online service may supply temperature when the Weather widget does not</label>

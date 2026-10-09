@@ -191,7 +191,7 @@ int main(int argc, char **argv)
         QStringLiteral("ellipsis-vertical"), QStringLiteral("settings"), QStringLiteral("plus"),
         QStringLiteral("pin"), QStringLiteral("trash-2"), QStringLiteral("chevron-up"),
         QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
-        QStringLiteral("rotate-cw"),
+        QStringLiteral("rotate-cw"), QStringLiteral("moon"), QStringLiteral("users"),
         QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"), QStringLiteral("cloud-sun"),
         QStringLiteral("gauge")
     };
