@@ -113,7 +113,7 @@ and bar share one clock and animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
 (`org.kde.plasma.workspace.calendar`) and holiday plugin; a Keyboard-sized card
-from the bottom edge is shelved past 1.0.
+from the bottom edge is not planned.
 
 Events come from private iCal addresses you paste, as Google, iCloud and
 Outlook give out, read with KCalendarCore every 10 minutes; a failed read keeps the
@@ -143,8 +143,7 @@ and all-day events stay in the calendar card.
 
 Session controls live in the Control Center header: Shut Down always, others as
 `sessionRow` and room allow (Sleep, Restart), the rest behind More. Switch User
-is opt-in. Lock and Sleep ask nothing;
-Log Out calls `org.kde.Shutdown` directly; Restart and Shut Down go through
+is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down go through
 `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
@@ -153,7 +152,7 @@ themselves, never a finger, whose tap would leave a hover behind. Bluetooth pair
 Promoted tray entries become Control Center pills in listed order and leave the
 organized tray, which keeps the Apps, Devices, System order and drops empty
 sections from its spacing. Controls the machine cannot use are omitted: battery
-follows authoritative power state, and the Performance pill, placed by
+follows authoritative power state, and the Performance entry, placed by
 `temperance.performance`, needs the local helper.
 
 ## Settings
@@ -212,7 +211,7 @@ native plugin and required artwork and matches the intended build output.
 KCalendarCore is a build and install dependency; the installer checks for it and
 restarts the panel, so an update needs no sign-out. A package identity change
 makes people remove and re-add the widget, as 1.1.0 showed, so identity changes
-only in the suite's coordinated identity work (Block 10b).
+only in the suite's coordinated identity work.
 
 Automated checks cover source, notification, session, popup, clock, calendar and
 real-panel geometry contracts. The real-panel fixture pairs Temperance with a
