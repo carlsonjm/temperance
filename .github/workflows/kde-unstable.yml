@@ -27,7 +27,11 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    container: archlinux:latest
+    container:
+      image: archlinux:latest
+      credentials:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
     timeout-minutes: 60
     env:
       QT_QPA_PLATFORM: offscreen
