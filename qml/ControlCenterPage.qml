@@ -406,7 +406,6 @@ Item {
                 Accessible.name: i18n("Performance")
                 Accessible.description: page.activePerformancePreset
                 Accessible.onPressAction: page.openPerformancePage()
-                Accessible.onShowMenuAction: profileList.popup(0, performanceEntry.height + 4)
                 Keys.onReturnPressed: page.openPerformancePage()
                 Keys.onSpacePressed: page.openPerformancePage()
                 Keys.onMenuPressed: profileList.popup(0, performanceEntry.height + 4)
