@@ -38,6 +38,8 @@ Item {
     readonly property var refreshRates: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rates : []
     readonly property int refreshRate: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rate : 0
     readonly property bool refreshHeld: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.held : false
+    readonly property int slowestRate: refreshRates.length > 0 ? refreshRates[0] : 0
+    readonly property int fastestRate: refreshRates.length > 0 ? refreshRates[refreshRates.length - 1] : 0
 
     implicitWidth: Kirigami.Units.gridUnit * 24
     implicitHeight: Math.min(maximumHeight, pageContent.implicitHeight + standardSpacing + surfaceSpacing)
@@ -463,39 +465,33 @@ Item {
                 text: i18n("The battery stops charging here. A lower limit keeps it healthy longer.")
             }
 
-            // 3. Refresh rate: the profile sets it; a rate chosen here holds
-            // until the profile changes.
+            // 3. Refresh rate: one switch between the screen's slowest and
+            // fastest rates, following the rate in use. The profile sets it;
+            // a rate switched here is Manual until the profile changes.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: page.surfaceSpacing - page.compactSpacing
                 visible: page.refreshRates.length > 1
                 PlasmaComponents.Label {
                     Layout.fillWidth: true
-                    text: i18n("Refresh rate")
+                    text: i18n("%1 Hz refresh rate", page.fastestRate)
                     font.weight: Font.Medium
+                    wrapMode: Text.Wrap
                 }
                 PlasmaComponents.Label {
-                    text: page.refreshHeld ? i18n("Held") : i18n("From profile")
+                    visible: page.refreshHeld
+                    text: i18n("Manual")
                     opacity: 0.65
                 }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                visible: page.refreshRates.length > 1
-                spacing: page.compactSpacing
-                Repeater {
-                    model: page.refreshRates
-                    delegate: ChoicePill {
-                        required property int modelData
-                        label: i18n("%1 Hz", modelData)
-                        selected: modelData === page.refreshRate
-                        onTriggered: Plasmoid.screenRefresh.choose(modelData)
-                    }
+                PlasmaComponents.Switch {
+                    checked: page.refreshRate === page.fastestRate
+                    Accessible.name: i18n("%1 Hz refresh rate", page.fastestRate)
+                    onToggled: Plasmoid.screenRefresh.choose(checked ? page.fastestRate : page.slowestRate)
                 }
             }
             DetailLabel {
                 visible: page.refreshRates.length > 1
-                text: i18n("Your profile sets the screen's rate. A rate chosen here holds until the profile changes.")
+                text: i18n("Your profile sets the rate. One switched here stays until the profile changes.")
             }
 
             // 4. Automatic switching between the plugged-in and battery profiles.

@@ -57,6 +57,8 @@ private:
     QList<int> m_rates;
     int m_rate = 0;
     int m_heldRate = 0;
+    // The rate the profile set, known while nothing is held.
+    int m_profileRate = 0;
     QString m_profile;
     QDeadlineTimer m_wakeWindow;
     bool m_restorePending = false;

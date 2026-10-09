@@ -113,6 +113,9 @@ void ScreenRefresh::readConfig()
         }
     }
     const bool lost = m_heldRate > 0 && rate > 0 && rate != m_heldRate && rate != m_rate;
+    if (m_heldRate == 0 && rate > 0) {
+        m_profileRate = rate;
+    }
     if (rates != m_rates || rate != m_rate) {
         m_rates = rates;
         m_rate = rate;
@@ -124,6 +127,7 @@ void ScreenRefresh::readConfig()
     if (m_wakeWindow.hasExpired()) {
         // Someone else chose a rate, or a new profile set its own.
         m_heldRate = 0;
+        m_profileRate = rate;
         m_restorePending = false;
         Q_EMIT changed();
         return;
@@ -142,7 +146,8 @@ void ScreenRefresh::choose(int hz)
     if (!m_rates.contains(hz)) {
         return;
     }
-    m_heldRate = hz;
+    // Back to the profile's own rate is no longer a manual choice.
+    m_heldRate = hz == m_profileRate ? 0 : hz;
     m_restorePending = false;
     Q_EMIT changed();
     apply(hz);
@@ -157,6 +162,7 @@ void ScreenRefresh::setProfile(const QString &profile)
     m_profile = profile;
     if (hadProfile && m_heldRate > 0) {
         m_heldRate = 0;
+        m_profileRate = m_rate;
         m_restorePending = false;
         Q_EMIT changed();
     }
