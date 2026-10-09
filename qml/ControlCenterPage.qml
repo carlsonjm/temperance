@@ -2,6 +2,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQml.Models
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
@@ -368,7 +370,8 @@ Item {
             }
 
             // The profile in use, drawn as a pill among the others and
-            // ordered with them; a tap opens the Performance page.
+            // ordered with them; a tap opens the Performance page, and a
+            // right-click or press and hold drops down the list of profiles.
             Rectangle {
                 id: performanceEntry
                 objectName: "temperance-performance-entry"
@@ -405,8 +408,57 @@ Item {
                 Accessible.onPressAction: page.openPerformancePage()
                 Keys.onReturnPressed: page.openPerformancePage()
                 Keys.onSpacePressed: page.openPerformancePage()
+                Keys.onMenuPressed: profileList.popup(0, performanceEntry.height + 4)
                 HoverHandler { id: performanceHover }
-                TapHandler { id: performanceTap; onTapped: page.openPerformancePage() }
+                TapHandler {
+                    id: performanceTap
+                    onTapped: page.openPerformancePage()
+                    onLongPressed: profileList.popup(0, performanceEntry.height + 4)
+                }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: profileList.popup(0, performanceEntry.height + 4)
+                }
+
+                QQC2.Menu {
+                    id: profileList
+                    width: performanceEntry.width
+                    padding: 6
+                    closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                    background: Rectangle {
+                        color: tone.surface
+                        radius: 18
+                        border.width: 1
+                        border.color: tone.divider
+                    }
+                    Instantiator {
+                        model: page.performancePresets
+                        delegate: QQC2.MenuItem {
+                            id: profileOption
+                            required property string modelData
+                            readonly property bool current: modelData === page.activePerformancePreset
+                            implicitHeight: 36
+                            text: modelData
+                            Accessible.checkable: true
+                            Accessible.checked: current
+                            contentItem: PlasmaComponents.Label {
+                                text: profileOption.text
+                                color: profileOption.current ? page.accentTextColor : tone.text
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                elide: Text.ElideRight
+                            }
+                            background: Rectangle {
+                                radius: height / 2
+                                color: profileOption.current ? page.accentColor
+                                    : profileOption.highlighted ? tone.wash(0.12) : "transparent"
+                            }
+                            onTriggered: if (!current) Plasmoid.applyPerformancePreset(modelData)
+                        }
+                        onObjectAdded: (index, object) => profileList.insertItem(index, object)
+                        onObjectRemoved: (index, object) => profileList.removeItem(object)
+                    }
+                }
             }
         }
     }

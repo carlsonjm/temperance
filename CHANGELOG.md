@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- On Z13 tablets with the z13ctl-plus helper, a right-click or press and hold
+  on Control Center's profile entry drops down the profiles, and choosing one
+  applies it. A switch on the Performance page sets the built-in screen to its
+  fastest or slowest refresh rate and reads Manual while that differs from the
+  profile's rate: it holds until the profile changes, and is put back once the
+  screen is unlocked when the helper resets it on waking.
 - With Plasma's animations set to Instant, which Plasma also reports as
   reduced motion, the bell's swing, its count, the tray's ripple, an alert
   card's arrival and the bell's cards closing up after a dismissal no longer

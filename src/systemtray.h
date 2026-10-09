@@ -31,6 +31,7 @@ class StatusNotifierModel;
 class SystemTrayModel;
 class SortedSystemTrayModel;
 class KJob;
+class ScreenRefresh;
 
 namespace PulseAudioQt
 {
@@ -41,6 +42,7 @@ class Sink;
 class SystemTray : public Plasma::Containment
 {
     Q_OBJECT
+    Q_MOC_INCLUDE("screenrefresh.h")
     Q_PROPERTY(QAbstractItemModel *systemTrayModel READ sortedSystemTrayModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *configSystemTrayModel READ configSystemTrayModel CONSTANT)
     Q_PROPERTY(QStringList performancePresets READ performancePresets NOTIFY performancePresetsChanged)
@@ -55,6 +57,9 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(QString performanceBatteryPreset READ performanceBatteryPreset NOTIFY performanceStateChanged)
     Q_PROPERTY(int performanceBatteryLimit READ performanceBatteryLimit NOTIFY performanceStateChanged)
     Q_PROPERTY(bool performanceBusy READ performanceBusy NOTIFY performanceBusyChanged)
+    // The built-in screen's refresh rate, alongside the profiles; null
+    // without the helper.
+    Q_PROPERTY(ScreenRefresh *screenRefresh READ screenRefresh NOTIFY screenRefreshChanged)
     Q_PROPERTY(int volumePercent READ volumePercent NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeMuted READ volumeMuted NOTIFY volumeChanged)
     Q_PROPERTY(bool volumeAvailable READ volumeAvailable NOTIFY volumeChanged)
@@ -134,6 +139,7 @@ public:
     Q_INVOKABLE void savePerformancePreset(const QString &name, const QVariantMap &settings);
     Q_INVOKABLE void setPerformanceBatteryLimit(int percent);
     Q_INVOKABLE void setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset);
+    ScreenRefresh *screenRefresh() const;
     int volumePercent() const;
     bool volumeMuted() const;
     bool volumeAvailable() const;
@@ -146,6 +152,7 @@ Q_SIGNALS:
     void activePerformancePresetChanged();
     void performanceStateChanged();
     void performanceBusyChanged();
+    void screenRefreshChanged();
     // A preset save has ended; detail is the helper's reason when it gave one.
     void performancePresetSaved(const QString &name, bool ok, const QString &detail);
     void volumeChanged();
@@ -190,6 +197,9 @@ private:
     int m_performanceBatteryLimit = 0;
     bool m_performanceBusy = false;
 
+    ScreenRefresh *m_screenRefresh = nullptr;
+
+    void readPerformancePresets(std::function<void()> done);
     void refreshPerformanceState();
     void setPerformanceBusy(bool busy);
     void sendPerformanceRequests(QList<QJsonObject> requests, std::function<void(bool ok, const QJsonObject &reply)> done);
