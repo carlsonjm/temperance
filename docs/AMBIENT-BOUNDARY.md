@@ -5,8 +5,7 @@ Tette.
 
 Temperance answers **what changed**. It owns notification intake and presentation:
 the ticker, priority banners, grouped history, dismissal, and producer
-actions. A future bounded source may report authoritative system transitions, but
-Temperance must not turn continuous status into synthetic events.
+actions. Temperance must not turn continuous status into synthetic events.
 
 Ambient Tette answers **what matters now**. It owns ongoing context on its own
 side of the dock, including media sessions, transfers, their progress, and their
