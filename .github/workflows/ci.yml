@@ -14,7 +14,8 @@ jobs:
   arch:
     name: Arch Linux (current packages)
     runs-on: ubuntu-latest
-    container: archlinux:latest
+    container:
+      image: public.ecr.aws/docker/library/archlinux:latest
     timeout-minutes: 45
     env:
       # Qt otherwise logs to the journal, which a container lacks, and a
