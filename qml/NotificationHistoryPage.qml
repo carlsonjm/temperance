@@ -265,8 +265,8 @@ Item {
         ListView {
             id: historyView
             objectName: "notificationHistoryView"
-            // A wheel notch scrolls by Plasma's step, as KDE's own lists do.
-            Kirigami.WheelHandler { target: historyView }
+            // A wheel notch scrolls 80 pixels at Plasma's usual three lines per notch.
+            Kirigami.WheelHandler { target: historyView; verticalStepSize: Qt.styleHints.wheelScrollLines * 80 / 3 }
             // Cards below a dismissed one slide up. Arrivals take no
             // transition: a new card settles its height a frame after it is
             // placed (Show more appears once its text measures as cut off), and
