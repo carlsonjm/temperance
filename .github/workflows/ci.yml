@@ -15,10 +15,7 @@ jobs:
     name: Arch Linux (current packages)
     runs-on: ubuntu-latest
     container:
-      image: archlinux:latest
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      image: public.ecr.aws/docker/library/archlinux:latest
     timeout-minutes: 45
     env:
       # Qt otherwise logs to the journal, which a container lacks, and a
