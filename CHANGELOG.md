@@ -4,6 +4,14 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Do not disturb stays at the end of the header on Notifications & Events.
+  Opened from the bell after the panel restarted, it could draw at the
+  header's start, over the title.
+- A mouse wheel scrolls the notification history 80 px a notch at Plasma's
+  usual three lines a notch, instead of a shorter step that varied by mouse.
+- An alert card takes its colours from the Plasma style rather than from the
+  bar, so a panel that gives the bar dark colours under a light style still
+  shows a light card.
 - Control Center's power row holds Sleep, Restart and Shut down out of the box,
   and Lock waits behind More with Log out. Shut down always stands in the row;
   each of the others can stand in the row, wait behind More or be hidden, and
@@ -66,12 +74,12 @@ This file records user-visible changes.
   page an entry opens, Networks say, has Back, which returns to the page it
   came from. The System Tray's buttons, Do Not Disturb, Bluetooth's Add new
   device, weather's button and the pin are the power row's grey pill.
-- Control Center's power row holds Lock, Restart and Shut down, each a grey pill
-  as large as its touch; Log out and Switch user wait behind More. Lock locks at
-  once; More is a grey circle with a vertical ellipsis. The header's buttons
-  light under a mouse in tablet mode too, where Plasma's own buttons stopped
-  hearing it. The bell and the wired connection's port are drawn smaller, to the size
-  of the icons beside them, and the bell's count is larger and set lower.
+- Control Center's power row is grey pills, each as large as its touch, and
+  More is a grey circle with a vertical ellipsis; Lock locks at once. The
+  header's buttons light under a mouse in tablet mode too, where Plasma's own
+  buttons stopped hearing it. The bell and the wired connection's port are
+  drawn smaller, to the size of the icons beside them, and the bell's count is
+  larger and set lower.
 - A new notification comes out from beside the bell and rests there, as today's
   event does, instead of crossing the ticker to the dock; one too long to fit
   scrolls once in place.
@@ -105,7 +113,7 @@ This file records user-visible changes.
 - Added a month calendar card with holidays and read-only events from linked
   private calendar addresses, each with a chosen color.
 - Brought today's next timed event into the ticker and today's events into the
-  history, now titled Notifications & events.
+  history, now titled Notifications & Events.
 - Put every popup page on the calendar's margins and spacing.
 - Added producer-named notification actions and individual dismissal to standalone
   and grouped history cards while preserving default-action and application

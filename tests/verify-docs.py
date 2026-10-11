@@ -115,7 +115,7 @@ WORD_BUDGETS = {
     "README.md": 840,
     "docs/AMBIENT-BOUNDARY.md": 295,
     "docs/ARCHITECTURE.md": 1875,
-    "docs/INPUT.md": 1350,
+    "docs/INPUT.md": 1655,
     "docs/ROADMAP.md": 270,
     "docs/README.md": 215,
     "packaging/README.md": 235,

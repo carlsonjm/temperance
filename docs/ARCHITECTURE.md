@@ -11,8 +11,6 @@ Center, an organized System Tray, and the time and date. It is one native
 containment plugin that replaces the stock System Tray's presentation, not a
 user-local QML-only plasmoid. Keep the root and native-plugin metadata identical,
 keep the custom containment type, and rebuild for incompatible Qt or Plasma ABIs.
-The release target is x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on
-a horizontal Wayland panel.
 
 The launcher, task manager, stock panel spacers and Ambient Tettegouche are
 independent applets. Temperance may measure but never configures or owns them.
@@ -39,9 +37,8 @@ each component to its own side, and its clamp decides the width.
 
 The bell, weather, Control Center, tray and battery are drawn a third larger than
 the panel's small icons and set one 34 px step apart with no gaps, so they read as
-one group; at the suite's usual 44 px they looked disconnected. Height makes up
-the width: each icon's touch area runs the panel's full height, about 7 by 13 mm
-on the Z13's band.
+one group. Height makes up the width: each icon's touch area runs the panel's
+full height, about 7 by 13 mm on the Z13's band.
 
 The row stays a 42 px surface because the popups are placed from it. The reach
 above and below is a separate handler that acts only outside the row: a pointer's
@@ -103,17 +100,15 @@ or one you pick, in fixed cells that reserve the widest time and date the
 locale produces, so it never moves the layout. The day period is lowercase, light
 and smaller, on the time's baseline.
 
-Each new minute is dealt onto the old like a card dropping in from above; a card
-from the side crossed the a.m. The deal keeps its
-own pace whatever Plasma's animation speed, since nobody waits on the clock and at
+Each new minute is dealt onto the old like a card dropping in from above. The
+deal keeps its own pace whatever Plasma's animation speed, since nobody waits on the clock and at
 four times the default it could not be seen; only Instant, which counts as reduced
 motion, makes it a fade. Shuffle Lock shows the same clock as a block at a size
 the caller gives, a bold time over the long date set to the time's width, so lock
 and bar share one clock and animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
-(`org.kde.plasma.workspace.calendar`) and holiday plugin; a Keyboard-sized card
-from the bottom edge is not planned.
+(`org.kde.plasma.workspace.calendar`) and holiday plugin.
 
 Events come from private iCal addresses you paste, as Google, iCloud and
 Outlook give out, read with KCalendarCore every 10 minutes; a failed read keeps the
@@ -141,10 +136,11 @@ and all-day events stay in the calendar card.
 
 ## Control Center and tray
 
-Session controls live in the Control Center header: Shut Down always, others as
-`sessionRow` and room allow (Sleep, Restart), the rest behind More. Switch User
-is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down go through
-`org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
+Session controls live in the Control Center header: Shut Down always, then the
+`sessionRow` actions (Sleep and Restart by default) as room allows, the rest (Lock
+and Log Out by default) behind More. Sleep needs a machine that can sleep;
+Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down
+go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
 themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
@@ -153,7 +149,11 @@ Promoted tray entries become Control Center pills in listed order and leave the
 organized tray, which keeps the Apps, Devices, System order and drops empty
 sections from its spacing. Controls the machine cannot use are omitted: battery
 follows authoritative power state, and the Performance entry, placed by
-`temperance.performance`, needs the local helper.
+`temperance.performance`, needs the local helper; a right-click lists its profiles.
+The Performance page's refresh-rate switch sets the built-in screen's rate through
+libkscreen. A rate other than the profile's holds until the profile changes, and
+is put back once the screen unlocks when the helper re-applies the profile on
+waking.
 
 ## Settings
 
@@ -165,7 +165,8 @@ opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 `PanelPopupAnchor.qml` places the popup, and its `panelGap` is the gap to the
 panel; `Dialog.floating` only treats and clamps screen edges. The critical
 notification host carries its own anchor correction, because its window type does
-not inherit AppletPopup clearance. `ExpandedRepresentation.qml` owns the rounded
+not inherit AppletPopup clearance, and its own theme, so an alert keeps the look's
+colours whatever ground the bar has. `ExpandedRepresentation.qml` owns the rounded
 surface, padding and entrance motion, and `availablePopupHeight()` caps content
 height. Never change padding, content translation or height limits to fix a
 placement error; measure the final window, the painted panel edge and the anchor
@@ -195,10 +196,8 @@ Temperance applies the suite's visual language:
 
 ## Weather
 
-Weather starts off. Plasma's Weather data comes first, hourly. With the online fallback on,
-Temperance may send the configured station coordinates or location name to
-Open-Meteo for current weather. The setting can be turned off, and no other
-provider is added.
+Weather starts off, and reads Plasma's Weather widget hourly; nothing runs without
+it. The Open-Meteo fallback the README describes is the only other provider.
 
 ## Licensing, packaging and checks
 
