@@ -381,6 +381,7 @@ Item {
 
             Kirigami.Heading {
                 id: pageHeading
+                objectName: "temperance-page-heading"
                 Layout.fillWidth: true
                 leftPadding: Kirigami.Units.largeSpacing
                 level: 1
@@ -579,52 +580,70 @@ Item {
                 }
             }
 
-            RowLayout {
-                id: doNotDisturbControl
-                visible: systemTrayState.page === "notifications" && !systemTrayState.activeApplet
-                spacing: 7
+            // The bell's page is usually chosen while the popup is closed, and
+            // a row that turned visible then could be drawn where the header
+            // never placed it, over the title. The slot stays in the header on
+            // every page and only its width changes, so the header always
+            // places it; on any other page it has no width and nothing to tap.
+            Item {
+                id: doNotDisturbSlot
+                readonly property bool shown: systemTrayState.page === "notifications" && !systemTrayState.activeApplet
+                Layout.preferredWidth: shown ? doNotDisturbControl.implicitWidth : 0
+                Layout.maximumWidth: Layout.preferredWidth
+                Layout.preferredHeight: doNotDisturbControl.implicitHeight
+                // Hidden, it takes no gap beside the title either.
+                Layout.leftMargin: shown ? 0 : -heading.spacing
+                clip: true
 
-                PlasmaComponents.Label {
-                    text: i18n("do not disturb")
-                    font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                    font.weight: Font.Medium
-                    color: tone.text
-                    opacity: doNotDisturbPill.checked ? 1 : 0.78
-                    Behavior on opacity { NumberAnimation { duration: 140 } }
-                }
+                RowLayout {
+                    id: doNotDisturbControl
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    enabled: doNotDisturbSlot.shown
+                    spacing: 7
 
-                Rectangle {
-                    id: doNotDisturbPill
-                    objectName: "temperance-do-not-disturb"
-                    readonly property bool checked: NotificationManager.Server.inhibited
-                    Layout.preferredWidth: 42
-                    Layout.minimumWidth: 42
-                    Layout.maximumWidth: 42
-                    Layout.preferredHeight: 30
-                    Layout.maximumHeight: 30
-                    radius: height / 2
-                    clip: true
-                    color: checked ? root.accentColor
-                        : dndTap.pressed ? tone.controlPressed : dndHover.hovered ? tone.controlHover : tone.control
-                    Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
-
-                    BellGlyph {
-                        width: 18
-                        height: 18
-                        anchors.centerIn: parent
-                        glyphColor: doNotDisturbPill.checked ? "#102729" : tone.text
-                        slashed: doNotDisturbPill.checked
-                        strokeWidth: 1.55
+                    PlasmaComponents.Label {
+                        text: i18n("do not disturb")
+                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        font.weight: Font.Medium
+                        color: tone.text
+                        opacity: doNotDisturbPill.checked ? 1 : 0.78
+                        Behavior on opacity { NumberAnimation { duration: 140 } }
                     }
 
-                    PointerHover { id: dndHover }
-                    TapHandler {
-                        id: dndTap
-                        onTapped: NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited
-                    }
-                    HeaderToolTip {
-                        text: doNotDisturbPill.checked
-                            ? i18n("Turn off do not disturb") : i18n("Turn on do not disturb")
+                    Rectangle {
+                        id: doNotDisturbPill
+                        objectName: "temperance-do-not-disturb"
+                        readonly property bool checked: NotificationManager.Server.inhibited
+                        Layout.preferredWidth: 42
+                        Layout.minimumWidth: 42
+                        Layout.maximumWidth: 42
+                        Layout.preferredHeight: 30
+                        Layout.maximumHeight: 30
+                        radius: height / 2
+                        clip: true
+                        color: checked ? root.accentColor
+                            : dndTap.pressed ? tone.controlPressed : dndHover.hovered ? tone.controlHover : tone.control
+                        Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+                        BellGlyph {
+                            width: 18
+                            height: 18
+                            anchors.centerIn: parent
+                            glyphColor: doNotDisturbPill.checked ? "#102729" : tone.text
+                            slashed: doNotDisturbPill.checked
+                            strokeWidth: 1.55
+                        }
+
+                        PointerHover { id: dndHover }
+                        TapHandler {
+                            id: dndTap
+                            onTapped: NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited
+                        }
+                        HeaderToolTip {
+                            text: doNotDisturbPill.checked
+                                ? i18n("Turn off do not disturb") : i18n("Turn on do not disturb")
+                        }
                     }
                 }
             }

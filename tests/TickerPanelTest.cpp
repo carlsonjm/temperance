@@ -654,6 +654,27 @@ private Q_SLOTS:
     QTRY_COMPARE(rail->property("count").toInt(), 0);
     QVERIFY(!tickerControls->property("revealed").toBool());
     hoverLightens(QStringLiteral("temperance-do-not-disturb"));
+    // Do not disturb stands at the header's end, clear of the title, however
+    // the page was reached: with the popup open, or chosen while it was
+    // closed, as a tap on the bell does.
+    const auto dndBesideTitle = [&] {
+      QTRY_VERIFY(popupWindow->isExposed());
+      auto *pill = findItem(popupWindow->contentItem(), QStringLiteral("temperance-do-not-disturb"));
+      auto *title = findItem(popupWindow->contentItem(), QStringLiteral("temperance-page-heading"));
+      QVERIFY(pill && title && pill->isVisible());
+      const auto pillLeft = [&] { return pill->mapToScene({0, 0}).x(); };
+      const auto titleRight = [&] { return title->mapToScene({title->width(), 0}).x(); };
+      QTRY_VERIFY2(pillLeft() >= titleRight() - 0.5,
+                   qPrintable(QStringLiteral("pill at %1, title ends at %2").arg(pillLeft()).arg(titleRight())));
+    };
+    dndBesideTitle();
+    state->setProperty("expanded", false);
+    QTest::qWait(300);
+    state->setProperty("page", QStringLiteral("control"));
+    QTest::qWait(100);
+    state->setProperty("page", QStringLiteral("notifications"));
+    state->setProperty("expanded", true);
+    dndBesideTitle();
     // A mouse resting on the bell still opens the ticker's controls.
     state->setProperty("expanded", false);
     QTest::qWait(700);
