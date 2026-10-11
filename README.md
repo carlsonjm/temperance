@@ -63,11 +63,10 @@ notifications stay in the quieter ticker and history flow.
 
 ## Control Center
 
-Control Center provides quick access to volume, brightness, connectivity, battery,
-and the performance controls supported by the current system.
-
-Unavailable controls are omitted. Temperance does not show a control that the
-machine cannot use.
+Control Center holds volume, brightness, connectivity, and the performance
+profiles where the system supports them. Its header holds Sleep, Restart and Shut
+down; Lock and Log out wait behind More. Controls the machine cannot use are
+omitted.
 
 ## System Tray
 

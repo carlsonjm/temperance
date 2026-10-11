@@ -35,6 +35,7 @@ documents cite this one.
 | Tap or click Clear beside Recent | Removes every notification; today's events stay. |
 | Tap or click Expand or Collapse on an application | Opens or folds its group. |
 | Tap or click Show more or Show less | Opens or folds a long notification in place. |
+| Wheel over the history | Scrolls 80 px a notch at Plasma's usual three lines a notch. |
 | Tap or click do not disturb | Turns do not disturb on or off. While on, the ticker stays still and the bell checks what arrives. |
 | Enter or Space on a focused notification | Same as tapping it. |
 
@@ -66,10 +67,27 @@ documents cite this one.
 | Drag the volume or brightness slider | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
 | Tap or click the profile entry | Opens Performance, to apply or edit profiles. |
-| Right-click or hold it | Lists the profiles to apply. |
+| Right-click, press and hold, or Menu key on it | Lists the profiles; choosing one applies it. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
 | Tap or click Back | Returns to the page that opened this one. |
 | Tap, click, right-click, middle-click, scroll or press and hold a pill | The same as on that entry in the System Tray. |
+
+### Performance
+
+| Input | What happens |
+| --- | --- |
+| Choose a profile under Profile | Applies it at once. |
+| Drag the charge limit | Sets where the battery stops charging, 40 to 100% in steps of 5, once you let go. |
+| Turn the refresh-rate switch on or off | Sets the built-in screen to its fastest or slowest rate. While that differs from the profile's rate it reads Manual and holds until the profile changes. |
+| Turn Switch when plugged in or unplugged on or off | Starts or stops changing profile when the power source changes. |
+| Choose the Plugged in or On battery profile | Sets the profile used on that power source; only while switching is on. |
+| Tap or click Edit a profile | Opens or folds the editor, on the profile in use. |
+| Choose the profile to edit | Loads that profile's settings into the editor. |
+| Tap or click a Performance profile or Energy use pill | Stages that choice for the profile being edited. |
+| Drag a power-limit slider | Stages that limit, in watts. |
+| Tap or click Reset beside Power limits or Fan curve | Stages the profile's own limits, or fans run by the firmware. |
+| Drag a point on the fan curve | Moves it, its neighbours making way, and shows its temperature and fan speed. A touch away from every point scrolls the page. |
+| Tap or click Save to, or Enter or Space on it | Saves everything staged to that profile; dimmed until something changes. |
 
 ### Session actions
 
