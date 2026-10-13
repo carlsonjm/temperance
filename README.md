@@ -148,9 +148,9 @@ The tray host is derived from KDE Plasma Workspace 6.7.4. Presentation code live
 in `qml/`; the inherited native tray implementation lives in `src/` and
 `libdbusmenuqt/`.
 
-See the SPDX headers, [LICENSES](LICENSES), and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for licensing and required
-third-party attribution.
+Licensed GPL-2.0-or-later ([LICENSE](LICENSE)); see the SPDX headers,
+[LICENSES](LICENSES), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for
+per-file terms and attribution.
 
 The project names and marks are not covered by that licence. See
 [TRADEMARKS.md](TRADEMARKS.md).
