@@ -66,6 +66,9 @@ class SystemTray : public Plasma::Containment
     // The calendars linked in the settings, shared by the calendar card and
     // the settings page that shows each link's state.
     Q_PROPERTY(CalendarFeeds *calendarFeeds READ calendarFeeds CONSTANT)
+    // Built for another Plasma or Qt than the one running: the Status Bar
+    // shows only that it needs an update (buildmatch.h).
+    Q_PROPERTY(bool needsUpdate READ needsUpdate CONSTANT)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -147,6 +150,7 @@ public:
     bool volumeAvailable() const;
     Q_INVOKABLE void setVolumePercent(int percent);
     CalendarFeeds *calendarFeeds() const;
+    bool needsUpdate() const;
 
 Q_SIGNALS:
     void sessionActionFailed();
@@ -169,7 +173,9 @@ private Q_SLOTS:
     void stopApplet(const QString &pluginId);
 
 private:
+    bool m_needsUpdate = false;
     QObject *m_sessionManagement = nullptr;
+    void initNeedingUpdate();
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();

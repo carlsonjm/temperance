@@ -39,6 +39,25 @@ if ! ldconfig -p | grep -q 'libKF6CalendarCore\.so\.6'; then
     exit 1
 fi
 
+# A build for another Plasma or Qt stays off, and the panel says it needs an
+# update; say so here first. A version either side does not give is not compared.
+built_for="$(grep -a -o -m1 'temperance-built-for plasma [0-9.]* qt [0-9.]*' \
+    "${package_dir}/${plugin_name}" || true)"
+read -r _ _ built_plasma _ built_qt <<<"${built_for}" || true
+running_plasma="" running_qt=""
+if command -v plasmashell >/dev/null 2>&1; then
+    running_plasma="$(plasmashell --version 2>/dev/null | awk '{ print $2; exit }' || true)"
+fi
+if command -v qtpaths6 >/dev/null 2>&1; then
+    running_qt="$(qtpaths6 --qt-version 2>/dev/null || true)"
+fi
+differs() { [[ -n "$1" && -n "$2" && "$1" != "$2" ]]; }
+if differs "${built_plasma:-}" "${running_plasma}" || differs "${built_qt:-}" "${running_qt}"; then
+    printf '%s\n' "This Temperance was built for Plasma ${built_plasma:-unknown} and Qt ${built_qt:-unknown}," \
+        "but this system runs Plasma ${running_plasma:-unknown} and Qt ${running_qt:-unknown}." \
+        "It installs, and the panel shows that it needs an update until a build for this system is installed." >&2
+fi
+
 # Shuffle's install key, where it is set up, places both files with no
 # password: a root-owned helper takes them as a stream and puts them only here.
 install_key=/usr/local/libexec/shuffle/install-step

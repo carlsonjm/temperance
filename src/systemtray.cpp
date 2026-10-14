@@ -10,6 +10,7 @@
 #include <optional>
 
 #include "config-X11.h"
+#include "buildmatch.h"
 #include "debug.h"
 #include "systemtray.h"
 #include "suitesettings.h"
@@ -33,6 +34,7 @@
 #include "systemtraymodel.h"
 #include "systemtraysettings.h"
 
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -70,6 +72,11 @@
 #include <KWindowSystem>
 
 using namespace Qt::StringLiterals;
+
+// What this build was made for, in a form the installer reads from the file
+// to warn before it installs a build the running Plasma or Qt will not run.
+[[gnu::used]] static const char builtFor[] =
+    "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
 
 void SystemTray::requestSessionAction(const QString &action)
 {
@@ -346,10 +353,21 @@ static void showSystemTrayMenuWayland(QMenu *menu, QQuickItem *trayItem, Plasma:
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Containment(parent, data, args)
 {
-    m_sessionManagement = new SessionManagement(this);
+    // Plasma's own version is plasmashell's, which is plasma-workspace's.
+    const QString runningPlasma = QCoreApplication::applicationVersion();
+    const QString runningQt = QString::fromLatin1(qVersion());
+    m_needsUpdate = !builtForRunning(QStringLiteral(TEMPERANCE_BUILT_PLASMA), runningPlasma,
+                                     QStringLiteral(TEMPERANCE_BUILT_QT), runningQt);
     m_calendarFeeds = new CalendarFeeds(this);
-    setHasConfigurationInterface(true);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
+    if (m_needsUpdate) {
+        qCWarning(SYSTEM_TRAY) << "Temperance was built for Plasma" << TEMPERANCE_BUILT_PLASMA << "and Qt" << TEMPERANCE_BUILT_QT
+                               << "but Plasma" << runningPlasma << "and Qt" << runningQt
+                               << "are running; it leaves notifications and the tray to Plasma until a rebuild";
+        return;
+    }
+    m_sessionManagement = new SessionManagement(this);
+    setHasConfigurationInterface(true);
 }
 
 SystemTray::~SystemTray()
@@ -360,6 +378,9 @@ SystemTray::~SystemTray()
 
 void SystemTray::init()
 {
+    // Nothing below may run on a Plasma or Qt this build was not made for.
+    if (m_needsUpdate) return initNeedingUpdate();
+
     // run this before doing any config restore
     migrateFromSystrayContainer();
 
@@ -410,6 +431,19 @@ void SystemTray::init()
             }
         });
     }
+}
+
+// Plasma's public parts only: no notification service, tray, session controls
+// or settings, so the notification service stays free for Plasma's own.
+void SystemTray::initNeedingUpdate()
+{
+    Containment::init();
+    useShuffleName(this, i18nc("@title Shuffle's name for this widget", "Status Bar"));
+}
+
+bool SystemTray::needsUpdate() const
+{
+    return m_needsUpdate;
 }
 
 void SystemTray::updateDefaultAudioSink(PulseAudioQt::Sink *sink)
@@ -885,6 +919,10 @@ void SystemTray::restoreContents(KConfigGroup &group)
         qCWarning(SYSTEM_TRAY) << "Loaded as an applet, this shouldn't have happened";
         return;
     }
+    // A build for another Plasma or Qt hosts no tray.
+    if (m_needsUpdate) {
+        return;
+    }
 
     KConfigGroup shortcutConfig(&group, u"Shortcuts"_s);
     QString shortcutText = shortcutConfig.readEntryUntranslated("global", QString());
@@ -975,7 +1013,8 @@ void SystemTray::showPlasmoidMenu(QQuickItem *appletInterface, int x, int y)
 
 QPointF SystemTray::popupPosition(QQuickItem *visualParent, int x, int y)
 {
-    if (!visualParent) {
+    // The native geometry below is Qt's private API.
+    if (!visualParent || m_needsUpdate) {
         return {0, 0};
     }
 
@@ -1166,6 +1205,10 @@ SystemTrayModel *SystemTray::systemTrayModel()
 
 QAbstractItemModel *SystemTray::sortedSystemTrayModel()
 {
+    // A build for another Plasma or Qt hosts no tray.
+    if (m_needsUpdate) {
+        return nullptr;
+    }
     if (!m_sortedSystemTrayModel) {
         m_sortedSystemTrayModel = new SortedSystemTrayModel(SortedSystemTrayModel::SortingType::SystemTray, this);
         m_sortedSystemTrayModel->setSourceModel(systemTrayModel());
@@ -1175,6 +1218,10 @@ QAbstractItemModel *SystemTray::sortedSystemTrayModel()
 
 QAbstractItemModel *SystemTray::configSystemTrayModel()
 {
+    // A build for another Plasma or Qt hosts no tray.
+    if (m_needsUpdate) {
+        return nullptr;
+    }
     if (!m_configSystemTrayModel) {
         m_configSystemTrayModel = new SortedSystemTrayModel(SortedSystemTrayModel::SortingType::ConfigurationPage, this);
         m_configSystemTrayModel->setSourceModel(systemTrayModel());

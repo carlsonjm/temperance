@@ -191,3 +191,16 @@ if(NOT main_qml MATCHES "id: hiddenModel\n        dynamicSortFilter: !root.trayH
    OR NOT main_qml MATCHES "id: organizedTrayModel\n        dynamicSortFilter: !root.trayHeld")
     message(FATAL_ERROR "The tray must hold its order while the popup is open")
 endif()
+
+# A build for another Plasma or Qt touches none of their private parts: it
+# neither takes the notification service nor builds the tray or session controls.
+string(FIND "${systemtray_cpp}" "if (m_needsUpdate) return initNeedingUpdate();" refuse_position)
+string(FIND "${systemtray_cpp}" "NotificationManager::Server::self().init();" server_position)
+string(FIND "${systemtray_cpp}" "to Plasma until a rebuild\";\n        return;" refuse_ctor_position)
+string(FIND "${systemtray_cpp}" "new SessionManagement(this)" session_position)
+if(refuse_position LESS 0 OR server_position LESS refuse_position
+   OR refuse_ctor_position LESS 0 OR session_position LESS refuse_ctor_position
+   OR main_qml MATCHES "showNotifications: true"
+   OR NOT main_qml MATCHES "showNotifications: !root.needsUpdate")
+    message(FATAL_ERROR "A build for another Plasma or Qt must leave notifications and the tray to Plasma")
+endif()
