@@ -168,8 +168,12 @@ ki18n_install(po)
 install(FILES assets/co.goodinput.temperance.png
     DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/512x512/apps)
 
+# The Plasma and Qt this build runs on; on another the Status Bar leaves their
+# private parts alone and says it needs an update (src/buildmatch.h).
 target_compile_definitions(co.goodinput.temperance PRIVATE
-    TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
+    TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance"
+    TEMPERANCE_BUILT_PLASMA="${LibNotificationManager_VERSION}"
+    TEMPERANCE_BUILT_QT="${Qt6_VERSION}")
 target_include_directories(co.goodinput.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(co.goodinput.temperance PRIVATE
@@ -229,6 +233,10 @@ if(BUILD_TESTING)
     target_include_directories(temperance-session-action-test PRIVATE src)
     target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)
     add_test(NAME temperance_session_actions COMMAND temperance-session-action-test)
+    add_executable(temperance-build-match-test tests/BuildMatchTest.cpp)
+    target_include_directories(temperance-build-match-test PRIVATE src)
+    target_link_libraries(temperance-build-match-test PRIVATE Qt6::Core)
+    add_test(NAME temperance_build_match COMMAND temperance-build-match-test)
     find_package(KF6Package REQUIRED)
     add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
     target_link_libraries(temperance-panel-load-test PRIVATE

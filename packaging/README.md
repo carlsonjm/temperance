@@ -18,7 +18,7 @@ says whether the restarted panel has loaded them. The first time, open panel edi
 
 **Configure Temperance**, in the widget's menu, selects the highlight color,
 promotes tray entries into Control Center pills, and links calendars. Promoted
-entries are automatically removed from the organized tray.
+entries leave the organized tray.
 
 The package identity changed in 1.1.0. When upgrading from 1.0.0, remove the
 previous package and add Temperance as a new widget rather than updating the old
@@ -28,8 +28,8 @@ panel instance.
 
 Run `./uninstall-system.sh`, then restart Plasma or sign out and back in.
 
-This is a native, architecture-specific plugin. Rebuild it after major Qt or
-Plasma ABI upgrades.
+This native, architecture-specific plugin runs only on the Plasma and Qt it was
+built for; the installer warns otherwise.
 
 The included PNG is installed as Temperance's widget-browser icon. Compact
 panel controls continue using their purpose-built monochrome system icons.

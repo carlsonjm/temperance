@@ -98,9 +98,9 @@ the fallback to keep weather data local to Plasma's installed Weather widget.
 The binary bundle targets x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE Frameworks 6.29
 on a horizontal Wayland panel.
 
-Temperance includes a native C++ plugin and must be rebuilt after incompatible Qt
-or Plasma upgrades. Building from source requires Qt 6.9 or newer and KDE
-Frameworks 6.20 or newer.
+Its native plugin runs only on the Plasma and Qt built for, elsewhere saying it
+needs an update. Building from source needs Qt 6.9 and KDE Frameworks 6.20 or
+newer.
 
 The package identity changed in 1.1.0. When upgrading from 1.0.0, remove the
 previous package and add Temperance to the panel as a new widget.

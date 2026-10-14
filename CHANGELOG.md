@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- On a Plasma or Qt other than the one it was built for, the Status Bar shows
+  only that it needs an update and leaves notifications and the tray to Plasma,
+  rather than failing or taking the panel down after a system update. The
+  installer warns before it installs such a build.
 - Do not disturb stays at the end of the header on Notifications & Events.
   Opened from the bell after the panel restarted, it could draw at the
   header's start, over the title.

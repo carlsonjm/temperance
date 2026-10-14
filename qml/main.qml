@@ -82,6 +82,10 @@ ContainmentItem {
     // notifications; this is true while it rests there.
     property bool eventPage: false
     property var minimizedPriorityNotifications: ({})
+    // Built for another Plasma or Qt, the bar shows only that it needs an
+    // update, and leaves notifications and the tray to Plasma.
+    readonly property bool needsUpdate: Plasmoid.needsUpdate
+    readonly property int needsUpdateWidth: needsUpdateLabel.implicitWidth + 2 * Kirigami.Units.largeSpacing
     readonly property int compactWidth: Math.max(320,
         Math.min(600, Number(Plasmoid.configuration.compactWidth) || 400))
     readonly property bool adaptiveWidth: Plasmoid.configuration.adaptiveWidth !== false
@@ -527,14 +531,14 @@ ContainmentItem {
         }
     }
 
-    implicitWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    implicitWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
     implicitHeight: 42
     Layout.fillWidth: false
-    Layout.minimumWidth: adaptiveWidth ? responsiveMinimumWidth : compactWidth
+    Layout.minimumWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMinimumWidth : compactWidth
     // Responsive mode follows actual neighboring applet geometry. It has no
     // configured, display-derived, or percentage-based width target.
-    Layout.preferredWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
-    Layout.maximumWidth: adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    Layout.preferredWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
+    Layout.maximumWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
     Layout.minimumHeight: 42
     Layout.preferredHeight: 42
     Layout.maximumHeight: 42
@@ -1063,6 +1067,7 @@ ContainmentItem {
     // the panel's height above and below the row.
     TapHandler {
         id: statusReach
+        enabled: !root.needsUpdate
         onPressedChanged: {
             if (point.device && point.device.type === PointerDevice.TouchScreen)
                 root.lastTouchAt = Date.now();
@@ -1152,6 +1157,7 @@ ContainmentItem {
 
     Connections {
         target: Plasmoid
+        enabled: !root.needsUpdate
         function onActivated() { root.openSurface("control"); }
     }
 
@@ -1202,7 +1208,7 @@ ContainmentItem {
         showDismissed: true
         showAddedDuringInhibition: true
         showJobs: false
-        showNotifications: true
+        showNotifications: !root.needsUpdate
         sortMode: NotificationManager.Notifications.SortByDate
         sortOrder: Qt.DescendingOrder
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -1220,7 +1226,7 @@ ContainmentItem {
         showDismissed: true
         showAddedDuringInhibition: true
         showJobs: false
-        showNotifications: true
+        showNotifications: !root.needsUpdate
         sortMode: NotificationManager.Notifications.SortByDate
         sortOrder: Qt.DescendingOrder
         groupMode: NotificationManager.Notifications.GroupApplicationsFlat
@@ -1469,9 +1475,18 @@ ContainmentItem {
         }
     }
 
+    PlasmaComponents.Label {
+        id: needsUpdateLabel
+        objectName: "temperance-needs-update"
+        visible: root.needsUpdate
+        anchors.centerIn: parent
+        text: i18nc("@info:status %1 is the widget's name", "%1 needs an update", Plasmoid.title)
+    }
+
     MouseArea {
         id: compactSurface
         objectName: "temperance-compact-surface"
+        visible: !root.needsUpdate
         width: root.width
         height: Math.min(42, root.height)
         anchors.right: parent.right

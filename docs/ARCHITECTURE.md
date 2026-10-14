@@ -1,8 +1,7 @@
 # Architecture
 
-How Temperance works and why. Every input it answers is in `INPUT.md`, the split
-with Ambient Tettegouche is `AMBIENT-BOUNDARY.md`, and planned work is
-`ROADMAP.md`.
+How Temperance works and why. Inputs are in `INPUT.md`, the Ambient split in
+`AMBIENT-BOUNDARY.md`, plans in `ROADMAP.md`.
 
 ## What Temperance is
 
@@ -10,7 +9,8 @@ Temperance is a Status Bar for Plasma 6: notifications, weather, battery, Contro
 Center, an organized System Tray, and the time and date. It is one native
 containment plugin that replaces the stock System Tray's presentation, not a
 user-local QML-only plasmoid. Keep the root and native-plugin metadata identical,
-keep the custom containment type, and rebuild for incompatible Qt or Plasma ABIs.
+keep the custom containment type, and run only on the Plasma and Qt built for,
+elsewhere saying it needs an update.
 
 The launcher, task manager, stock panel spacers and Ambient Tettegouche are
 independent applets. Temperance may measure but never configures or owns them.
