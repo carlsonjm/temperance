@@ -39,13 +39,13 @@ Item {
     property string displayName: ""
     property bool sessionActionError: false
     Connections {
-        target: Plasmoid
-        function onSessionActionFailed() { page.sessionActionError = true }
+        target: Plasmoid.session
+        function onFailed() { page.sessionActionError = true }
     }
 
     function requestSessionAction(action) {
         page.sessionActionError = false
-        Plasmoid.requestSessionAction(action)
+        Plasmoid.session.request(action)
     }
     property int displayBrightness: 0
     property int displayBrightnessMax: 100
@@ -270,7 +270,7 @@ Item {
                 text: i18n("Open sound settings")
                 display: PlasmaComponents.AbstractButton.IconOnly
                 onClicked: page.activateAppletById("org.kde.plasma.volume")
-                contentItem: SpeakerGlyph { muted: Plasmoid.volumeMuted }
+                contentItem: SpeakerGlyph { muted: Plasmoid.audio.muted }
                 PlasmaComponents.ToolTip { text: parent.text }
             }
             AccentSlider {
@@ -279,14 +279,14 @@ Item {
                 from: 0
                 to: 100
                 stepSize: 1
-                enabled: Plasmoid.volumeAvailable
-                onMoved: Plasmoid.setVolumePercent(Math.round(value))
+                enabled: Plasmoid.audio.available
+                onMoved: Plasmoid.audio.setPercent(Math.round(value))
             }
-            Binding { target: volumeSlider; property: "value"; value: Plasmoid.volumePercent; when: !volumeSlider.pressed }
+            Binding { target: volumeSlider; property: "value"; value: Plasmoid.audio.percent; when: !volumeSlider.pressed }
             PlasmaComponents.Label {
                 Layout.minimumWidth: Kirigami.Units.gridUnit * 2.4
                 horizontalAlignment: Text.AlignRight
-                text: Plasmoid.volumeAvailable ? Plasmoid.volumePercent + "%" : "—"
+                text: Plasmoid.audio.available ? Plasmoid.audio.percent + "%" : "—"
                 font.features: { "tnum": 1 }
             }
         }
@@ -453,7 +453,7 @@ Item {
                                 color: profileOption.current ? page.accentColor
                                     : profileOption.highlighted ? tone.wash(0.12) : "transparent"
                             }
-                            onTriggered: if (!current) Plasmoid.applyPerformancePreset(modelData)
+                            onTriggered: if (!current) Plasmoid.performance.applyPreset(modelData)
                         }
                         onObjectAdded: (index, object) => profileList.insertItem(index, object)
                         onObjectRemoved: (index, object) => profileList.removeItem(object)

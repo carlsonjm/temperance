@@ -9,11 +9,11 @@ Temperance needs KDE's calendar library, packaged as `kcalendarcore`. The
 installer stops and says so if it is missing.
 
 Double-click `install-system.sh` and choose **Execute**, or open this folder in a
-terminal and run `./install-system.sh`. A terminal remains open so authorization,
-success, or any error is visible. The installer then restarts the panel to load
-the new build; windows and the session are untouched, so an update needs no sign
-out. It reports success only once the system holds this package's own files, and
-says whether the restarted panel has loaded them. The first time, open panel edit mode, choose **Add Widgets**, search for
+terminal and run `./install-system.sh`. A terminal stays open so authorization,
+success, or any error is visible. It installs where the system's Qt looks for
+plugins, then restarts the panel; windows and the session are untouched, so an
+update needs no sign out. It reports success only once the system holds this
+package's own files, and says whether the restarted panel has loaded them. The first time, open panel edit mode, choose **Add Widgets**, search for
 **Temperance**, and drop it into the panel.
 
 **Configure Temperance**, in the widget's menu, selects the highlight color,
@@ -26,10 +26,10 @@ panel instance.
 
 ## Remove
 
-Run `./uninstall-system.sh`, then restart Plasma or sign out and back in.
+Run `./uninstall-system.sh`. It puts Plasma's System Tray back on Temperance's
+panel, so notifications show again, and restarts the panel.
 
 This native, architecture-specific plugin runs only on the Plasma and Qt it was
 built for; the installer warns otherwise.
 
-The included PNG is installed as Temperance's widget-browser icon. Compact
-panel controls continue using their purpose-built monochrome system icons.
+The included PNG is Temperance's icon in Add Widgets.

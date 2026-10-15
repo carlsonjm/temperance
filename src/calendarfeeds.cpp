@@ -7,8 +7,11 @@
 #include <KCalendarCore/ICalFormat>
 #include <KLocalizedString>
 
+#include <QFutureWatcher>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QThread>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QTimeZone>
 #include <QUrl>
 
@@ -18,6 +21,9 @@ namespace
 {
 constexpr int defaultRefreshInterval = 10 * 60 * 1000;
 constexpr int fetchTimeout = 30 * 1000;
+// Far above a real calendar's size, even with years of repeating events; a
+// feed past it is refused rather than read into the panel.
+constexpr qint64 maximumFeedSize = 16 * 1024 * 1024;
 
 // Most feeds name themselves; the address's host stands in for one that
 // does not.
@@ -77,6 +83,7 @@ QString failureMessage(QNetworkReply::NetworkError error)
 CalendarFeeds::CalendarFeeds(QObject *parent)
     : QObject(parent)
 {
+    m_parser.setMaxThreadCount(1);
     m_refresh.setInterval(defaultRefreshInterval);
     connect(&m_refresh, &QTimer::timeout, this, &CalendarFeeds::refresh);
 }
@@ -99,8 +106,16 @@ QVariantMap CalendarFeeds::colors() const
     return m_colors;
 }
 
-void CalendarFeeds::setColors(const QVariantMap &colors)
+void CalendarFeeds::setColors(const QVariantMap &picked)
 {
+    // Keyed as the links are, so a colour saved with an earlier spelling of a
+    // link, such as http, still finds its calendar.
+    QVariantMap colors;
+    for (auto it = picked.cbegin(); it != picked.cend(); ++it) {
+        const QString link = normalizedLink(it.key());
+        if (!link.isEmpty())
+            colors.insert(link, it.value());
+    }
     if (colors == m_colors)
         return;
     m_colors = colors;
@@ -112,13 +127,19 @@ void CalendarFeeds::setColors(const QVariantMap &colors)
 QString CalendarFeeds::normalizedLink(const QString &link)
 {
     QString text = link.trimmed();
-    if (text.startsWith(QLatin1String("webcal://"), Qt::CaseInsensitive))
-        text = QLatin1String("https://") + text.mid(int(qstrlen("webcal://")));
+    // A private address is a secret, so it is only ever sent encrypted: webcal
+    // and plain http are read over https, which every calendar service serves.
+    for (const QLatin1String prefix : {QLatin1String("webcal://"), QLatin1String("http://")}) {
+        if (text.startsWith(prefix, Qt::CaseInsensitive)) {
+            text = QLatin1String("https://") + text.mid(prefix.size());
+            break;
+        }
+    }
     const QUrl url(text, QUrl::StrictMode);
     const QString scheme = url.scheme().toLower();
     if (!url.isValid())
         return {};
-    if ((scheme == QLatin1String("https") || scheme == QLatin1String("http")) && !url.host().isEmpty())
+    if (scheme == QLatin1String("https") && !url.host().isEmpty())
         return url.toString();
     if (scheme == QLatin1String("file") && !url.path().isEmpty())
         return url.toString();
@@ -222,6 +243,12 @@ void CalendarFeeds::fetch(Feed &feed)
     request.setTransferTimeout(fetchTimeout);
     QNetworkReply *reply = m_network.get(request);
     feed.reply = reply;
+    connect(reply, &QNetworkReply::downloadProgress, this, [reply](qint64 received, qint64 total) {
+        if (received > maximumFeedSize || total > maximumFeedSize) {
+            reply->setProperty("tooLarge", true);
+            reply->abort();
+        }
+    });
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
         finished(reply);
     });
@@ -240,10 +267,17 @@ void CalendarFeeds::finished(QNetworkReply *reply)
 {
     reply->deleteLater();
     Feed *feed = feedFor(reply);
-    if (!feed || reply->error() == QNetworkReply::OperationCanceledError)
+    const bool tooLarge = reply->property("tooLarge").toBool();
+    if (!feed || (reply->error() == QNetworkReply::OperationCanceledError && !tooLarge))
         return;
     feed->reply = nullptr;
 
+    if (tooLarge) {
+        feed->state = QStringLiteral("failed");
+        feed->message = i18nc("@info a linked calendar's status", "This calendar is too large to read");
+        Q_EMIT feedsChanged();
+        return;
+    }
     if (reply->error() != QNetworkReply::NoError) {
         feed->state = QStringLiteral("failed");
         feed->message = failureMessage(reply->error());
@@ -251,10 +285,43 @@ void CalendarFeeds::finished(QNetworkReply *reply)
         return;
     }
 
+    // A large feed takes a while to parse, so that runs off the panel's
+    // thread; the calendar is handed back to this one when it is done.
     const QByteArray data = reply->readAll();
-    auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
-    KCalendarCore::ICalFormat format;
-    if (!data.contains("BEGIN:VCALENDAR") || !format.fromRawString(calendar, data)) {
+    const QString link = feed->link;
+    const quint64 parse = feed->parse = ++m_parseSerial;
+    QThread *home = thread();
+    struct Result {
+        KCalendarCore::MemoryCalendar::Ptr calendar;
+        QString name;
+        QString color;
+    };
+    auto *watcher = new QFutureWatcher<Result>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, link, parse] {
+        const Result result = watcher->result();
+        watcher->deleteLater();
+        parsed(link, parse, result.calendar, result.name, result.color);
+    });
+    watcher->setFuture(QtConcurrent::run(&m_parser, [data, link, home]() -> Result {
+        auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
+        KCalendarCore::ICalFormat format;
+        if (!data.contains("BEGIN:VCALENDAR") || !format.fromRawString(calendar, data))
+            return {};
+        calendar->moveToThread(home);
+        return {calendar, calendarName(data, link), calendarColor(data)};
+    }));
+}
+
+void CalendarFeeds::parsed(const QString &link, quint64 parse, const KCalendarCore::MemoryCalendar::Ptr &calendar,
+                           const QString &name, const QString &color)
+{
+    const auto found = std::find_if(m_feeds.begin(), m_feeds.end(), [&link, parse](const Feed &feed) {
+        return feed.link == link && feed.parse == parse;
+    });
+    if (found == m_feeds.end())
+        return;
+    Feed *feed = &*found;
+    if (!calendar) {
         feed->state = QStringLiteral("failed");
         feed->message = i18nc("@info a linked calendar's status", "This link isn't a calendar");
         Q_EMIT feedsChanged();
@@ -262,8 +329,8 @@ void CalendarFeeds::finished(QNetworkReply *reply)
     }
 
     feed->calendar = calendar;
-    feed->name = calendarName(data, feed->link);
-    feed->color = calendarColor(data);
+    feed->name = name;
+    feed->color = color;
     feed->state = QStringLiteral("ready");
     feed->message.clear();
     feed->updated = QDateTime::currentDateTime();
@@ -273,6 +340,28 @@ void CalendarFeeds::finished(QNetworkReply *reply)
 }
 
 QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
+{
+    if (m_monthsRevision != m_revision) {
+        m_months.clear();
+        m_monthsRevision = m_revision;
+    }
+    // A change of time zone moves events between days, so it is part of the key.
+    const QString key = QString::number(year) + QLatin1Char('-') + QString::number(month) + QLatin1Char('|')
+        + QString::fromLatin1(QTimeZone::systemTimeZoneId());
+    const auto cached = m_months.constFind(key);
+    if (cached != m_months.cend())
+        return *cached;
+    const QVariantMap result = computeMonth(year, month);
+    m_months.insert(key, result);
+    return result;
+}
+
+QVariantList CalendarFeeds::eventsForDay(int year, int month, int day) const
+{
+    return eventsForMonth(year, month).value(QString::number(day)).toList();
+}
+
+QVariantMap CalendarFeeds::computeMonth(int year, int month) const
 {
     const QTimeZone zone = QTimeZone::systemTimeZone();
     const QDate first(year, month, 1);
@@ -330,14 +419,18 @@ QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
                     if (day < first || day > last)
                         continue;
                     // On the days after the first, a timed event is under way
-                    // rather than starting, and reads like an all-day one.
-                    const bool wholeDay = allDay || offset > 0;
+                    // rather than starting, and the calendar shows it like an
+                    // all-day one. It keeps its real times, so the ticker can
+                    // follow an overnight event until it ends.
+                    const bool continuing = !allDay && offset > 0;
+                    const bool wholeDay = allDay || continuing;
                     entries.append(Entry{day,
                                          QVariantMap{
                                              {QStringLiteral("title"), event->summary()},
                                              {QStringLiteral("allDay"), wholeDay},
-                                             {QStringLiteral("start"), wholeDay ? QDateTime() : local},
-                                             {QStringLiteral("end"), wholeDay ? QDateTime() : local.addSecs(length)},
+                                             {QStringLiteral("continuing"), continuing},
+                                             {QStringLiteral("start"), allDay ? QDateTime() : local},
+                                             {QStringLiteral("end"), allDay ? QDateTime() : local.addSecs(length)},
                                              {QStringLiteral("calendar"), feed.name},
                                              {QStringLiteral("color"), event->color().isEmpty() ? calendarColor : event->color()},
                                              {QStringLiteral("key"), key},
