@@ -144,9 +144,8 @@ Run the repository checks before proposing a build:
 
 ## Architecture and attribution
 
-The tray host is derived from KDE Plasma Workspace 6.7.4. Presentation code lives
-in `qml/`; the inherited native tray implementation lives in `src/` and
-`libdbusmenuqt/`.
+The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma
+Workspace 6.7.4; `tools/upstream.sh` records it file by file.
 
 Licensed GPL-2.0-or-later ([LICENSE](LICENSE)); see the SPDX headers,
 [LICENSES](LICENSES), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for

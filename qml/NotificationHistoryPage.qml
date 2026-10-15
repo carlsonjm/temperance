@@ -30,6 +30,10 @@ Item {
     property var events: []
     property var dismissEvent: key => {}
     property var formatTime: value => value.toLocaleTimeString(Qt.locale(), Locale.ShortFormat)
+    // Whether Temperance holds the notification service, and else the
+    // program that does, as "vendor name", or empty when it is not known.
+    property bool serviceAvailable: true
+    property string serviceOwner: ""
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
@@ -598,8 +602,8 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: Kirigami.Units.gridUnit * 10
-            visible: page.notificationModel.count === 0 && !page.demoNotificationVisible
-                && page.events.length === 0
+            visible: !page.serviceAvailable || (page.notificationModel.count === 0
+                && !page.demoNotificationVisible && page.events.length === 0)
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -616,11 +620,25 @@ Item {
                     opacity: 0.34
                 }
                 PlasmaComponents.Label {
+                    objectName: "notificationEmptyTitle"
                     Layout.fillWidth: true
-                    text: i18n("All caught up")
+                    text: page.serviceAvailable ? i18n("All caught up")
+                        : i18n("Notifications aren't available")
                     horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
                     font.weight: Font.DemiBold
                     font.pixelSize: Kirigami.Theme.defaultFont.pixelSize * 1.2
+                }
+                PlasmaComponents.Label {
+                    objectName: "notificationEmptyDetail"
+                    Layout.fillWidth: true
+                    visible: !page.serviceAvailable
+                    text: page.serviceOwner
+                        ? i18nc("@info %1 is a program's vendor and name", "%1 is showing notifications instead.", page.serviceOwner)
+                        : i18n("Another program is showing notifications instead.")
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    opacity: 0.65
                 }
             }
         }

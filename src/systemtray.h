@@ -7,9 +7,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QJsonObject>
 #include <QVariantMap>
-#include <functional>
 #include <QPointer>
 #include <QList>
 
@@ -31,38 +29,24 @@ class StatusNotifierModel;
 class SystemTrayModel;
 class SortedSystemTrayModel;
 class KJob;
-class ScreenRefresh;
-
-namespace PulseAudioQt
-{
-class Sink;
-}
+class AudioStatus;
+class PerformanceController;
+class SessionActions;
 
 
 class SystemTray : public Plasma::Containment
 {
     Q_OBJECT
-    Q_MOC_INCLUDE("screenrefresh.h")
+    Q_MOC_INCLUDE("audiostatus.h")
+    Q_MOC_INCLUDE("performancecontroller.h")
+    Q_MOC_INCLUDE("sessionactions.h")
     Q_PROPERTY(QAbstractItemModel *systemTrayModel READ sortedSystemTrayModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *configSystemTrayModel READ configSystemTrayModel CONSTANT)
-    Q_PROPERTY(QStringList performancePresets READ performancePresets NOTIFY performancePresetsChanged)
-    Q_PROPERTY(QString activePerformancePreset READ activePerformancePreset NOTIFY activePerformancePresetChanged)
-    // What each preset holds (profile, energy use, power limits, fan curve),
-    // the AC/battery assignment and the charge limit, read from the
-    // z13ctl-plus daemon so the Performance page edits a preset from what it
-    // saved rather than from whatever happens to be live.
-    Q_PROPERTY(QVariantMap performancePresetSettings READ performancePresetSettings NOTIFY performanceStateChanged)
-    Q_PROPERTY(bool performanceAutoSwitch READ performanceAutoSwitch NOTIFY performanceStateChanged)
-    Q_PROPERTY(QString performanceAcPreset READ performanceAcPreset NOTIFY performanceStateChanged)
-    Q_PROPERTY(QString performanceBatteryPreset READ performanceBatteryPreset NOTIFY performanceStateChanged)
-    Q_PROPERTY(int performanceBatteryLimit READ performanceBatteryLimit NOTIFY performanceStateChanged)
-    Q_PROPERTY(bool performanceBusy READ performanceBusy NOTIFY performanceBusyChanged)
-    // The built-in screen's refresh rate, alongside the profiles; null
-    // without the helper.
-    Q_PROPERTY(ScreenRefresh *screenRefresh READ screenRefresh NOTIFY screenRefreshChanged)
-    Q_PROPERTY(int volumePercent READ volumePercent NOTIFY volumeChanged)
-    Q_PROPERTY(bool volumeMuted READ volumeMuted NOTIFY volumeChanged)
-    Q_PROPERTY(bool volumeAvailable READ volumeAvailable NOTIFY volumeChanged)
+    // Temperance's own parts, kept apart from the tray host inherited from
+    // Plasma: performance profiles, the volume and the session controls.
+    Q_PROPERTY(PerformanceController *performance READ performance CONSTANT)
+    Q_PROPERTY(AudioStatus *audio READ audio CONSTANT)
+    Q_PROPERTY(SessionActions *session READ session CONSTANT)
     // The calendars linked in the settings, shared by the calendar card and
     // the settings page that shows each link's state.
     Q_PROPERTY(CalendarFeeds *calendarFeeds READ calendarFeeds CONSTANT)
@@ -124,44 +108,17 @@ public:
 
     Q_INVOKABLE void scroll(const QString &service, int delta, const QString &direction);
     Q_INVOKABLE void launchApplication(const QString &desktopName);
-    Q_INVOKABLE void requestSessionAction(const QString &action);
-    // Whether the machine can sleep now, as the session manager reports it.
-    Q_INVOKABLE bool canSleep() const;
     Q_INVOKABLE QString resolveApplicationIcon(const QString &applicationName,
                                                const QString &desktopEntry,
                                                const QString &fallbackIcon) const;
 
-    QStringList performancePresets() const;
-    QString activePerformancePreset() const;
-    Q_INVOKABLE void applyPerformancePreset(const QString &name);
-    Q_INVOKABLE void refreshPerformancePresets();
-    QVariantMap performancePresetSettings() const;
-    bool performanceAutoSwitch() const;
-    QString performanceAcPreset() const;
-    QString performanceBatteryPreset() const;
-    int performanceBatteryLimit() const;
-    bool performanceBusy() const;
-    Q_INVOKABLE void savePerformancePreset(const QString &name, const QVariantMap &settings);
-    Q_INVOKABLE void setPerformanceBatteryLimit(int percent);
-    Q_INVOKABLE void setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset);
-    ScreenRefresh *screenRefresh() const;
-    int volumePercent() const;
-    bool volumeMuted() const;
-    bool volumeAvailable() const;
-    Q_INVOKABLE void setVolumePercent(int percent);
+    PerformanceController *performance() const;
+    AudioStatus *audio() const;
+    SessionActions *session() const;
     CalendarFeeds *calendarFeeds() const;
     bool needsUpdate() const;
 
 Q_SIGNALS:
-    void sessionActionFailed();
-    void performancePresetsChanged();
-    void activePerformancePresetChanged();
-    void performanceStateChanged();
-    void performanceBusyChanged();
-    void screenRefreshChanged();
-    // A preset save has ended; detail is the helper's reason when it gave one.
-    void performancePresetSaved(const QString &name, bool ok, const QString &detail);
-    void volumeChanged();
     void panelGeometryChanged();
 
 private Q_SLOTS:
@@ -174,12 +131,10 @@ private Q_SLOTS:
 
 private:
     bool m_needsUpdate = false;
-    QObject *m_sessionManagement = nullptr;
     void initNeedingUpdate();
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
-    void updateDefaultAudioSink(PulseAudioQt::Sink *sink);
     void watchGeometryItem(QQuickItem *item);
 
     KConfigWatcher::Ptr m_configWatcher;
@@ -195,23 +150,10 @@ private:
     SortedSystemTrayModel *m_configSystemTrayModel = nullptr;
 
     QHash<QString /*plugin id*/, int /*config group*/> m_configGroupIds;
-    QStringList m_performancePresets;
-    QString m_activePerformancePreset;
-    QString m_performanceHelper;
-    QVariantMap m_performancePresetSettings;
-    bool m_performanceAutoSwitch = false;
-    QString m_performanceAcPreset;
-    QString m_performanceBatteryPreset;
-    int m_performanceBatteryLimit = 0;
-    bool m_performanceBusy = false;
 
-    ScreenRefresh *m_screenRefresh = nullptr;
-
-    void readPerformancePresets(std::function<void()> done);
-    void refreshPerformanceState();
-    void setPerformanceBusy(bool busy);
-    void sendPerformanceRequests(QList<QJsonObject> requests, std::function<void(bool ok, const QJsonObject &reply)> done);
-    QPointer<PulseAudioQt::Sink> m_defaultAudioSink;
+    PerformanceController *m_performance = nullptr;
+    AudioStatus *m_audio = nullptr;
+    SessionActions *m_session = nullptr;
     QList<QPointer<QQuickItem>> m_watchedGeometryItems;
     CalendarFeeds *m_calendarFeeds = nullptr;
     bool m_watchingPanelGeometry = false;

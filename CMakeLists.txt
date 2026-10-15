@@ -13,7 +13,7 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMQtDeclareLoggingCategory)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui GuiPrivate Network Quick Widgets)
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Concurrent Core DBus Gui GuiPrivate Network Quick Widgets)
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     CalendarCore Config CoreAddons IconThemes I18n ItemModels JobWidgets KIO
     Service StatusNotifierItem WindowSystem XmlGui
@@ -107,7 +107,8 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(co.goodinput.temperance
-    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp src/screenrefresh.cpp
+    CPP_SOURCES src/systemtray.cpp src/audiostatus.cpp src/calendarfeeds.cpp
+        src/performancecontroller.cpp src/screenrefresh.cpp src/sessionactions.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
@@ -136,6 +137,8 @@ plasma_add_applet(co.goodinput.temperance
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
+        qml/TodayEvents.qml
+        qml/WeatherReading.qml
         qml/config.qml
         qml/main.qml
     RESOURCES
@@ -177,7 +180,7 @@ target_compile_definitions(co.goodinput.temperance PRIVATE
 target_include_directories(co.goodinput.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(co.goodinput.temperance PRIVATE
-    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt KF6::Screen Qt6::Network
+    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt KF6::Screen Qt6::Concurrent Qt6::Network
     PW::LibNotificationManager PW::KWorkspace)
 
 add_test(NAME temperance_source_sanity
@@ -208,7 +211,7 @@ if(BUILD_TESTING)
     add_executable(temperance-calendar-feeds-test tests/CalendarFeedsTest.cpp src/calendarfeeds.cpp)
     target_include_directories(temperance-calendar-feeds-test PRIVATE src)
     target_link_libraries(temperance-calendar-feeds-test PRIVATE
-        Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
+        Qt6::Concurrent Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-feeds-test PRIVATE
         FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
     add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
@@ -216,7 +219,7 @@ if(BUILD_TESTING)
     add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
     target_include_directories(temperance-calendar-test PRIVATE src)
     target_link_libraries(temperance-calendar-test PRIVATE
-        Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
+        Qt6::Concurrent Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-test PRIVATE
         CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
         FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
@@ -237,6 +240,21 @@ if(BUILD_TESTING)
     target_include_directories(temperance-build-match-test PRIVATE src)
     target_link_libraries(temperance-build-match-test PRIVATE Qt6::Core)
     add_test(NAME temperance_build_match COMMAND temperance-build-match-test)
+    add_executable(temperance-today-events-test tests/TodayEventsTest.cpp)
+    target_link_libraries(temperance-today-events-test PRIVATE Qt6::Gui Qt6::Qml KF6::I18n)
+    target_compile_definitions(temperance-today-events-test PRIVATE
+        TODAY_EVENTS_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/TodayEvents.qml")
+    add_test(NAME temperance_today_events COMMAND temperance-today-events-test)
+    set_tests_properties(temperance_today_events PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
+    add_executable(temperance-weather-contract-test tests/WeatherContractTest.cpp)
+    target_link_libraries(temperance-weather-contract-test PRIVATE Qt6::Core)
+    add_test(NAME temperance_weather_contract COMMAND temperance-weather-contract-test)
+    set_tests_properties(temperance_weather_contract PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 30)
+    add_executable(temperance-fan-curve-test tests/FanCurveTest.cpp)
+    target_include_directories(temperance-fan-curve-test PRIVATE src)
+    target_link_libraries(temperance-fan-curve-test PRIVATE Qt6::Core)
+    add_test(NAME temperance_fan_curve COMMAND temperance-fan-curve-test)
     find_package(KF6Package REQUIRED)
     add_executable(temperance-panel-load-test tests/PanelLoadTest.cpp)
     target_link_libraries(temperance-panel-load-test PRIVATE

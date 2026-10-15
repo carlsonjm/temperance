@@ -7,10 +7,12 @@
 #include <KCalendarCore/MemoryCalendar>
 
 #include <QDateTime>
+#include <QHash>
 #include <QList>
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <QPointer>
+#include <QThreadPool>
 #include <QTimer>
 #include <QVariant>
 
@@ -44,18 +46,25 @@ public:
     QVariantList feeds() const;
     int revision() const;
 
-    // A webcal:// address is the same feed over https. Anything that is not a
-    // web address after trimming returns empty.
+    // A webcal:// or http:// address is the same feed over https; a local
+    // file stays as it is. Anything else after trimming returns empty.
     Q_INVOKABLE static QString normalizedLink(const QString &link);
 
     // Events of every linked calendar that fall in the month, keyed by day of
-    // the month as a string. Each is a map of title, allDay, start, end,
-    // calendar, color and key, sorted all-day first and then by start. The key
+    // the month as a string. Each is a map of title, allDay, continuing,
+    // start, end, calendar, color and key, sorted all-day first and then by
+    // start. A timed event on a day after the one it starts is allDay and
+    // continuing, and keeps its real start and end. The key
     // names one occurrence, so it survives a re-read of the feed. The colour is
     // the event's own, else the one the person picked for its calendar, else
     // the feed's, else empty: iCloud's feeds carry one, Google's and Outlook's
     // do not.
+    // Worked out once per month and kept until the events change, so the
+    // ticker's tick each minute and the calendar card cost a lookup.
     Q_INVOKABLE QVariantMap eventsForMonth(int year, int month) const;
+
+    // The events of one day, as eventsForMonth() lists them.
+    Q_INVOKABLE QVariantList eventsForDay(int year, int month, int day) const;
 
     Q_INVOKABLE void refresh();
 
@@ -77,11 +86,16 @@ private:
         QDateTime updated;
         KCalendarCore::MemoryCalendar::Ptr calendar;
         QPointer<QNetworkReply> reply;
+        // The read being parsed; a later one supersedes it.
+        quint64 parse = 0;
     };
 
     void fetch(Feed &feed);
     void finished(QNetworkReply *reply);
+    void parsed(const QString &link, quint64 parse, const KCalendarCore::MemoryCalendar::Ptr &calendar,
+                const QString &name, const QString &color);
     Feed *feedFor(QNetworkReply *reply);
+    QVariantMap computeMonth(int year, int month) const;
 
     QStringList m_links;
     QVariantMap m_colors;
@@ -89,4 +103,9 @@ private:
     QNetworkAccessManager m_network;
     QTimer m_refresh;
     int m_revision = 0;
+    quint64 m_parseSerial = 0;
+    // Feeds are parsed away from the panel's own thread, one at a time.
+    QThreadPool m_parser;
+    mutable QHash<QString, QVariantMap> m_months;
+    mutable int m_monthsRevision = -1;
 };

@@ -34,7 +34,7 @@ jobs:
             kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels \
             kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui \
             kpackage libplasma plasma-workspace pulseaudio-qt libkscreen layer-shell-qt \
-            powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons \
+            powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons kdeplasma-addons \
             ttf-dejavu noto-fonts
       - uses: actions/checkout@v4
       - name: Trust the checkout
