@@ -404,7 +404,12 @@ void SystemTray::init()
 
     // This applet replaces Plasma's notification presentation. Own the public
     // notification service directly so the stock popup UI is never created.
-    NotificationManager::Server::self().init();
+    // Another notification daemon may hold the service already; the history
+    // then says who shows notifications instead of staying silently empty.
+    if (!NotificationManager::Server::self().init()) {
+        qCWarning(SYSTEM_TRAY) << "Another program holds the notification service;"
+                               << "Temperance shows no notifications while it does";
+    }
 
     auto *audioContext = PulseAudioQt::Context::instance();
     auto *audioServer = audioContext->server();

@@ -712,6 +712,14 @@ Item {
                 Plasmoid.resolveApplicationIcon(applicationName, desktopEntry, fallbackIcon)
             events: root.todayEvents
             dismissEvent: key => root.dismissEvent(key)
+            // The owner is read only when the service is not Temperance's,
+            // since asking for it starts watching the other program.
+            serviceAvailable: NotificationManager.Server.valid
+            serviceOwner: {
+                if (NotificationManager.Server.valid) return "";
+                const owner = NotificationManager.Server.currentOwner;
+                return owner && owner.name ? [owner.vendor, owner.name].filter(part => !!part).join(" ") : "";
+            }
             formatTime: value => statusClock.timeString(value)
         }
 

@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- When another program already shows notifications, Notifications & Events
+  says so and names it, instead of staying empty with no reason given.
 - Large linked calendars no longer make the panel stutter: a calendar is read
   away from the panel, each month's events are worked out once until they
   change, and a feed over 16 MB is refused with a message in Calendar
