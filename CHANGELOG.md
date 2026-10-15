@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The installer puts Temperance where the system's Qt looks for plugins, so
+  it also installs on distributions that keep them outside Arch's folder.
+  Removing Temperance puts Plasma's System Tray back on its panel and
+  restarts the panel, so notifications keep showing.
 - The weather icon finds the Weather widget's place from its saved setting,
   so with the online fallback on it keeps showing a temperature after a
   Plasma update changes the widget's inner workings, instead of "—°".
