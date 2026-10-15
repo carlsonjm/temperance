@@ -624,8 +624,16 @@ ContainmentItem {
     Layout.preferredHeight: slim ? rowHeight : 42
     Layout.maximumHeight: slim ? rowHeight : 42
 
-    function refreshResponsiveWidth() {
+    // The room below a top bar, or above a bottom one, for the popup. Panels
+    // arriving after this one shrink it without moving this one, so it is
+    // measured again as a page opens: a page taller than the room is put on
+    // the far side of the bar, off the screen.
+    function refreshPopupHeightLimit() {
         notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
+    }
+
+    function refreshResponsiveWidth() {
+        refreshPopupHeightLimit();
         if (!adaptiveWidth) return;
         // A host that paints its own clock says how much room it leaves
         // beside it; the row's own inset stays inside that width.
@@ -680,6 +688,7 @@ ContainmentItem {
     function showApplet(itemId) {
         const applet = appletsById[itemId];
         if (!applet) return;
+        refreshPopupHeightLimit();
         // Back returns to the page an applet was opened from. One opened from
         // the bar itself, the battery's say, goes back to Control Center,
         // where its page is otherwise reached.
@@ -700,6 +709,7 @@ ContainmentItem {
 
     // Opens a page, leaving it open if it is open already.
     function showSurface(page) {
+        refreshPopupHeightLimit();
         systemTrayState.setActiveApplet(null);
         systemTrayState.page = page;
         systemTrayState.expanded = true;
@@ -2605,8 +2615,12 @@ ContainmentItem {
             // ExpandedRepresentation owns the complete rounded #141414 surface.
             backgroundHints: PlasmaCore.Dialog.NoBackground
             onVisibleChanged: {
-                if (!visible) expandedSync.restart();
-                else requestActivate();
+                if (!visible) {
+                    expandedSync.restart();
+                } else {
+                    root.refreshPopupHeightLimit();
+                    requestActivate();
+                }
             }
             mainItem: ExpandedRepresentation {
                 id: expandedRepresentation

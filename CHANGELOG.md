@@ -21,6 +21,9 @@ This file records user-visible changes.
 - A bar that paints its own clock can say on the session bus how much room it
   leaves beside it, and the Status Bar takes that width. Without such a bar it
   measures its neighbours as before.
+- A page opened from a bar along the top no longer lands off the top of the
+  screen when a panel along the bottom arrived after the Status Bar: the room
+  below the bar is measured again each time a page opens.
 - On a Plasma or Qt other than the one it was built for, the Status Bar shows
   only that it needs an update and leaves notifications and the tray to Plasma,
   rather than failing or taking the panel down after a system update. The

@@ -1278,10 +1278,17 @@ private Q_SLOTS:
     QTRY_VERIFY(!state->property("expanded").toBool());
     QTRY_VERIFY(!popup->isVisible());
     QTest::qWait(300);
+    // Room measured before the dock arrived is measured again as the page
+    // opens, so the page still fits below the bar.
+    const qreal room = rightFace->property("notificationPopupHeightLimit").toReal();
+    QVERIFY(room > 1);
+    rightFace->setProperty("notificationPopupHeightLimit", room + 5000);
     QTest::mouseClick(&window, Qt::LeftButton, {}, centreOf(bellButton));
     QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
     QVERIFY(state->property("expanded").toBool());
     QVERIFY(!magnifierWindow->isVisible());
+    QCOMPARE(rightFace->property("notificationPopupHeightLimit").toReal(), room);
+    QTRY_VERIFY(placed(popup).top() >= barBottom);
     state->setProperty("expanded", false);
     QTRY_VERIFY(!popup->isVisible());
     QTest::qWait(300);
