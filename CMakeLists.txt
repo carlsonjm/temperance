@@ -13,7 +13,7 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(ECMQtDeclareLoggingCategory)
 
-find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core DBus Gui GuiPrivate Network Quick Widgets)
+find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Concurrent Core DBus Gui GuiPrivate Network Quick Widgets)
 find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     CalendarCore Config CoreAddons IconThemes I18n ItemModels JobWidgets KIO
     Service StatusNotifierItem WindowSystem XmlGui
@@ -177,7 +177,7 @@ target_compile_definitions(co.goodinput.temperance PRIVATE
 target_include_directories(co.goodinput.temperance PRIVATE
     src ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(co.goodinput.temperance PRIVATE
-    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt KF6::Screen Qt6::Network
+    temperance_core KF6::CalendarCore KF6::CoreAddons KF6::PulseAudioQt KF6::Screen Qt6::Concurrent Qt6::Network
     PW::LibNotificationManager PW::KWorkspace)
 
 add_test(NAME temperance_source_sanity
@@ -208,7 +208,7 @@ if(BUILD_TESTING)
     add_executable(temperance-calendar-feeds-test tests/CalendarFeedsTest.cpp src/calendarfeeds.cpp)
     target_include_directories(temperance-calendar-feeds-test PRIVATE src)
     target_link_libraries(temperance-calendar-feeds-test PRIVATE
-        Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
+        Qt6::Concurrent Qt6::Core Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-feeds-test PRIVATE
         FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
     add_test(NAME temperance_calendar_feeds COMMAND temperance-calendar-feeds-test)
@@ -216,7 +216,7 @@ if(BUILD_TESTING)
     add_executable(temperance-calendar-test tests/CalendarTest.cpp src/calendarfeeds.cpp)
     target_include_directories(temperance-calendar-test PRIVATE src)
     target_link_libraries(temperance-calendar-test PRIVATE
-        Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
+        Qt6::Concurrent Qt6::Gui Qt6::Qml Qt6::Quick Qt6::Network KF6::CalendarCore KF6::I18n)
     target_compile_definitions(temperance-calendar-test PRIVATE
         CALENDAR_PAGE_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/CalendarPage.qml"
         FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures" TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")

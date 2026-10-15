@@ -124,6 +124,12 @@ int main(int argc, char **argv)
     check(lateRest.value(QStringLiteral("key")) == lateStart.value(QStringLiteral("key")),
           QStringLiteral("both days name the same occurrence"));
 
+    // A day is the same as its place in the month, and reading the month
+    // again gives the same events.
+    check(feeds.eventsForDay(2026, 9, 25) == september.value(QStringLiteral("25")).toList(),
+          QStringLiteral("a day's events are its place in the month"));
+    check(feeds.eventsForMonth(2026, 9) == september, QStringLiteral("a month read again is the same"));
+
     const QVariantMap october = feeds.eventsForMonth(2026, 10);
     check(titles(october, 1) == QStringList{QStringLiteral("Trip")}, QStringLiteral("the trip's last day is in October"));
     check(titles(october, 5) == QStringList{QStringLiteral("Standup")}, QStringLiteral("the repeat continues into October"));

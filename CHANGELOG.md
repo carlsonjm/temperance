@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Large linked calendars no longer make the panel stutter: a calendar is read
+  away from the panel, each month's events are worked out once until they
+  change, and a feed over 16 MB is refused with a message in Calendar
+  settings.
 - An event that runs past midnight, such as a 23:00 to 01:00 call, stays on
   the ticker until it ends instead of vanishing at midnight, and a mark made
   before midnight still holds after it.

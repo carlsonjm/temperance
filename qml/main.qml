@@ -157,7 +157,7 @@ ContainmentItem {
             return [];
         feeds.revision;
         const now = systemClock.dateTime;
-        const day = feeds.eventsForMonth(now.getFullYear(), now.getMonth() + 1)[String(now.getDate())] ?? [];
+        const day = feeds.eventsForDay(now.getFullYear(), now.getMonth() + 1, now.getDate());
         // An overnight event stays until it ends, past midnight.
         return day.filter(event => (!event.allDay || event.continuing) && event.end > now
             && !dismissedEventKeys.includes(event.key));
