@@ -4,6 +4,15 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- On a horizontal panel too thin for its row, such as a 24 px bar along the top
+  of the screen, the Status Bar draws a slim row by itself: smaller marks, the
+  temperature beside its icon, and the ticker on one line, all inside the bar.
+  With something unread, the bell gives its place to a chip with the count;
+  do not disturb shows the slashed bell. At the usual sizes nothing changes. Pages and
+  important banners open below a bar along the top and come down from it.
+- A bar that paints its own clock can say on the session bus how much room it
+  leaves beside it, and the Status Bar takes that width. Without such a bar it
+  measures its neighbours as before.
 - On a Plasma or Qt other than the one it was built for, the Status Bar shows
   only that it needs an update and leaves notifications and the tray to Plasma,
   rather than failing or taking the panel down after a system update. The

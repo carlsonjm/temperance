@@ -13,6 +13,7 @@ import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
@@ -129,10 +130,13 @@ Item {
 
     property real presentationOffset: 24
     property real presentationOpacity: 0
+    // The page comes out of the panel: up from one along the bottom, down
+    // from one along the top.
+    readonly property bool belowPanel: Plasmoid.location === PlasmaCore.Types.TopEdge
     opacity: presentationOpacity
     scale: 0.985 + (1 - Math.min(1, presentationOffset / 24)) * 0.015
-    transformOrigin: Item.Bottom
-    transform: Translate { y: popup.presentationOffset }
+    transformOrigin: belowPanel ? Item.Top : Item.Bottom
+    transform: Translate { y: popup.belowPanel ? -popup.presentationOffset : popup.presentationOffset }
 
     property alias hiddenLayout: compatibilityLayout
     property alias plasmoidContainer: container

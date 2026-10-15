@@ -107,7 +107,7 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(co.goodinput.temperance
-    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp src/screenrefresh.cpp
+    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp src/clockextent.cpp src/screenrefresh.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
@@ -229,6 +229,14 @@ if(BUILD_TESTING)
     set_tests_properties(temperance_clock_fast_animation PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/fast-animation"
         TIMEOUT 60)
+    add_executable(temperance-clock-extent-test tests/ClockExtentTest.cpp src/clockextent.cpp)
+    target_include_directories(temperance-clock-extent-test PRIVATE src)
+    target_link_libraries(temperance-clock-extent-test PRIVATE Qt6::DBus Qt6::Test)
+    add_test(NAME temperance_clock_extent
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+            $<TARGET_FILE:temperance-clock-extent-test>
+            ${CMAKE_CURRENT_BINARY_DIR}/bin)
+    set_tests_properties(temperance_clock_extent PROPERTIES TIMEOUT 30)
     add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
     target_include_directories(temperance-session-action-test PRIVATE src)
     target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)

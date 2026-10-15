@@ -36,7 +36,7 @@ The compact panel view can show:
 - Network and other System Tray entries
 - The time over the date, at the right end, in the system font or one you choose
 
-Temperance adjusts its width to the space available in the panel. Optional modules
+Temperance fits the panel's free space, and slims for thin panels. Optional modules
 can be turned off, and the remaining sections share the available space.
 
 ## Clock and calendar
