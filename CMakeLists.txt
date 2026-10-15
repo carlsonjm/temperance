@@ -125,6 +125,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/ExpandedRepresentation.qml
         qml/ExpanderArrow.qml
         qml/HiddenItemsView.qml
+        qml/LevelReading.qml
         qml/ItemLoader.qml
         qml/NotificationHistoryPage.qml
         qml/OrganizedTrayPage.qml
@@ -136,6 +137,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/StatusColors.qml
         qml/StatusMagnifier.qml
         qml/StatusClock.qml
+        qml/SpeakerGlyph.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
