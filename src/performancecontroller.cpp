@@ -5,6 +5,7 @@
 
 #include "performancecontroller.h"
 
+#include "fancurve.h"
 #include "screenrefresh.h"
 
 #include <QJsonArray>
@@ -18,6 +19,11 @@
 
 using namespace Qt::StringLiterals;
 
+namespace
+{
+constexpr int helperTimeout = 5000;
+}
+
 PerformanceController::PerformanceController(QObject *parent)
     : QObject(parent)
 {
@@ -27,7 +33,9 @@ void PerformanceController::start()
 {
     // A successful helper discovery unlocks the control without creating a
     // separate build or exposing device-specific setup to everyone else.
-    m_helper = QStandardPaths::findExecutable(u"z13ctl-plus"_s);
+    // Only the system's own copy is run, as its package installs it, never
+    // one that comes first on the panel's PATH.
+    m_helper = QStandardPaths::findExecutable(u"z13ctl-plus"_s, {u"/usr/bin"_s, u"/usr/local/bin"_s});
     if (!m_helper.isEmpty()) {
         m_screenRefresh = new ScreenRefresh([this](std::function<void()> done) { readPresets(std::move(done)); }, this);
         Q_EMIT screenRefreshChanged();
@@ -55,14 +63,43 @@ void PerformanceController::refresh()
     readPresets({});
 }
 
+// Runs the helper with a time limit: one that hangs is stopped after five
+// seconds, and one that cannot start ends at once, so whatever waits on it,
+// such as the refresh rate's check after waking, always hears back.
+void PerformanceController::runHelper(const QStringList &arguments,
+                                      std::function<void(QProcess *process, bool ok)> finished)
+{
+    auto *process = new QProcess(this);
+    auto ended = std::make_shared<bool>(false);
+    auto end = [process, ended, finished](bool ok) {
+        if (*ended) {
+            return;
+        }
+        *ended = true;
+        finished(process, ok);
+        process->deleteLater();
+    };
+    connect(process, &QProcess::finished, this, [end](int exitCode, QProcess::ExitStatus status) {
+        end(status == QProcess::NormalExit && exitCode == 0);
+    });
+    connect(process, &QProcess::errorOccurred, this, [end](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart) {
+            end(false);
+        }
+    });
+    QTimer::singleShot(helperTimeout, process, [process]() {
+        process->kill();
+    });
+    process->start(m_helper, arguments);
+}
+
 void PerformanceController::readPresets(std::function<void()> done)
 {
     if (m_helper.isEmpty()) {
         return;
     }
-    auto *process = new QProcess(this);
-    connect(process, &QProcess::finished, this, [this, process, done](int exitCode, QProcess::ExitStatus status) {
-        if (status == QProcess::NormalExit && exitCode == 0) {
+    runHelper({u"preset"_s, u"list"_s}, [this, done](QProcess *process, bool ok) {
+        if (ok) {
             QStringList presets;
             QString active;
             const QString output = QString::fromUtf8(process->readAllStandardOutput());
@@ -95,12 +132,10 @@ void PerformanceController::readPresets(std::function<void()> done)
                 m_screenRefresh->setProfile(active);
             }
         }
-        process->deleteLater();
         if (done) {
             done();
         }
     });
-    process->start(m_helper, {u"preset"_s, u"list"_s});
     refreshState();
 }
 
@@ -285,29 +320,13 @@ void PerformanceController::savePreset(const QString &name, const QVariantMap &s
     if (settings.value(u"fanReset"_s).toBool()) {
         changes.append(QJsonObject{{u"cmd"_s, u"fancurve-reset"_s}});
     } else if (settings.contains(u"fanCurve"_s)) {
-        // Eight temp:pwm points, temperatures rising and speeds never falling.
-        const QStringList points = settings.value(u"fanCurve"_s).toString().split(u',');
-        bool valid = points.size() == 8;
-        int lastTemp = -1;
-        int lastPwm = 0;
-        for (const QString &point : points) {
-            const QStringList parts = point.split(u':');
-            bool tempOk = false;
-            bool pwmOk = false;
-            const int temp = parts.value(0).toInt(&tempOk);
-            const int pwm = parts.value(1).toInt(&pwmOk);
-            if (parts.size() != 2 || !tempOk || !pwmOk || temp <= lastTemp || temp > 120 || pwm < lastPwm || pwm > 255) {
-                valid = false;
-                break;
-            }
-            lastTemp = temp;
-            lastPwm = pwm;
-        }
-        if (!valid) {
+        // Eight temp:pwm points that keep the fans turning when hot (fancurve.h).
+        const QString curve = settings.value(u"fanCurve"_s).toString();
+        if (!fanCurveAllowed(curve)) {
             Q_EMIT presetSaved(name, false, QString());
             return;
         }
-        changes.append(QJsonObject{{u"cmd"_s, u"fancurve"_s}, {u"set"_s, points.join(u',')}});
+        changes.append(QJsonObject{{u"cmd"_s, u"fancurve"_s}, {u"set"_s, curve}});
     }
     if (settings.contains(u"epp"_s)) {
         const QString epp = settings.value(u"epp"_s).toString();
@@ -378,10 +397,7 @@ void PerformanceController::applyPreset(const QString &name)
         || (!m_presets.isEmpty() && !m_presets.contains(name))) {
         return;
     }
-    auto *process = new QProcess(this);
-    connect(process, &QProcess::finished, this, [this, process](int, QProcess::ExitStatus) {
-        process->deleteLater();
+    runHelper({u"preset"_s, u"apply"_s, name}, [this](QProcess *, bool) {
         QTimer::singleShot(300, this, &PerformanceController::refresh);
     });
-    process->start(m_helper, {u"preset"_s, u"apply"_s, name});
 }

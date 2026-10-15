@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- On Z13 tablets, a fan curve keeps the fans at a fifth of full speed or more
+  from 70 °C, so no saved curve leaves them off while the machine is hot.
+  Temperance runs only the system's own z13ctl-plus, and stops a call to it
+  that hangs after five seconds.
 - When another program already shows notifications, Notifications & Events
   says so and names it, instead of staying empty with no reason given.
 - Large linked calendars no longer make the panel stutter: a calendar is read

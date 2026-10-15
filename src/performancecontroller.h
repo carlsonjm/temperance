@@ -13,6 +13,7 @@
 #include <QVariantMap>
 #include <functional>
 
+class QProcess;
 class ScreenRefresh;
 
 // Performance profiles on machines with the z13ctl-plus helper, such as the
@@ -72,6 +73,7 @@ Q_SIGNALS:
     void presetSaved(const QString &name, bool ok, const QString &detail);
 
 private:
+    void runHelper(const QStringList &arguments, std::function<void(QProcess *process, bool ok)> finished);
     void readPresets(std::function<void()> done);
     void refreshState();
     void setBusy(bool busy);

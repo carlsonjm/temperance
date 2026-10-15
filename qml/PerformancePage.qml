@@ -164,6 +164,9 @@ Item {
         tdpDirty = !limitsSavedDefault;
     }
 
+    readonly property int hotFanTemperature: 70
+    readonly property int minimumHotFanPwm: 51
+
     // Adapted from Z13GUI+'s fan curve editor (Apache-2.0): the dragged point
     // pushes its neighbours, so temperatures keep rising and speeds never fall,
     // and it stops short of the edges so the others always have room.
@@ -179,6 +182,12 @@ Item {
         for (let i = index - 1; i >= 0; --i) {
             if (points[i].temp >= points[i + 1].temp) points[i].temp = points[i + 1].temp - 1;
             if (points[i].pwm > points[i + 1].pwm) points[i].pwm = points[i + 1].pwm;
+        }
+        // From 70 °C the fans keep at least a fifth of full speed, the floor
+        // the save holds to (src/fancurve.h).
+        for (let i = 0; i <= last; ++i) {
+            if (points[i].temp >= hotFanTemperature) points[i].pwm = Math.max(points[i].pwm, minimumHotFanPwm);
+            if (i > 0 && points[i].pwm < points[i - 1].pwm) points[i].pwm = points[i - 1].pwm;
         }
         stagedFan = points;
         fanAuto = false;
