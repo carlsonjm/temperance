@@ -48,9 +48,11 @@ Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
 whole at once, however far the finger has gone. There each control is 78 px
 from the next, about 16 mm on the Z13, with its mark at 40 px, and the strip is
 placed so the control pressed, or the nearer one to a press between two, comes
-out under the finger, kept on the screen. The finger chooses by where it is
-over the strip, not over the bar: a tile marks that control and its name shows
-beneath it, while the controls keep still and the same size, in the strip and
+out under the finger, kept on the screen. That control is chosen first. The
+finger then chooses by how far it slides, a control for every 78 px; where the
+screen's edge leaves less room than that to one side, the steps that way
+shorten so the strip's end is reached just short of the edge. A tile marks
+the control chosen and its name shows beneath it, while the controls keep still and the same size, in the strip and
 in the bar. Nothing opens while the finger moves. Lifted over a control, its page opens, staying open if it was
 already; lifted back in the bar or past either end of the strip, nothing opens.
 Either way the strip goes back into the bar at Plasma's animation speed. The

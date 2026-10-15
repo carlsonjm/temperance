@@ -87,6 +87,14 @@ ContainmentItem {
     property bool magnifierShown: false
     property real magnifierGrowth: 0
     property real magnifierFingerX: -1
+    // Where the press was, in this item, and where the face of the control
+    // it pressed sits in the strip. Along an edge of the screen the strip
+    // cannot stand with that face under the finger, so the finger's travel to
+    // that side is stretched to reach the strip's end before the screen's.
+    property real magnifierPressX: 0
+    property real magnifierPressCentre: 0
+    property real magnifierGainLeft: 1
+    property real magnifierGainRight: 1
     property int magnifierSelected: -1
     property var magnifierEntries: []
     readonly property bool magnifierUpward: Plasmoid.location === PlasmaCore.Types.BottomEdge
@@ -1178,8 +1186,11 @@ ContainmentItem {
         let best = Infinity;
         for (const control of controls) {
             if (!control.visible) continue;
+            // The pixels a control covers run from its left edge up to, not
+            // including, its right one, so a press on the edge two controls
+            // share is the right one's.
             const x = control.mapFromItem(null, sceneX, 0).x;
-            const distance = x < 0 ? -x : x >= control.width ? x - control.width : 0;
+            const distance = x < 0 ? -x : x >= control.width ? x - control.width + 1 : 0;
             if (distance < best) {
                 best = distance;
                 nearest = control;
@@ -1280,7 +1291,10 @@ ContainmentItem {
         // cancels.
         const out = statusPull >= statusPullThreshold;
         settleMagnifier(out ? 1 : 0);
-        magnifierFingerX = root.mapFromItem(null, point.sceneX, 0).x - magnifierAnchor.x;
+        const fingerX = root.mapFromItem(null, point.sceneX, 0).x;
+        const travel = fingerX - magnifierPressX;
+        magnifierFingerX = magnifierPressCentre
+            + travel * (travel < 0 ? magnifierGainLeft : magnifierGainRight);
         magnifierSelected = out ? magnifier.indexAt(magnifierFingerX) : -1;
     }
 
@@ -1354,6 +1368,20 @@ ContainmentItem {
         const onScreen = root.mapToGlobal(0, 0).x - Screen.virtualX;
         left = Math.max(10 - onScreen, Math.min(Screen.width - 10 - stripWidth - onScreen, left));
         magnifierAnchor.x = Math.round(left);
+        // The face of the control pressed is chosen first, wherever the
+        // strip stands, and each end of the strip is reached a little short
+        // of the screen's edge.
+        magnifierPressX = pressX;
+        magnifierPressCentre = pressedIndex >= 0 ? magnifier.restCentres[pressedIndex]
+            : pressX - magnifierAnchor.x;
+        const reach = 12;
+        const centres = magnifier.restCentres;
+        const roomLeft = pressX + onScreen - reach;
+        const roomRight = Screen.width - onScreen - pressX - reach;
+        const needLeft = centres.length ? magnifierPressCentre - centres[0] : 0;
+        const needRight = centres.length ? centres[centres.length - 1] - magnifierPressCentre : 0;
+        magnifierGainLeft = needLeft > 0 && roomLeft > 0 ? Math.max(1, needLeft / roomLeft) : 1;
+        magnifierGainRight = needRight > 0 && roomRight > 0 ? Math.max(1, needRight / roomRight) : 1;
         const top = magnifierUpward ? -magnifierGap - magnifier.height : root.height + magnifierGap;
         magnifierEntries = entries.map(entry => {
             const centre = entry.control.mapToItem(root, entry.control.width / 2, entry.control.height / 2);
