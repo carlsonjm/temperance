@@ -884,7 +884,23 @@ private Q_SLOTS:
     auto *tickerArea = findItem(rightFace, QStringLiteral("temperance-ticker-content"));
     auto *tickerControls = findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
     auto *count = findItem(rightFace, QStringLiteral("temperance-notification-count"));
-    QVERIFY(tickerArea && tickerControls && count);
+    auto *bell = findItem(rightFace, QStringLiteral("temperance-bell-glyph"));
+    auto *chip = findItem(rightFace, QStringLiteral("temperance-unread-chip"));
+    auto *bellButton = findItem(rightFace, QStringLiteral("temperance-review-notifications"));
+    QVERIFY(tickerArea && tickerControls && count && bell && chip && bellButton);
+    // With nothing unread the bell stands alone; with something unread its
+    // place holds a chip with the count, inside the bar, and the bell under
+    // the row's own badge stays away.
+    const auto showsBell = [&] {
+      return bell->opacity() > 0.99 && !chip->isVisible();
+    };
+    const auto showsChip = [&](const QString &text) {
+      return chip->opacity() > 0.99 && !bell->isVisible()
+          && chip->childItems().value(0)
+          && chip->childItems().first()->property("text").toString() == text;
+    };
+    QTRY_VERIFY(showsBell());
+    QVERIFY(!bell->property("slashed").toBool());
     QVERIFY(notify(QStringLiteral("Slim fixture"), 1));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
     QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
@@ -897,8 +913,13 @@ private Q_SLOTS:
     const qreal labelCentre = label->mapToItem(row, QPointF(0, label->height() / 2)).y();
     qInfo() << "T1_SLIM_LINE" << label->mapRectToItem(row, label->boundingRect()) << thickness;
     QVERIFY(qAbs(labelCentre - thickness / 2) <= 1.5);
-    QTRY_VERIFY(count->parentItem()->opacity() > 0.9);
-    QVERIFY(insideRow(count->parentItem()));
+    QTRY_VERIFY(showsChip(QStringLiteral("1")));
+    qInfo() << "T1_SLIM_CHIP" << chip->mapRectToItem(row, chip->boundingRect());
+    QVERIFY(chip->height() <= 16);
+    QVERIFY(insideRow(chip));
+    QVERIFY(count->parentItem()->opacity() < 0.01);
+    QVERIFY(bellButton->property("text").toString().contains(QStringLiteral("Notifications")));
+    QVERIFY(bellButton->property("text").toString().contains(QStringLiteral("1")));
 
     // A flick checks it off; the bell keeps a check for it.
     auto *finger = QTest::createTouchDevice();
@@ -912,8 +933,8 @@ private Q_SLOTS:
     QTest::touchEvent(&window, finger).release(0, from - QPoint(100, 0));
     QTRY_COMPARE(rail->property("count").toInt(), 0);
     QTRY_COMPARE(checked->property("count").toInt(), 1);
-    QTRY_COMPARE(count->property("text").toString(), QString::fromUtf8("✓"));
-    QVERIFY(insideRow(count->parentItem()));
+    // Checked off, it is still unread in the history.
+    QTRY_VERIFY(showsChip(QStringLiteral("1")));
 
     // A tap on the line opens the history, below the bar.
     tickerControls->setProperty("revealed", false);
@@ -921,6 +942,7 @@ private Q_SLOTS:
     QVERIFY(notify(QStringLiteral("Tap fixture"), 1));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
     QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
+    QTRY_VERIFY(showsChip(QStringLiteral("2")));
     QTest::qWait(400);
     const QPoint tap = tickerArea->mapToScene(
         QPointF(tickerArea->width() - 12, tickerArea->height() / 2)).toPoint();
@@ -930,6 +952,8 @@ private Q_SLOTS:
     QVERIFY(state);
     QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
     QTRY_VERIFY(state->property("expanded").toBool());
+    // Read, nothing is unread, and the bell comes back.
+    QTRY_VERIFY(showsBell());
     QWindow *popup = nullptr;
     for (auto *candidate : rightFace->findChildren<QObject *>())
       if (candidate->objectName() == QStringLiteral("popupWindow"))
@@ -966,6 +990,17 @@ private Q_SLOTS:
     qInfo() << "T1_SLIM_BANNER" << alert << barBottom;
     QVERIFY(alert.isValid() && alert.top() >= barBottom);
     QVERIFY(alert.bottom() <= screen.bottom());
+    // Do not disturb shows the slashed bell, even with something unread.
+    NotificationManager::Server::self().setInhibited(true);
+    QVERIFY(notify(QStringLiteral("Quiet slim fixture"), 1));
+    QTRY_COMPARE(checked->property("count").toInt(), 1);
+    QTest::qWait(400);
+    QVERIFY(rightFace->property("unreadCount").toInt() > 0);
+    QVERIFY(showsBell());
+    QVERIFY(bell->property("slashed").toBool());
+    NotificationManager::Server::self().setInhibited(false);
+    QTRY_VERIFY(showsChip(QStringLiteral("1")));
+    QVERIFY(!bell->property("slashed").toBool());
     // Without the bar the panel's own neighbours decide again.
     hostBus.unregisterService(QStringLiteral("co.goodinput.ContextBar"));
     QTRY_VERIFY(rightFace->width() < 520);

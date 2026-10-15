@@ -94,8 +94,7 @@ if(NOT expanded_qml MATCHES "org.kde.bluedevilwizard"
 endif()
 if(NOT notification_history_qml MATCHES "textFormat: Text.StyledText"
    OR NOT main_qml MATCHES "criticalSummary.truncated \\|\\| criticalBody.truncated"
-   OR NOT main_qml MATCHES "countPixelSize: slim \\? 10 : 13"
-   OR NOT main_qml MATCHES "font.pixelSize: root.countPixelSize"
+   OR NOT main_qml MATCHES "font.pixelSize: 13"
    OR NOT main_qml MATCHES "countInk.tightBoundingRect")
     message(FATAL_ERROR "Formatted notification expansion and measured badge geometry must be preserved")
 endif()

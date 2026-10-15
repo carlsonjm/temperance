@@ -46,10 +46,16 @@ ContainmentItem {
     readonly property int bellSize: slim ? 16 : 21
     readonly property real bellStroke: slim ? 1.5 : 1.75
     // The bell sits a little low, keeping one optical baseline whether its
-    // clapper shows or its mark replaces it. The slim row puts the mark
-    // beside the bell rather than under it, so the bell stays near centre.
+    // clapper shows or its mark replaces it. The slim row has no room for a
+    // mark under the bell, so there the bell stays near centre and gives its
+    // place to a chip holding the count of what is unread: the lines waiting
+    // and those checked off but not yet read in the history. Do not disturb
+    // shows the slashed bell instead, whatever waits.
     readonly property real bellDrop: slim ? 1 : bellSize * 0.1
-    readonly property int countPixelSize: slim ? 10 : 13
+    readonly property int unreadCount: attentionPages + checkedNotifications.count
+    readonly property bool bellShowsCount: slim && !doNotDisturb && unreadCount > 0
+    readonly property string unreadText: unreadCount > 9
+        ? i18nc("@info:status more than nine unread", "9+") : Qt.locale().toString(unreadCount)
     // A theme's status icon, at a size themes draw: 24, or 16 in the slim
     // row. A symbolic one fills its box, so it is asked for smaller.
     readonly property int statusIconSize: slim ? 16 : 24
@@ -399,7 +405,39 @@ ContainmentItem {
                 anchors.verticalCenterOffset: root.bellDrop
                 strokeWidth: root.bellStroke
                 glyphColor: railControlButton.glyphColor
-                clapperProgress: root.bellMarked ? 0 : 1
+                clapperProgress: root.bellMarked && !root.slim ? 0 : 1
+                slashed: root.slim && root.doNotDisturb
+                opacity: root.bellShowsCount ? 0 : 1
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad }
+                }
+            }
+            // The slim row's count, in the bell's place: a chip one 16 px
+            // circle for a digit, longer for more.
+            Rectangle {
+                id: unreadChip
+                objectName: "temperance-unread-chip"
+                anchors.centerIn: parent
+                height: 16
+                width: Math.max(height, unreadLabel.implicitWidth + 8)
+                radius: height / 2
+                color: Kirigami.Theme.highlightColor
+                opacity: root.bellShowsCount ? 1 : 0
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad }
+                }
+                PlasmaComponents.Label {
+                    id: unreadLabel
+                    anchors.centerIn: parent
+                    text: root.unreadText
+                    textFormat: Text.PlainText
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.features: { "tnum": 1 }
+                    color: Kirigami.Theme.highlightedTextColor
+                }
             }
         }
     }
@@ -1573,8 +1611,7 @@ ContainmentItem {
                             && systemTrayState.page === "notifications"
                             && systemTrayState.expanded
                         color: "transparent"
-                        // The slim row's count reaches past the bell's column.
-                        clip: !root.slim
+                        clip: true
                         // A resting pointer, a pen held over it included, shows the
                         // latest line. A finger does not rest: on the bell it
                         // opens the history. Its press also arrives as a hover
@@ -1640,38 +1677,37 @@ ContainmentItem {
                             anchors.right: parent.right
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
+                            objectName: "temperance-review-notifications"
                             z: 30
-                            text: i18n("Review all notifications")
+                            // The slim row's bell says what its chip counts.
+                            text: !root.slim ? i18n("Review all notifications")
+                                : root.unreadCount > 0
+                                ? i18ncp("@info:tooltip", "Notifications, %1 unread", "Notifications, %1 unread", root.unreadCount)
+                                : i18nc("@info:tooltip", "Notifications")
                             onClicked: root.openNotifications()
+                            PlasmaComponents.ToolTip {
+                                text: reviewNotificationsButton.text
+                                visible: root.slim && reviewNotificationsButton.hovered
+                            }
                         }
 
                         Item {
                             id: notificationCountBadge
-                            // The bell's top: centred canvas, its optical
-                            // offset, the 0.083 normalized crown, half the stroke.
-                            readonly property real bellTop: notificationControls.height / 2
-                                - root.bellSize / 2 + root.bellDrop + root.bellSize * 0.083
-                                - root.bellStroke / 2
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
-                            // The slim row has no room under the bell, so the
-                            // count rides at its shoulder, level with its crown.
-                            anchors.horizontalCenterOffset: root.slim ? root.bellSize * 0.35 + width / 2 : 0
                             // Bell rim: centered canvas, its optical offset,
                             // 0.708 normalized rim, half the stroke. Keep five
                             // logical pixels below that painted rim, so the
                             // count reads apart from the bell, and never past
                             // the bottom of the control.
-                            // Either way it stays inside the row.
-                            y: root.slim ? Math.max(0, Math.min(notificationControls.height - height, bellTop))
-                                : Math.min(notificationControls.height - height,
+                            y: Math.min(notificationControls.height - height,
                                 notificationControls.height / 2 - root.bellSize / 2
                                 + root.bellDrop + root.bellSize * 0.708
                                 + root.bellStroke / 2 + 5)
                             visible: opacity > 0
-                            opacity: root.bellMarked ? 1 : 0
+                            // The slim row shows its count in the bell's place.
+                            opacity: root.bellMarked && !root.slim ? 1 : 0
                             scale: root.bellMarked ? 1 : 0.72
-                            width: root.slim ? notificationCountLabel.implicitWidth
-                                : Math.max(18, notificationCountLabel.implicitWidth + 6)
+                            width: Math.max(18, notificationCountLabel.implicitWidth + 6)
                             height: countInk.tightBoundingRect.height
                             z: 40
                             Behavior on opacity {
@@ -1694,7 +1730,7 @@ ContainmentItem {
                                 text: root.attentionPages > 0 ? root.attentionPages : "✓"
                                 // Larger than the clock's date, so the count
                                 // reads at arm's length under the smaller bell.
-                                font.pixelSize: root.countPixelSize
+                                font.pixelSize: 13
                                 font.weight: Font.Medium
                                 color: tone.text
                             }

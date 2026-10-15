@@ -17,12 +17,19 @@ panel always keeps the full row, and at 34 px or more nothing changes.
 | Theme status icons, charging bolt | 24 px | 16 px |
 | Wired port | 18 px | 14 px |
 | Outline line | 1.75 px | 1.5 px |
-| Bell's count | 13 px, under the rim | 10 px, at the crown beside it |
+| Bell's count | 13 px, under the rim | 11 px, on a chip in the bell's place |
 | Battery percentage | 15 px | 12 px |
 | Weather temperature | 10 px, under the icon | 12 px, beside the icon |
 | Tray mark | 12 px | 9 px |
 | Ticker line | System font | 13 px |
 | Time | 15 px | 13 px |
+
+The slim row has no room under the bell, so with something unread the bell gives
+its place, and its touch, to a chip in the highlight colour holding the count: a
+16 px circle for one digit, longer for more, 9+ past nine. It counts the lines
+waiting and those checked off but not yet read in the history; with nothing
+unread the bell comes back, and do not disturb shows the slashed bell and no chip.
+The two cross-fade at Plasma's animation speed.
 
 The slim row takes the panel's height and asks for no more. Each control is still
 at least one step wide and runs the bar's full height, so a touch anywhere on the
