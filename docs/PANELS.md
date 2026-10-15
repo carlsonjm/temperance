@@ -40,8 +40,9 @@ the date both off, as on a bar that draws its own clock, the clock takes no room
 both on, its two lines are tight in a 24 px bar.
 
 A finger cannot choose between controls that small, so in the slim row the
-status controls, from the bell to the row's end, answer a finger as one. A tap
-anywhere on them opens Control Center, and closes it when it is open there.
+status controls, from the bell to the row's end, take a finger's press as one.
+A tap opens the page of the control nearest it, as a click would, a tap between
+two taking the nearer, and a second tap on it closes the page.
 Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
 24 px bar, the controls grow out of the bar into a strip of their own beside it,
 whole at once, however far the finger has gone. There each control is 78 px

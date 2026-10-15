@@ -11,7 +11,7 @@ This file records user-visible changes.
   do not disturb shows the slashed bell. At the usual sizes nothing changes. Pages and
   important banners open below a bar along the top and come down from it.
 - In the slim row a finger no longer has to find an icon a few millimetres
-  wide. A tap anywhere on the status icons opens Control Center. Pulled down
+  wide. A tap opens the page of the status icon nearest it. Pulled down
   from them, the icons grow out of the bar finger-sized in a strip below it,
   at once and with the nearest icon under the finger: slide to one, which is
   marked and named while the icons keep still, and let go to open its page.

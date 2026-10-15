@@ -71,7 +71,8 @@ ContainmentItem {
     // lift also arrive as a pointer, which is not one resting on the bell.
     property double lastTouchAt: 0
     // A finger on the slim row's status controls, which are too small to
-    // choose between one by one. A tap opens Control Center. Pulled down past
+    // press one by one. A tap opens the page of the control nearest it, as
+    // a click would, a press between two taking the nearer. Pulled down past
     // the threshold, the controls grow out of the bar finger-sized and the
     // finger chooses among them; lifting opens the one under it. The
     // threshold is past a tap's wobble, Qt's 10 px, and two thirds of a
@@ -1282,8 +1283,11 @@ ContainmentItem {
         if (phase === 1) {
             const slop = Qt.styleHints.startDragDistance;
             if (Math.abs(point.sceneX - statusTouchStart.x) <= slop
-                    && Math.abs(point.sceneY - statusTouchStart.y) <= slop)
-                openSurface("control");
+                    && Math.abs(point.sceneY - statusTouchStart.y) <= slop) {
+                const tapped = statusControlNearest(statusTouchStart.x);
+                if (tapped) tapped.activate();
+                else openSurface("control");
+            }
         } else if (phase === 2) {
             const chosen = magnifierSelected >= 0 ? magnifierEntries[magnifierSelected] : null;
             closeMagnifier();

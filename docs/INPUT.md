@@ -19,7 +19,7 @@ documents cite this one.
 | Tap or click above or below an icon | Counts as that icon. |
 | Your finger on an icon | The icon lifts until you let go. |
 | Pointer over the weather, network, tray or battery icon | It grows a little and shows its name. |
-| On a thin bar, tap the icons, or pull down from them | A tap opens or closes Control Center. Pulled, they grow finger-sized below it: slide to one, which is marked and named, and let go to open it, or in the bar or past an end to cancel. |
+| On a thin bar, tap the icons, or pull down from them | A tap opens or closes the nearest icon's page. Pulled, they grow finger-sized below it: slide to one, which is marked and named, and let go to open it, or in the bar or past an end to cancel. |
 | Escape, with a page open | Closes the page. |
 | Tap or click the pin in a page's header | Keeps the page open when focus leaves; shown only when turned on in settings. |
 

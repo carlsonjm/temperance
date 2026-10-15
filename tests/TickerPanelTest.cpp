@@ -1004,9 +1004,10 @@ private Q_SLOTS:
     NotificationManager::Server::self().setInhibited(false);
     QTRY_VERIFY(showsChip(QStringLiteral("1")));
     QVERIFY(!bell->property("slashed").toBool());
-    // A finger on the status controls. They are too small to choose between
-    // one by one, so a tap anywhere on them opens Control Center, and a
-    // second tap closes it.
+    // A finger on the status controls. They are too small to press one by
+    // one, so the finger's press is taken for all of them, and a tap opens
+    // the page of the control nearest it, as a click would: another
+    // control's page in its place, or closed by a second tap on it.
     state->setProperty("expanded", false);
     QTRY_VERIFY(!popup->isVisible());
     auto *statusTouch = findItem(rightFace, QStringLiteral("temperance-status-touch"));
@@ -1027,7 +1028,15 @@ private Q_SLOTS:
     };
     fingerTap(centreOf(trayItem));
     QTRY_VERIFY(state->property("expanded").toBool());
-    QCOMPARE(state->property("page").toString(), QStringLiteral("control"));
+    QCOMPARE(state->property("page").toString(), QStringLiteral("tray"));
+    QTest::qWait(300);
+    fingerTap(centreOf(controlItem));
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("control"));
+    QVERIFY(state->property("expanded").toBool());
+    QTest::qWait(300);
+    fingerTap(centreOf(bellButton));
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QVERIFY(state->property("expanded").toBool());
     QTest::qWait(300);
     fingerTap(centreOf(bellButton));
     QTRY_VERIFY(!state->property("expanded").toBool());
