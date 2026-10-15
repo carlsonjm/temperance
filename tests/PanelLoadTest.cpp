@@ -70,9 +70,12 @@ int main(int argc, char **argv)
             const appletsById = {weather: {}, audio: {}};
             const systemTrayState = {expanded: false, page: 'control', activeApplet: null,
                 setActiveApplet: function(a) { this.activeApplet = a; if (a) this.expanded = true; }};
+            let measured = 0;
+            function refreshPopupHeightLimit() { ++measured; }
     )JS") + navigationFunctions + QStringLiteral(R"JS(
             openSurface('tray');
             if (!systemTrayState.expanded) throw 'open tray';
+            if (measured !== 1) throw 'room measured as a page opens';
             openSurface('tray');
             if (systemTrayState.expanded) throw 'close tray';
             openSurface('notifications'); openSurface('control');
