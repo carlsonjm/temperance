@@ -240,6 +240,13 @@ if(BUILD_TESTING)
     target_include_directories(temperance-build-match-test PRIVATE src)
     target_link_libraries(temperance-build-match-test PRIVATE Qt6::Core)
     add_test(NAME temperance_build_match COMMAND temperance-build-match-test)
+    add_executable(temperance-today-events-test tests/TodayEventsTest.cpp)
+    target_link_libraries(temperance-today-events-test PRIVATE Qt6::Gui Qt6::Qml KF6::I18n)
+    target_compile_definitions(temperance-today-events-test PRIVATE
+        TODAY_EVENTS_QML="${CMAKE_CURRENT_SOURCE_DIR}/qml/TodayEvents.qml")
+    add_test(NAME temperance_today_events COMMAND temperance-today-events-test)
+    set_tests_properties(temperance_today_events PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 30)
     add_executable(temperance-weather-contract-test tests/WeatherContractTest.cpp)
     target_link_libraries(temperance-weather-contract-test PRIVATE Qt6::Core)
     add_test(NAME temperance_weather_contract COMMAND temperance-weather-contract-test)
