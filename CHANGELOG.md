@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- An event that runs past midnight, such as a 23:00 to 01:00 call, stays on
+  the ticker until it ends instead of vanishing at midnight, and a mark made
+  before midnight still holds after it.
 - A calendar link pasted as plain http is read over https, so its private
   address never crosses the network unencrypted.
 - On a Plasma or Qt other than the one it was built for, the Status Bar shows

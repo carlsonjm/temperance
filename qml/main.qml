@@ -145,6 +145,10 @@ ContainmentItem {
     // seen, which takes it off the ticker and leaves it in the history; Dismiss
     // there removes it. Both marks are kept per day, so a restart keeps them.
     readonly property string eventDay: Qt.formatDate(systemClock.dateTime, "yyyy-MM-dd") + "|"
+    // Yesterday's marks still count for an event that runs past midnight.
+    readonly property string previousEventDay: Qt.formatDate(
+        new Date(systemClock.dateTime.getFullYear(), systemClock.dateTime.getMonth(),
+                 systemClock.dateTime.getDate() - 1), "yyyy-MM-dd") + "|"
     readonly property var seenEventKeys: dayKeys(Plasmoid.configuration.readEvents)
     readonly property var dismissedEventKeys: dayKeys(Plasmoid.configuration.dismissedEvents)
     readonly property var todayEvents: {
@@ -154,7 +158,9 @@ ContainmentItem {
         feeds.revision;
         const now = systemClock.dateTime;
         const day = feeds.eventsForMonth(now.getFullYear(), now.getMonth() + 1)[String(now.getDate())] ?? [];
-        return day.filter(event => !event.allDay && event.end > now && !dismissedEventKeys.includes(event.key));
+        // An overnight event stays until it ends, past midnight.
+        return day.filter(event => (!event.allDay || event.continuing) && event.end > now
+            && !dismissedEventKeys.includes(event.key));
     }
     // The next of those not yet seen rides the ticker.
     readonly property var tickerEvents: todayEvents.filter(event => !seenEventKeys.includes(event.key))
@@ -167,13 +173,13 @@ ContainmentItem {
             : !notificationCopyActive)
 
     function dayKeys(entries) {
-        return (entries || []).filter(entry => entry.startsWith(eventDay))
+        return (entries || []).filter(entry => entry.startsWith(eventDay) || entry.startsWith(previousEventDay))
             .map(entry => entry.slice(eventDay.length));
     }
 
     // Adds today's mark for an event to a stored list, dropping other days'.
     function withDayKey(entries, key) {
-        const kept = (entries || []).filter(entry => entry.startsWith(eventDay));
+        const kept = (entries || []).filter(entry => entry.startsWith(eventDay) || entry.startsWith(previousEventDay));
         if (!kept.includes(eventDay + key))
             kept.push(eventDay + key);
         return kept;

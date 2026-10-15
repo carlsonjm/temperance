@@ -107,6 +107,23 @@ int main(int argc, char **argv)
     check(titles(september, 21).isEmpty(), QStringLiteral("a moved repeat leaves its day"));
     check(titles(september, 22) == QStringList{QStringLiteral("Standup (moved)")}, QStringLiteral("a moved repeat is on its new day"));
 
+    // An overnight event starts on its first day and is under way on the
+    // next, where it keeps its real times so the ticker can follow it.
+    const QVariantMap lateStart = september.value(QStringLiteral("10")).toList().value(0).toMap();
+    const QVariantMap lateRest = september.value(QStringLiteral("11")).toList().value(0).toMap();
+    check(titles(september, 10) == QStringList{QStringLiteral("Late call")}
+              && !lateStart.value(QStringLiteral("allDay")).toBool()
+              && !lateStart.value(QStringLiteral("continuing")).toBool(),
+          QStringLiteral("an overnight event starts on its first day"));
+    check(titles(september, 11) == QStringList{QStringLiteral("Late call")}
+              && lateRest.value(QStringLiteral("allDay")).toBool()
+              && lateRest.value(QStringLiteral("continuing")).toBool()
+              && lateRest.value(QStringLiteral("start")).toDateTime().time() == QTime(23, 0)
+              && lateRest.value(QStringLiteral("end")).toDateTime() == QDateTime(QDate(2026, 9, 11), QTime(1, 0)),
+          QStringLiteral("after midnight it is under way, with its real start and end"));
+    check(lateRest.value(QStringLiteral("key")) == lateStart.value(QStringLiteral("key")),
+          QStringLiteral("both days name the same occurrence"));
+
     const QVariantMap october = feeds.eventsForMonth(2026, 10);
     check(titles(october, 1) == QStringList{QStringLiteral("Trip")}, QStringLiteral("the trip's last day is in October"));
     check(titles(october, 5) == QStringList{QStringLiteral("Standup")}, QStringLiteral("the repeat continues into October"));

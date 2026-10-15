@@ -49,8 +49,10 @@ public:
     Q_INVOKABLE static QString normalizedLink(const QString &link);
 
     // Events of every linked calendar that fall in the month, keyed by day of
-    // the month as a string. Each is a map of title, allDay, start, end,
-    // calendar, color and key, sorted all-day first and then by start. The key
+    // the month as a string. Each is a map of title, allDay, continuing,
+    // start, end, calendar, color and key, sorted all-day first and then by
+    // start. A timed event on a day after the one it starts is allDay and
+    // continuing, and keeps its real start and end. The key
     // names one occurrence, so it survives a re-read of the feed. The colour is
     // the event's own, else the one the person picked for its calendar, else
     // the feed's, else empty: iCloud's feeds carry one, Google's and Outlook's

@@ -344,14 +344,18 @@ QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
                     if (day < first || day > last)
                         continue;
                     // On the days after the first, a timed event is under way
-                    // rather than starting, and reads like an all-day one.
-                    const bool wholeDay = allDay || offset > 0;
+                    // rather than starting, and the calendar shows it like an
+                    // all-day one. It keeps its real times, so the ticker can
+                    // follow an overnight event until it ends.
+                    const bool continuing = !allDay && offset > 0;
+                    const bool wholeDay = allDay || continuing;
                     entries.append(Entry{day,
                                          QVariantMap{
                                              {QStringLiteral("title"), event->summary()},
                                              {QStringLiteral("allDay"), wholeDay},
-                                             {QStringLiteral("start"), wholeDay ? QDateTime() : local},
-                                             {QStringLiteral("end"), wholeDay ? QDateTime() : local.addSecs(length)},
+                                             {QStringLiteral("continuing"), continuing},
+                                             {QStringLiteral("start"), allDay ? QDateTime() : local},
+                                             {QStringLiteral("end"), allDay ? QDateTime() : local.addSecs(length)},
                                              {QStringLiteral("calendar"), feed.name},
                                              {QStringLiteral("color"), event->color().isEmpty() ? calendarColor : event->color()},
                                              {QStringLiteral("key"), key},
