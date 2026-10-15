@@ -13,8 +13,9 @@ This file records user-visible changes.
 - In the slim row a finger no longer has to find an icon a few millimetres
   wide. A tap opens the page of the status icon nearest it. Pulled down
   from them, the icons grow out of the bar finger-sized in a strip below it,
-  at once and with the nearest icon under the finger: slide to one, which is
-  marked and named while the icons keep still, and let go to open its page.
+  at once with the icon pulled from chosen, even at the screen's edge, where
+  the strip cannot stand under it: slide to another, which is marked and
+  named while the icons keep still, and let go to open its page.
   Let go back in the bar or past either end and nothing opens. A mouse,
   touchpad or pen still uses each icon. The bell no longer shows its name
   over the bar: the page it opens names itself.
@@ -24,6 +25,28 @@ This file records user-visible changes.
 - A page opened from a bar along the top no longer lands off the top of the
   screen when a panel along the bottom arrived after the Status Bar: the room
   below the bar is measured again each time a page opens.
+- The installer puts Temperance where the system's Qt looks for plugins, so
+  it also installs on distributions that keep them outside Arch's folder.
+  Removing Temperance puts Plasma's System Tray back on its panel and
+  restarts the panel, so notifications keep showing.
+- The weather icon finds the Weather widget's place from its saved setting,
+  so with the online fallback on it keeps showing a temperature after a
+  Plasma update changes the widget's inner workings, instead of "—°".
+- On Z13 tablets, a fan curve keeps the fans at a fifth of full speed or more
+  from 70 °C, so no saved curve leaves them off while the machine is hot.
+  Temperance runs only the system's own z13ctl-plus, and stops a call to it
+  that hangs after five seconds.
+- When another program already shows notifications, Notifications & Events
+  says so and names it, instead of staying empty with no reason given.
+- Large linked calendars no longer make the panel stutter: a calendar is read
+  away from the panel, each month's events are worked out once until they
+  change, and a feed over 16 MB is refused with a message in Calendar
+  settings.
+- An event that runs past midnight, such as a 23:00 to 01:00 call, stays on
+  the ticker until it ends instead of vanishing at midnight, and a mark made
+  before midnight still holds after it.
+- A calendar link pasted as plain http is read over https, so its private
+  address never crosses the network unencrypted.
 - On a Plasma or Qt other than the one it was built for, the Status Bar shows
   only that it needs an update and leaves notifications and the tray to Plasma,
   rather than failing or taking the panel down after a system update. The

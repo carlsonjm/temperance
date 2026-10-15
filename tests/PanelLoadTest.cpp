@@ -56,8 +56,6 @@ int main(int argc, char **argv)
     const QString qml = QString::fromUtf8(source.readAll());
     if (!qml.contains(QStringLiteral("Plasmoid.watchPanelGeometry(root)"))
         || !qml.contains(QStringLiteral("function onPanelGeometryChanged()"))) return 13;
-    if (!qml.contains(QStringLiteral("nearest real panel item on"))
-        || !qml.contains(QStringLiteral("its left to this applet's fixed right edge"))) return 14;
     QString navigationFunctions;
     for (const auto &name : {"activateAppletById", "showApplet", "openSurface", "showSurface"}) {
         const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
@@ -103,6 +101,37 @@ int main(int argc, char **argv)
     if (navigationTest.isError() || !navigationTest.toBool()) {
         qCritical() << "Panel navigation regression:" << navigationTest.toString();
         return 12;
+    }
+    // Which notifications take a banner: critical ones and a fresh logout
+    // cancellation, never a normal one for having actions.
+    QString routingFunctions;
+    for (const auto &name : {"isFreshNotification", "isFreshLogoutCancellation", "isPriorityNotificationCandidate"}) {
+        const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
+        const auto finish = qml.indexOf(QStringLiteral("\n    }"), begin);
+        if (begin < 0 || finish < 0) return 21;
+        routingFunctions += qml.mid(begin, finish - begin + 6);
+    }
+    const auto routingTest = engine.evaluate(QStringLiteral(R"JS(
+        (function() {
+            const NotificationManager = { Notifications: { UrgencyRole: 1, UpdatedRole: 2, CreatedRole: 3,
+                SummaryRole: 4, BodyRole: 5, ActionNamesRole: 6, HasDefaultActionRole: 7,
+                NormalUrgency: 1, CriticalUrgency: 2 } };
+            const priorityAlertFreshnessMs = 20000;
+            function model(fields) { return { data: (index, role) => fields[role] }; }
+            const now = new Date();
+            const old = new Date(Date.now() - 60000);
+    )JS") + routingFunctions + QStringLiteral(R"JS(
+            if (!isPriorityNotificationCandidate(model({1: 2, 2: now}), 0)) throw 'critical';
+            if (isPriorityNotificationCandidate(model({1: 1, 2: now, 4: 'Download', 6: ['open'], 7: true}), 0))
+                throw 'actionable normal';
+            if (!isPriorityNotificationCandidate(model({1: 1, 2: now, 4: 'Logout canceled'}), 0)) throw 'logout cancelled';
+            if (isPriorityNotificationCandidate(model({1: 1, 2: old, 4: 'Logout canceled'}), 0)) throw 'stale logout';
+            return true;
+        })()
+    )JS"));
+    if (routingTest.isError() || !routingTest.toBool()) {
+        qCritical() << "Banner routing regression:" << routingTest.toString();
+        return 21;
     }
     const auto acStart = qml.indexOf(QStringLiteral("function acHoldingCharge("));
     const auto acEnd = qml.indexOf(QStringLiteral("\n    }"), acStart);

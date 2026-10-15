@@ -9,7 +9,7 @@ work="$(mktemp -d "${TMPDIR:-/tmp}/temperance-installer.XXXXXX")"
 trap 'rm -rf -- "${work}"' EXIT
 package="${work}/package" bin="${work}/bin" root="${work}/root"
 mkdir -p "${package}" "${bin}" "${root}"
-cp "${here}/../packaging/install-system.sh" "${package}/"
+cp "${here}/../packaging/install-system.sh" "${here}/../packaging/uninstall-system.sh" "${package}/"
 printf 'plugin' > "${package}/co.goodinput.temperance.so"
 printf 'icon' > "${package}/co.goodinput.temperance.png"
 printf '#!/bin/sh\necho "libKF6CalendarCore.so.6 (libc6,x86-64) => /usr/lib/libKF6CalendarCore.so.6"\n' > "${bin}/ldconfig"
@@ -17,7 +17,14 @@ printf '#!/bin/sh\nexit 0\n' > "${bin}/kbuildsycoca6"
 printf '#!/bin/sh\nexit 3\n' > "${bin}/systemctl"
 printf '#!/bin/sh\nexec "$@"\n' > "${bin}/sudo"
 printf '#!/bin/sh\necho "plasmashell 6.7.4"\n' > "${bin}/plasmashell"
-printf '#!/bin/sh\necho "6.11.2"\n' > "${bin}/qtpaths6"
+# Qt answers its version and where it looks for plugins, here Arch's folder.
+cat > "${bin}/qtpaths6" <<'STUB'
+#!/bin/sh
+case "$1" in
+    --qt-version) echo "6.11.2" ;;
+    --query) echo "${STUB_QT_PLUGINS:-/usr/lib/qt6/plugins}" ;;
+esac
+STUB
 chmod +x "${bin}"/*
 run() {
     TEMPERANCE_IN_TERMINAL=1 TEMPERANCE_ROOT="${root}" PATH="${bin}:${PATH}" \
@@ -52,5 +59,23 @@ grep -q "built for Plasma 6.8.0 and Qt 6.11.2" <<<"${output}"
 grep -q "needs an update" <<<"${output}"
 cmp "${package}/co.goodinput.temperance.so" \
     "${root}/usr/lib/qt6/plugins/plasma/applets/co.goodinput.temperance.so"
+
+# A Qt that looks for plugins elsewhere, as Fedora's and openSUSE's lib64
+# does, gets the plugin there.
+printf 'ELF\0temperance-built-for plasma 6.7.4 qt 6.11.2\0' > "${package}/co.goodinput.temperance.so"
+STUB_QT_PLUGINS=/usr/lib64/qt6/plugins run >/dev/null 2>&1
+cmp "${package}/co.goodinput.temperance.so" \
+    "${root}/usr/lib64/qt6/plugins/plasma/applets/co.goodinput.temperance.so"
+
+# Removing takes the files from where Qt looks, and says how notifications
+# come back.
+output="$(STUB_QT_PLUGINS=/usr/lib64/qt6/plugins TEMPERANCE_ROOT="${root}" PATH="${bin}:${PATH}" \
+    bash "${package}/uninstall-system.sh" 2>&1)"
+if [[ -e "${root}/usr/lib64/qt6/plugins/plasma/applets/co.goodinput.temperance.so" \
+        || -e "${root}/usr/share/icons/hicolor/512x512/apps/co.goodinput.temperance.png" ]]; then
+    printf '%s\n' "uninstaller: left Temperance's files in place" >&2
+    exit 1
+fi
+grep -q "System Tray" <<<"${output}"
 
 echo "Installer checks passed."

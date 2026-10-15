@@ -1162,12 +1162,22 @@ private Q_SLOTS:
       qInfo() << "T1_MAGNIFIER_SHOT" << shot;
     }
 
-    // Sliding sideways chooses by where the finger is over the magnified
-    // strip, not over the bar's small controls.
+    // Sliding sideways chooses by how far the finger goes across the
+    // magnified strip, not over the bar's small controls: a face's width
+    // for each control, or, short of room before the screen's edge, a
+    // shorter way that still reaches the strip's end there.
     const auto restCentres = strip->property("restCentres").toList();
     QCOMPARE(restCentres.size(), 3);
+    const auto fingerFor = [&](qreal centre, int y) {
+      const qreal pressed = rightFace->property("magnifierPressCentre").toReal();
+      const qreal gain = rightFace->property(centre < pressed ? "magnifierGainLeft"
+                                                              : "magnifierGainRight").toReal();
+      const qreal pressX = rightFace->mapToScene(
+          {rightFace->property("magnifierPressX").toReal(), 0}).x();
+      return QPoint(qRound(pressX + (centre - pressed) / gain), y);
+    };
     const auto overStrip = [&](int index, int y) {
-      return QPoint(qRound(anchorItem->mapToScene({restCentres.at(index).toReal(), 0}).x()), y);
+      return fingerFor(restCentres.at(index).toReal(), y);
     };
     QPoint at = trayAt + QPoint(0, 140);
     pullTo(at, overStrip(1, at.y()));
@@ -1229,13 +1239,45 @@ private Q_SLOTS:
       QTest::touchEvent(&window, finger).press(0, trayAt);
       pullTo(trayAt, trayAt + QPoint(0, 90));
       QTRY_VERIFY(magnifierWindow->isVisible());
-      const QPoint off(qRound(anchorItem->mapToScene({past, 0}).x()), trayAt.y() + 90);
+      const QPoint off = fingerFor(past, trayAt.y() + 90);
       pullTo(trayAt + QPoint(0, 90), off);
       QCOMPARE(rightFace->property("magnifierSelected").toInt(), -1);
       QTest::touchEvent(&window, finger).release(0, off);
       QTRY_VERIFY(!magnifierWindow->isVisible());
       QTest::qWait(300);
       QVERIFY(!state->property("expanded").toBool());
+    }
+
+    // Whichever control the finger pulls down from is chosen first, though
+    // along the screen's edge the strip cannot stand with every face under
+    // its control; from the first, the last is still reached before the
+    // screen's edge.
+    const auto cancelAt = [&](const QPoint &from) {
+      pullTo(from, from + QPoint(0, -88));
+      QTest::touchEvent(&window, finger).release(0, from + QPoint(0, -88));
+      QTRY_VERIFY(!magnifierWindow->isVisible());
+      QTest::qWait(300);
+      QVERIFY(!state->property("expanded").toBool());
+    };
+    for (const auto &[item, key] : {std::pair{bellButton, "notifications"},
+                                    std::pair{controlItem, "control"},
+                                    std::pair{trayItem, "tray"}}) {
+      const QPoint start = centreOf(item);
+      QTest::touchEvent(&window, finger).press(0, start);
+      pullTo(start, start + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      QCOMPARE(selectedKey(), QString::fromLatin1(key));
+      cancelAt(start + QPoint(0, 90));
+    }
+    {
+      const QPoint start = centreOf(bellButton);
+      const int edge = screen.right() - 4;
+      QTest::touchEvent(&window, finger).press(0, start);
+      pullTo(start, start + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      pullTo(start + QPoint(0, 90), QPoint(edge, start.y() + 90));
+      QCOMPARE(selectedKey(), QStringLiteral("tray"));
+      cancelAt(QPoint(edge, start.y() + 90));
     }
 
     // Pressed between two controls, the strip grows out with the nearer one

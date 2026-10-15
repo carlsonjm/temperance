@@ -87,6 +87,14 @@ ContainmentItem {
     property bool magnifierShown: false
     property real magnifierGrowth: 0
     property real magnifierFingerX: -1
+    // Where the press was, in this item, and where the face of the control
+    // it pressed sits in the strip. Along an edge of the screen the strip
+    // cannot stand with that face under the finger, so the finger's travel to
+    // that side is stretched to reach the strip's end before the screen's.
+    property real magnifierPressX: 0
+    property real magnifierPressCentre: 0
+    property real magnifierGainLeft: 1
+    property real magnifierGainRight: 1
     property int magnifierSelected: -1
     property var magnifierEntries: []
     readonly property bool magnifierUpward: Plasmoid.location === PlasmaCore.Types.BottomEdge
@@ -168,8 +176,6 @@ ContainmentItem {
         return ["weather", "fahrenheit", "celsius"].includes(configured)
             ? configured : regionTemperatureUnit;
     }
-    property string currentTemperature: ""
-    property bool weatherRequestPending: false
     readonly property bool hasBattery: Boolean(compactBattery.properties.IsPresent)
     readonly property var demoNotificationTexts: [
         i18n("FINAL SCROLL TEST: This message is intentionally much longer than the notification rail can display at once. Rest on the bell and keep reading while the remaining sentence glides cleanly into view."),
@@ -185,26 +191,17 @@ ContainmentItem {
         : demoNotificationVisible ? demoNotificationTexts.length : 0
     readonly property int attentionPages: notificationPages + (tickerEvent !== null ? 1 : 0)
 
-    // Today's timed events from the linked calendars that have not ended and
-    // were not dismissed, soonest first; they head the notification history.
-    // Holidays and all-day events stay in the calendar. The arrow marks one
-    // seen, which takes it off the ticker and leaves it in the history; Dismiss
-    // there removes it. Both marks are kept per day, so a restart keeps them.
-    readonly property string eventDay: Qt.formatDate(systemClock.dateTime, "yyyy-MM-dd") + "|"
-    readonly property var seenEventKeys: dayKeys(Plasmoid.configuration.readEvents)
-    readonly property var dismissedEventKeys: dayKeys(Plasmoid.configuration.dismissedEvents)
-    readonly property var todayEvents: {
-        const feeds = Plasmoid.calendarFeeds;
-        if (!feeds || !notificationsEnabled)
-            return [];
-        feeds.revision;
-        const now = systemClock.dateTime;
-        const day = feeds.eventsForMonth(now.getFullYear(), now.getMonth() + 1)[String(now.getDate())] ?? [];
-        return day.filter(event => !event.allDay && event.end > now && !dismissedEventKeys.includes(event.key));
+    // Today's events from the linked calendars (TodayEvents.qml).
+    TodayEvents {
+        id: calendarEvents
+        feeds: Plasmoid.calendarFeeds
+        enabled: root.notificationsEnabled
+        now: systemClock.dateTime
+        configuration: Plasmoid.configuration
+        clock: statusClock
     }
-    // The next of those not yet seen rides the ticker.
-    readonly property var tickerEvents: todayEvents.filter(event => !seenEventKeys.includes(event.key))
-    readonly property var tickerEvent: tickerEvents.length > 0 ? tickerEvents[0] : null
+    readonly property var todayEvents: calendarEvents.today
+    readonly property var tickerEvent: calendarEvents.next
     // At rest the event holds the ticker whenever a notification is not
     // reading; while the controls are open it shows only as its own page.
     readonly property bool eventShown: tickerEvent !== null
@@ -212,49 +209,10 @@ ContainmentItem {
             ? eventPage && !notificationReviewComplete
             : !notificationCopyActive)
 
-    function dayKeys(entries) {
-        return (entries || []).filter(entry => entry.startsWith(eventDay))
-            .map(entry => entry.slice(eventDay.length));
-    }
-
-    // Adds today's mark for an event to a stored list, dropping other days'.
-    function withDayKey(entries, key) {
-        const kept = (entries || []).filter(entry => entry.startsWith(eventDay));
-        if (!kept.includes(eventDay + key))
-            kept.push(eventDay + key);
-        return kept;
-    }
-
-    function markEventSeen(key) {
-        Plasmoid.configuration.readEvents = withDayKey(Plasmoid.configuration.readEvents, key);
-    }
-
-    function dismissEvent(key) {
-        Plasmoid.configuration.dismissedEvents = withDayKey(Plasmoid.configuration.dismissedEvents, key);
-    }
-
-    // What the ticker says of an event's time: that it is under way, how soon
-    // it starts within the hour, or its start in the clock's own form. A start
-    // time beside the clock read as a second clock, and one already passed
-    // said nothing.
-    function eventTimeText(event) {
-        if (!event) return "";
-        const now = systemClock.dateTime;
-        if (event.start <= now) return i18nc("@info an event under way", "Now");
-        const minutes = Math.ceil((event.start - now) / 60000);
-        if (minutes < 60)
-            return i18ncp("@info an event starting soon", "In %1 min", "In %1 min", minutes);
-        return statusClock.timeString(event.start);
-    }
-
-    // The day period ending a clock-form time, which the ticker draws smaller
-    // and lighter as the clock does; empty for any other lead.
-    function eventTimePeriod(text) {
-        for (const label of [statusClock.amLabel, statusClock.pmLabel]) {
-            if (label && text.endsWith(" " + label)) return label;
-        }
-        return "";
-    }
+    function markEventSeen(key) { calendarEvents.markSeen(key); }
+    function dismissEvent(key) { calendarEvents.dismiss(key); }
+    function eventTimeText(event) { return calendarEvents.timeText(event); }
+    function eventTimePeriod(text) { return calendarEvents.timePeriod(text); }
 
     function priorityNotificationKey(model, modelIndex) {
         const notificationId = model.data(modelIndex,
@@ -1028,126 +986,13 @@ ContainmentItem {
             ? applet.Plasmoid.icon : fallback;
     }
 
-    function weatherText() {
-        if (currentTemperature) return currentTemperature;
-        const weather = appletsById["org.kde.plasma.weather"];
-        if (!weather) return "—°";
-        const observation = weather.fullRepresentationItem
-            ? weather.fullRepresentationItem.lastObservation : null;
-        const nativeTemperature = observation ? Number(observation.temperature) : NaN;
-        if (Number.isFinite(nativeTemperature)) return Math.round(nativeTemperature) + "°";
-        const tooltip = String(weather.toolTipSubText || "").replace(/<[^>]*>/g, " ");
-        const match = tooltip.match(/-?[0-9]+(?:\.[0-9]+)?\s*°/);
-        return match ? match[0].replace(/\s+/g, "") : "—°";
-    }
-
-    function fetchCurrentTemperature(latitude, longitude) {
-        const request = new XMLHttpRequest();
-        request.onreadystatechange = function() {
-            if (request.readyState !== XMLHttpRequest.DONE) return;
-            root.weatherRequestPending = false;
-            if (request.status < 200 || request.status >= 300) return;
-            try {
-                const payload = JSON.parse(request.responseText);
-                const temperature = Number(payload.current.temperature_2m);
-                if (Number.isFinite(temperature)) root.currentTemperature = Math.round(temperature) + "°";
-            } catch (error) {
-                console.warn("Temperance: unable to parse current weather", error);
-            }
-        };
-        const apiTemperatureUnit = temperatureUnit === "celsius" ? "celsius" : "fahrenheit";
-        request.open("GET", "https://api.open-meteo.com/v1/forecast?latitude="
-            + encodeURIComponent(latitude) + "&longitude=" + encodeURIComponent(longitude)
-            + "&current=temperature_2m&temperature_unit=" + apiTemperatureUnit, true);
-        request.send();
-    }
-
-    function requestCurrentTemperature() {
-        if (weatherRequestPending) return;
-        const weather = appletsById["org.kde.plasma.weather"];
-        if (!weather) return;
-        const page = weather.fullRepresentationItem;
-        const observation = page ? page.lastObservation : null;
-        const nativeTemperature = observation ? Number(observation.temperature) : NaN;
-        if (temperatureUnit === "weather" && Number.isFinite(nativeTemperature)) {
-            currentTemperature = Math.round(nativeTemperature) + "°";
-            return;
-        }
-        if (!Plasmoid.configuration.useOnlineWeatherFallback) return;
-
-        const station = page ? page.station : null;
-        const latitude = station ? Number(station.latitude) : NaN;
-        const longitude = station ? Number(station.longitude) : NaN;
-        weatherRequestPending = true;
-        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-            fetchCurrentTemperature(latitude, longitude);
-            return;
-        }
-
-        // Some providers expose only a display location. Resolve that once,
-        // then use the same lightweight current-temperature request.
-        const location = String(weather.toolTipMainText || "").trim();
-        if (!location) {
-            weatherRequestPending = false;
-            return;
-        }
-        const geocode = new XMLHttpRequest();
-        geocode.onreadystatechange = function() {
-            if (geocode.readyState !== XMLHttpRequest.DONE) return;
-            if (geocode.status < 200 || geocode.status >= 300) {
-                root.weatherRequestPending = false;
-                return;
-            }
-            try {
-                const payload = JSON.parse(geocode.responseText);
-                const result = payload.results && payload.results.length ? payload.results[0] : null;
-                if (result) {
-                    root.fetchCurrentTemperature(Number(result.latitude), Number(result.longitude));
-                    return;
-                }
-            } catch (error) {
-                console.warn("Temperance: unable to resolve weather location", error);
-            }
-            root.weatherRequestPending = false;
-        };
-        geocode.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name="
-            + encodeURIComponent(location), true);
-        geocode.send();
-    }
-
-    // Until a temperature arrives, ask again after 5 s, 30 s, 2 min and
-    // 10 min, then once an hour, the same as once one has arrived. Nothing runs without a
-    // weather widget, and a new widget or setting starts the steps over.
-    property int weatherAttempts: 0
-    readonly property var weatherRetryDelays: [5000, 5000, 30000, 120000, 600000, 3600000]
-
-    Timer {
-        interval: root.currentTemperature ? 3600000
-            : root.weatherRetryDelays[Math.min(root.weatherAttempts, root.weatherRetryDelays.length - 1)]
-        running: root.weatherEnabled && !!root.appletsById["org.kde.plasma.weather"]
-        repeat: true
-        triggeredOnStart: true
-        onRunningChanged: if (running) root.weatherAttempts = 0
-        onTriggered: {
-            root.weatherAttempts += 1;
-            root.requestCurrentTemperature();
-        }
-    }
-
-    Connections {
-        target: Plasmoid.configuration
-        function onTemperatureUnitChanged() {
-            root.currentTemperature = "";
-            root.weatherRequestPending = false;
-            root.weatherAttempts = 0;
-            Qt.callLater(root.requestCurrentTemperature);
-        }
-        function onUseOnlineWeatherFallbackChanged() {
-            root.currentTemperature = "";
-            root.weatherRequestPending = false;
-            root.weatherAttempts = 0;
-            Qt.callLater(root.requestCurrentTemperature);
-        }
+    // The temperature beside the weather icon (WeatherReading.qml).
+    WeatherReading {
+        id: weatherReading
+        applet: root.appletsById["org.kde.plasma.weather"] ?? null
+        active: root.weatherEnabled
+        unit: root.temperatureUnit
+        onlineFallback: Plasmoid.configuration.useOnlineWeatherFallback === true
     }
 
     function weatherIcon() {
@@ -1178,8 +1023,11 @@ ContainmentItem {
         let best = Infinity;
         for (const control of controls) {
             if (!control.visible) continue;
+            // The pixels a control covers run from its left edge up to, not
+            // including, its right one, so a press on the edge two controls
+            // share is the right one's.
             const x = control.mapFromItem(null, sceneX, 0).x;
-            const distance = x < 0 ? -x : x >= control.width ? x - control.width : 0;
+            const distance = x < 0 ? -x : x >= control.width ? x - control.width + 1 : 0;
             if (distance < best) {
                 best = distance;
                 nearest = control;
@@ -1280,7 +1128,10 @@ ContainmentItem {
         // cancels.
         const out = statusPull >= statusPullThreshold;
         settleMagnifier(out ? 1 : 0);
-        magnifierFingerX = root.mapFromItem(null, point.sceneX, 0).x - magnifierAnchor.x;
+        const fingerX = root.mapFromItem(null, point.sceneX, 0).x;
+        const travel = fingerX - magnifierPressX;
+        magnifierFingerX = magnifierPressCentre
+            + travel * (travel < 0 ? magnifierGainLeft : magnifierGainRight);
         magnifierSelected = out ? magnifier.indexAt(magnifierFingerX) : -1;
     }
 
@@ -1354,6 +1205,20 @@ ContainmentItem {
         const onScreen = root.mapToGlobal(0, 0).x - Screen.virtualX;
         left = Math.max(10 - onScreen, Math.min(Screen.width - 10 - stripWidth - onScreen, left));
         magnifierAnchor.x = Math.round(left);
+        // The face of the control pressed is chosen first, wherever the
+        // strip stands, and each end of the strip is reached a little short
+        // of the screen's edge.
+        magnifierPressX = pressX;
+        magnifierPressCentre = pressedIndex >= 0 ? magnifier.restCentres[pressedIndex]
+            : pressX - magnifierAnchor.x;
+        const reach = 12;
+        const centres = magnifier.restCentres;
+        const roomLeft = pressX + onScreen - reach;
+        const roomRight = Screen.width - onScreen - pressX - reach;
+        const needLeft = centres.length ? magnifierPressCentre - centres[0] : 0;
+        const needRight = centres.length ? centres[centres.length - 1] - magnifierPressCentre : 0;
+        magnifierGainLeft = needLeft > 0 && roomLeft > 0 ? Math.max(1, needLeft / roomLeft) : 1;
+        magnifierGainRight = needRight > 0 && roomRight > 0 ? Math.max(1, needRight / roomRight) : 1;
         const top = magnifierUpward ? -magnifierGap - magnifier.height : root.height + magnifierGap;
         magnifierEntries = entries.map(entry => {
             const centre = entry.control.mapToItem(root, entry.control.width / 2, entry.control.height / 2);
@@ -2429,7 +2294,7 @@ ContainmentItem {
                         PlasmaComponents.Label {
                             id: weatherTemperatureLabel
                             anchors.centerIn: parent
-                            text: root.weatherText()
+                            text: weatherReading.text
                             font.pixelSize: root.slim ? root.statusTextPixelSize : 10
                             font.weight: Font.Medium
                             color: tone.text
