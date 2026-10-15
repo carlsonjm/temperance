@@ -70,6 +70,28 @@ ContainmentItem {
     // When a finger last pressed or lifted anywhere on the panel. Its press and
     // lift also arrive as a pointer, which is not one resting on the bell.
     property double lastTouchAt: 0
+    // A finger on the slim row's status controls, which are too small to
+    // choose between one by one. A tap opens Control Center. Pulled down past
+    // the threshold, the controls grow out of the bar finger-sized and the
+    // finger chooses among them; lifting opens the one under it. The
+    // threshold is past a tap's wobble, Qt's 10 px, and two thirds of a
+    // 24 px bar, so a press at the bar's top is pulled out of the bar.
+    readonly property int statusPullThreshold: 16
+    // How much further the finger pulls before the strip is fully grown:
+    // about where the strip's own controls are.
+    readonly property int magnifierGrowDistance: 48
+    // The gap between the bar and the strip.
+    readonly property int magnifierGap: 4
+    // None, pressed (a tap so far), or pulled (choosing in the strip).
+    property int statusTouchPhase: 0
+    property point statusTouchStart: Qt.point(0, 0)
+    property real statusPull: 0
+    property bool magnifierShown: false
+    property real magnifierGrowth: 0
+    property real magnifierFingerX: -1
+    property int magnifierSelected: -1
+    property var magnifierEntries: []
+    readonly property bool magnifierUpward: Plasmoid.location === PlasmaCore.Types.BottomEdge
     readonly property bool oneRowOrColumn: true
     readonly property alias systemTrayState: systemTrayState
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
@@ -653,6 +675,12 @@ ContainmentItem {
             systemTrayState.expanded = false;
             return;
         }
+        showApplet(itemId);
+    }
+
+    // Opens an applet's page, leaving it open if it is open already.
+    function showApplet(itemId) {
+        const applet = appletsById[itemId];
         if (!applet) return;
         // Back returns to the page an applet was opened from. One opened from
         // the bar itself, the battery's say, goes back to Control Center,
@@ -669,6 +697,11 @@ ContainmentItem {
             systemTrayState.expanded = false;
             return;
         }
+        showSurface(page);
+    }
+
+    // Opens a page, leaving it open if it is open already.
+    function showSurface(page) {
         systemTrayState.setActiveApplet(null);
         systemTrayState.page = page;
         systemTrayState.expanded = true;
@@ -1153,6 +1186,196 @@ ContainmentItem {
         }
     }
 
+    // Where the slim row's status controls start, from the bell or the first
+    // control shown after it.
+    readonly property real statusControlsLeft: compactSurface.x + statusRow.x
+        + (notificationControls.visible ? notificationRail.x + notificationControls.x
+            : weatherStatusButton.visible ? weatherStatusButton.x : controlCenterButton.x)
+
+    // The slim row's status controls, for a finger. It takes the finger's
+    // press, so no control under it also acts on it or shows its tooltip;
+    // a mouse, touchpad or pen passes through to the controls themselves.
+    // The finger stays with the panel that took its press wherever it goes,
+    // so the strip below the bar is driven from here.
+    MultiPointTouchArea {
+        id: statusTouch
+        objectName: "temperance-status-touch"
+        visible: root.slim && !root.needsUpdate && !root.vertical
+        z: 1
+        x: root.statusControlsLeft
+        width: Math.max(0, compactSurface.x + compactSurface.width - x)
+        height: root.height
+        mouseEnabled: false
+        minimumTouchPoints: 1
+        maximumTouchPoints: 1
+        onPressed: touchPoints => root.beginStatusTouch(touchPoints[0])
+        onUpdated: touchPoints => root.moveStatusTouch(touchPoints[0])
+        onReleased: touchPoints => root.endStatusTouch(touchPoints[0])
+        onCanceled: root.cancelStatusTouch()
+    }
+
+    // The finger's pull away from the bar, toward the rest of the screen.
+    function statusPullAt(sceneY) {
+        return (magnifierUpward ? -1 : 1) * (sceneY - statusTouchStart.y);
+    }
+
+    function beginStatusTouch(point) {
+        lastTouchAt = Date.now();
+        magnifierShrink.stop();
+        magnifierShown = false;
+        magnifierGrowth = 0;
+        magnifierSelected = -1;
+        statusTouchStart = Qt.point(point.sceneX, point.sceneY);
+        statusPull = 0;
+        statusTouchPhase = 1;
+    }
+
+    function moveStatusTouch(point) {
+        if (statusTouchPhase === 0) return;
+        statusPull = statusPullAt(point.sceneY);
+        if (statusTouchPhase === 1) {
+            if (statusPull < statusPullThreshold) return;
+            openMagnifier();
+        }
+        magnifierGrowth = Math.max(0, Math.min(1,
+            (statusPull - statusPullThreshold) / magnifierGrowDistance));
+        magnifierFingerX = root.mapFromItem(null, point.sceneX, 0).x - magnifierAnchor.x;
+        // Back in the bar the finger chooses nothing; lifted there, it
+        // cancels.
+        magnifierSelected = statusPull >= statusPullThreshold
+            ? magnifier.indexAt(magnifierFingerX) : -1;
+        reachedControl = magnifierSelected >= 0 ? magnifierEntries[magnifierSelected].control : null;
+    }
+
+    function endStatusTouch(point) {
+        lastTouchAt = Date.now();
+        if (statusTouchPhase === 2) moveStatusTouch(point);
+        const phase = statusTouchPhase;
+        statusTouchPhase = 0;
+        reachedControl = null;
+        if (phase === 1) {
+            const slop = Qt.styleHints.startDragDistance;
+            if (Math.abs(point.sceneX - statusTouchStart.x) <= slop
+                    && Math.abs(point.sceneY - statusTouchStart.y) <= slop)
+                openSurface("control");
+        } else if (phase === 2) {
+            const chosen = magnifierSelected >= 0 ? magnifierEntries[magnifierSelected] : null;
+            closeMagnifier();
+            if (chosen) showStatusPage(chosen.key);
+        }
+    }
+
+    function cancelStatusTouch() {
+        const phase = statusTouchPhase;
+        statusTouchPhase = 0;
+        reachedControl = null;
+        if (phase === 2) closeMagnifier();
+    }
+
+    // Opens a control's page from the strip, leaving it open if it is open
+    // already: the finger chose it, so it does not close it.
+    function showStatusPage(key) {
+        if (key === "notifications") {
+            notificationHistory.lastRead = new Date();
+            showSurface("notifications");
+        } else if (key === "weather") {
+            showApplet("org.kde.plasma.weather");
+        } else if (key === "battery" && appletsById["org.kde.plasma.battery"]) {
+            showApplet("org.kde.plasma.battery");
+        } else {
+            showSurface(key === "battery" ? "control" : key);
+        }
+    }
+
+    // The controls shown in the bar, left to right, and where each sits in
+    // the strip's coordinates; the strip is placed so the control the finger
+    // pressed grows out under it.
+    function openMagnifier() {
+        const shown = [
+            [notificationControls.visible, "notifications", reviewNotificationsButton,
+                reviewNotificationsButton.text],
+            [weatherStatusButton.visible, "weather", weatherStatusButton, i18n("Weather")],
+            [controlCenterButton.visible, "control", controlCenterButton, i18n("Control Center")],
+            [trayButton.visible, "tray", trayButton, i18n("System Tray")],
+            [batteryStatusButton.visible, "battery", batteryStatusButton, i18n("Battery")],
+            [statusClock.visible, "calendar", statusClock, i18nc("@label the clock's page", "Calendar")],
+        ].filter(entry => entry[0]);
+        const entries = shown.map(entry => ({ key: entry[1], control: entry[2], name: entry[3],
+            barX: 0, barY: 0 }));
+        magnifierEntries = entries;
+        const stripWidth = magnifier.width;
+        const pressed = statusControlAt(statusTouchStart.x);
+        const pressedIndex = entries.findIndex(entry => entry.control === pressed);
+        const pressX = root.mapFromItem(null, statusTouchStart.x, 0).x;
+        let left = pressedIndex >= 0 ? pressX - magnifier.restCentres[pressedIndex]
+            : statusControlsLeft + (compactSurface.x + compactSurface.width - statusControlsLeft) / 2
+                - stripWidth / 2;
+        // Kept on the screen, as the popup is.
+        const onScreen = root.mapToGlobal(0, 0).x - Screen.virtualX;
+        left = Math.max(10 - onScreen, Math.min(Screen.width - 10 - stripWidth - onScreen, left));
+        magnifierAnchor.x = Math.round(left);
+        const top = magnifierUpward ? -magnifierGap - magnifier.height : root.height + magnifierGap;
+        magnifierEntries = entries.map(entry => {
+            const centre = entry.control.mapToItem(root, entry.control.width / 2, entry.control.height / 2);
+            return Object.assign({}, entry, { barX: centre.x - magnifierAnchor.x, barY: centre.y - top });
+        });
+        magnifierGrowth = 0;
+        magnifierShown = true;
+        statusTouchPhase = 2;
+    }
+
+    // The strip goes back into the bar at Plasma's animation speed.
+    function closeMagnifier() {
+        magnifierShrink.from = magnifierGrowth;
+        magnifierShrink.restart();
+    }
+
+    NumberAnimation {
+        id: magnifierShrink
+        target: root
+        property: "magnifierGrowth"
+        to: 0
+        duration: Kirigami.Units.longDuration
+        easing.type: Easing.InCubic
+        onFinished: {
+            root.magnifierShown = false;
+            root.magnifierSelected = -1;
+        }
+    }
+
+    // Where the strip is put: under the bar, or above one along the bottom,
+    // as wide as the strip so the window's left edge is the anchor's.
+    Item {
+        id: magnifierAnchor
+        objectName: "temperance-magnifier-anchor"
+        width: magnifier.width
+        height: 1
+        y: root.magnifierUpward ? -root.magnifierGap : root.height + root.magnifierGap - 1
+    }
+
+    PlasmaCore.Dialog {
+        id: magnifierWindow
+        objectName: "temperance-magnifier-window"
+        visualParent: magnifierAnchor
+        location: Plasmoid.location
+        type: PlasmaCore.Dialog.Tooltip
+        // It only draws: the finger's touch stays with the panel.
+        outputOnly: true
+        flags: Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
+        hideOnWindowDeactivate: false
+        backgroundHints: PlasmaCore.Dialog.NoBackground
+        visible: root.magnifierShown
+        mainItem: StatusMagnifier {
+            id: magnifier
+            status: root
+            entries: root.magnifierEntries
+            growth: root.magnifierGrowth
+            fingerX: root.magnifierFingerX
+            selected: root.magnifierSelected
+            upward: root.magnifierUpward
+        }
+    }
+
     Component.onCompleted: {
         appletInstantiator.active = true;
         if (!needsUpdate) Plasmoid.watchHostClock(outputName);
@@ -1575,6 +1798,7 @@ ContainmentItem {
         DnD.DropArea { anchors.fill: parent; preventStealing: true }
 
         RowLayout {
+            id: statusRow
             anchors.fill: parent
             anchors.leftMargin: Kirigami.Units.smallSpacing
             anchors.rightMargin: 4
@@ -2197,73 +2421,14 @@ ContainmentItem {
                     anchors.fill: parent
                     touched: trayTap.pressed || root.reachedControl === trayButton
                     hovered: trayHover.hovered
-                    Canvas {
+                    TrayGlyph {
                         id: trayGlyph
-                        // The mark's size; the canvas leaves room around it for
-                        // the ring drawn while the tray is open.
-                        readonly property real mark: root.slim ? 9 : 12
+                        mark: root.slim ? 9 : 12
                         anchors.centerIn: parent
                         anchors.verticalCenterOffset: 1
-                        width: Math.round(mark * 28 / 9)
-                        height: width
-                        onWidthChanged: requestPaint()
-                        Connections {
-                            target: trayButton
-                            function onRippleProgressChanged() { trayGlyph.requestPaint(); }
-                            function onActiveChanged() { trayGlyph.requestPaint(); }
-                        }
-                        readonly property color ink: tone.text
-                        onInkChanged: requestPaint()
-                        onPaint: {
-                            const ctx = getContext("2d");
-                            ctx.reset();
-                            function triangle(size) {
-                                const cx = width / 2;
-                                const cy = height / 2;
-                                const vertices = [[cx, cy - size * 0.55],
-                                    [cx + size * 0.6, cy + size * 0.4],
-                                    [cx - size * 0.6, cy + size * 0.4]];
-                                // Round the path itself, not just the stroke join.
-                                const inset = size * 0.16;
-                                ctx.beginPath();
-                                for (let i = 0; i < 3; ++i) {
-                                    const v = vertices[i];
-                                    const prev = vertices[(i + 2) % 3];
-                                    const next = vertices[(i + 1) % 3];
-                                    const a = inset / Math.hypot(prev[0] - v[0], prev[1] - v[1]);
-                                    const b = inset / Math.hypot(next[0] - v[0], next[1] - v[1]);
-                                    const x = v[0] + (prev[0] - v[0]) * a;
-                                    const y = v[1] + (prev[1] - v[1]) * a;
-                                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                                    ctx.quadraticCurveTo(v[0], v[1],
-                                        v[0] + (next[0] - v[0]) * b,
-                                        v[1] + (next[1] - v[1]) * b);
-                                }
-                                ctx.closePath();
-                            }
-                            ctx.lineJoin = "round";
-                            ctx.fillStyle = trayGlyph.ink;
-                            ctx.strokeStyle = trayGlyph.ink;
-                            if (trayButton.active) {
-                                // Offset the SAME path with a stroke band, rather than
-                                // scaling vertices. This keeps clearance uniform around
-                                // both the straight edges and the rounded corners.
-                                const offset = (2 + trayButton.rippleProgress * 1.6) * mark / 9;
-                                ctx.globalAlpha = 0.8 - trayButton.rippleProgress * 0.3;
-                                ctx.lineWidth = offset * 2 + 1;
-                                triangle(mark);
-                                ctx.stroke();
-                                ctx.globalCompositeOperation = "destination-out";
-                                ctx.globalAlpha = 1;
-                                ctx.lineWidth = offset * 2 - 1;
-                                ctx.fill();
-                                ctx.stroke();
-                                ctx.globalCompositeOperation = "source-over";
-                            }
-                            ctx.globalAlpha = 1;
-                            ctx.lineWidth = 2 * mark / 9;
-                            triangle(mark); ctx.fill(); ctx.stroke();
-                        }
+                        ink: tone.text
+                        ring: trayButton.active
+                        rippleProgress: trayButton.rippleProgress
                     }
                 }
                 HoverHandler { id: trayHover }
@@ -2306,27 +2471,12 @@ ContainmentItem {
                         font.weight: Font.Normal
                         color: tone.text
                     }
-                    Canvas {
+                    BoltGlyph {
                         anchors.centerIn: parent
-                        // The bolt stands in for a theme's status icon.
                         width: root.statusIconSize
                         height: root.statusIconSize
-                        onWidthChanged: requestPaint()
                         visible: root.batteryOnAC
-                        readonly property color ink: tone.text
-                        onInkChanged: requestPaint()
-                        onPaint: {
-                            const ctx = getContext("2d");
-                            ctx.reset();
-                            // The bolt is drawn on an 18 px grid.
-                            ctx.scale(width / 18, height / 18);
-                            ctx.fillStyle = ink;
-                            ctx.beginPath();
-                            ctx.moveTo(10.5, 1); ctx.lineTo(3.5, 10);
-                            ctx.lineTo(8, 10); ctx.lineTo(7, 17);
-                            ctx.lineTo(14.5, 7); ctx.lineTo(10, 7);
-                            ctx.closePath(); ctx.fill();
-                        }
+                        ink: tone.text
                     }
                 }
                 HoverHandler { id: batteryStatusHover }

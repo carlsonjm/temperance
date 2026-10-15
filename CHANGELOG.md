@@ -10,6 +10,12 @@ This file records user-visible changes.
   With something unread, the bell gives its place to a chip with the count;
   do not disturb shows the slashed bell. At the usual sizes nothing changes. Pages and
   important banners open below a bar along the top and come down from it.
+- In the slim row a finger no longer has to find an icon a few millimetres
+  wide. A tap anywhere on the status icons opens Control Center. Pulled down
+  from them, the icons grow out of the bar finger-sized in a strip below it:
+  slide to one, which lifts and shows its name, and let go to open its page.
+  Let go back in the bar or past either end and nothing opens. A mouse,
+  touchpad or pen still uses each icon, and a finger raises no tooltip.
 - A bar that paints its own clock can say on the session bus how much room it
   leaves beside it, and the Status Bar takes that width. Without such a bar it
   measures its neighbours as before.

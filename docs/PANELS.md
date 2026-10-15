@@ -39,12 +39,30 @@ event, a flick to check a line off, a tap to open the history. With the time and
 the date both off, as on a bar that draws its own clock, the clock takes no room;
 both on, its two lines are tight in a 24 px bar.
 
+A finger cannot choose between controls that small, so in the slim row the
+status controls, from the bell to the row's end, answer a finger as one. A tap
+anywhere on them opens Control Center, and closes it when it is open there.
+Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
+24 px bar, the controls grow out of the bar into a strip of their own beside it,
+following the finger until, 48 px further, the strip is whole. There each
+control is 78 px from the next, about 16 mm on the Z13, with its mark at 40 px,
+and the strip is placed so the control pressed comes out under the finger, kept
+on the screen. The finger chooses by where it is over the strip, not over the
+bar: that control lifts most and its neighbours less, as a dock magnifies, its
+name shows beneath it, and its mark in the bar lifts too. Nothing opens while
+the finger moves. Lifted over a control, its page opens, staying open if it was
+already; lifted back in the bar or past either end of the strip, nothing opens.
+Either way the strip goes back into the bar at Plasma's animation speed. The
+strip follows a light or dark style as the pages do, and no tooltip rises from
+a finger. A mouse, touchpad or pen still uses each control by itself.
+
 ## Edges
 
 Pages and important banners open away from the panel's edge, above a panel along
 the bottom and below one along the top, and come in from the panel's side. A page
 sits 18 px from the row and a banner 10 px further, since its window type has no
-clearance of its own.
+clearance of its own. The slim row's strip of status controls sits 4 px from the
+bar.
 
 ## Host interfaces
 

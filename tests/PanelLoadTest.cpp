@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     if (!qml.contains(QStringLiteral("nearest real panel item on"))
         || !qml.contains(QStringLiteral("its left to this applet's fixed right edge"))) return 14;
     QString navigationFunctions;
-    for (const auto &name : {"activateAppletById", "openSurface"}) {
+    for (const auto &name : {"activateAppletById", "showApplet", "openSurface", "showSurface"}) {
         const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
         const auto finish = qml.indexOf(QStringLiteral("\n    }"), begin);
         if (begin < 0 || finish < 0) return 11;
@@ -88,6 +88,12 @@ int main(int argc, char **argv)
             systemTrayState.expanded = false; systemTrayState.page = 'notifications';
             activateAppletById('audio'); activateAppletById('weather');
             if (systemTrayState.page !== 'control') throw 'bar applet backs to Control Center';
+            // Chosen from the slim row's strip, a page opens and stays open.
+            showSurface('tray'); showSurface('tray');
+            if (!systemTrayState.expanded || systemTrayState.page !== 'tray') throw 'strip keeps tray';
+            showApplet('weather'); showApplet('weather');
+            if (!systemTrayState.expanded || systemTrayState.activeApplet !== appletsById.weather)
+                throw 'strip keeps weather';
             return true;
         })()
     )JS"));
