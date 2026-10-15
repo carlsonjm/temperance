@@ -5,7 +5,21 @@ package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # TEMPERANCE_ROOT stages the files under another folder instead of the system.
 root="${TEMPERANCE_ROOT:-}"
 plugin_name="co.goodinput.temperance.so"
-plugin_target="${root}/usr/lib/qt6/plugins/plasma/applets/${plugin_name}"
+# Qt looks for plugins where it was built to, which differs between
+# distributions (lib, lib64 or a multiarch folder), so ask it.
+qt_plugins() {
+    local dir=""
+    if command -v qtpaths6 >/dev/null 2>&1; then
+        dir="$(qtpaths6 --query QT_INSTALL_PLUGINS 2>/dev/null || true)"
+    fi
+    if [[ "${dir}" != /* ]] && command -v qmake6 >/dev/null 2>&1; then
+        dir="$(qmake6 -query QT_INSTALL_PLUGINS 2>/dev/null || true)"
+    fi
+    [[ "${dir}" == /* ]] || dir=/usr/lib/qt6/plugins
+    printf '%s\n' "${dir%/}"
+}
+plugin_dir="$(qt_plugins)"
+plugin_target="${root}${plugin_dir}/plasma/applets/${plugin_name}"
 icon_name="co.goodinput.temperance.png"
 icon_target="${root}/usr/share/icons/hicolor/512x512/apps/${icon_name}"
 
@@ -59,9 +73,10 @@ if differs "${built_plasma:-}" "${running_plasma}" || differs "${built_qt:-}" "$
 fi
 
 # Shuffle's install key, where it is set up, places both files with no
-# password: a root-owned helper takes them as a stream and puts them only here.
+# password: a root-owned helper takes them as a stream and puts them only in
+# the usual folder, so it serves only a Qt that looks there.
 install_key=/usr/local/libexec/shuffle/install-step
-if [[ -z "${root}" && -x "${install_key}" ]] \
+if [[ -z "${root}" && -x "${install_key}" && "${plugin_dir}" == /usr/lib/qt6/plugins ]] \
         && sudo -n -l "${install_key}" temperance install >/dev/null 2>&1; then
     tar -C "${package_dir}" -cf - "${plugin_name}" "${icon_name}" \
         | sudo -n "${install_key}" temperance install

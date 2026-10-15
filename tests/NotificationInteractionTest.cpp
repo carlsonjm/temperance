@@ -231,6 +231,40 @@ private Q_SLOTS:
         QCOMPARE(model.defaultCalls, 1);
         item->setParentItem(nullptr);
     }
+    // When another program holds the notification service, the history says
+    // so, and who, instead of claiming all is caught up.
+    void unavailableService() {
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        HistoryFixture model;
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600},
+            {QStringLiteral("serviceAvailable"), false}, {QStringLiteral("serviceOwner"), QStringLiteral("Example Daemon")}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        QQuickWindow window;
+        window.resize(430, 600);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 600));
+        window.show();
+        auto *title = findItem(item, QStringLiteral("notificationEmptyTitle"));
+        auto *detail = findItem(item, QStringLiteral("notificationEmptyDetail"));
+        QVERIFY(title && detail);
+        QVERIFY(title->isVisible() && detail->isVisible());
+        QVERIFY(title->property("text").toString() != QStringLiteral("All caught up"));
+        QVERIFY(detail->property("text").toString().contains(QStringLiteral("Example Daemon")));
+        page->setProperty("serviceAvailable", true);
+        QCOMPARE(title->property("text").toString(), QStringLiteral("All caught up"));
+        QVERIFY(!detail->isVisible());
+    }
+
     void layoutFallbacks() {
         QQmlEngine engine;
         engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
