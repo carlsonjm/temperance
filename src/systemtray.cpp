@@ -16,16 +16,13 @@
 #include "suitesettings.h"
 #include <KLocalizedString>
 
+#include "audiostatus.h"
 #include "calendarfeeds.h"
-#include "screenrefresh.h"
+#include "performancecontroller.h"
+#include "sessionactions.h"
 
 #include <QScreen>
 #include <optional>
-#include "sessionaction.h"
-#include <sessionmanagement.h>
-#include <QDBusConnection>
-#include <QDBusPendingCallWatcher>
-#include <QDBusPendingReply>
 
 #include "plasmoidregistry.h"
 #include "sortedsystemtraymodel.h"
@@ -36,9 +33,6 @@
 
 #include <QCoreApplication>
 #include <QGuiApplication>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QLocalSocket>
 #include <QMenu>
 #include <QMetaMethod>
 #include <QMetaObject>
@@ -46,15 +40,10 @@
 #include <QQueue>
 #include <QQuickItem>
 #include <QQuickWindow>
-#include <QStandardPaths>
-#include <QProcess>
 #include <QScreen>
 #include <QTimer>
 #include <qpa/qplatformscreen.h>
 
-#include <PulseAudioQt/Context>
-#include <PulseAudioQt/Server>
-#include <PulseAudioQt/Sink>
 #include <notificationmanager/server.h>
 
 #include <Plasma/Applet>
@@ -77,48 +66,6 @@ using namespace Qt::StringLiterals;
 // to warn before it installs a build the running Plasma or Qt will not run.
 [[gnu::used]] static const char builtFor[] =
     "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
-
-void SystemTray::requestSessionAction(const QString &action)
-{
-    if (action == u"switchUser"_s) {
-        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
-        if (session && session->canSwitchUser()) session->switchUser();
-        else Q_EMIT sessionActionFailed();
-        return;
-    }
-    // Sleeping asks nothing first either: everything open is there on waking.
-    if (action == u"sleep"_s) {
-        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
-        if (session && session->canSuspend()) session->suspend();
-        else Q_EMIT sessionActionFailed();
-        return;
-    }
-    // Locking asks nothing first: it loses no work.
-    if (action == u"lock"_s) {
-        auto *session = static_cast<SessionManagement *>(m_sessionManagement);
-        if (session && session->canLock()) session->lock();
-        else Q_EMIT sessionActionFailed();
-        return;
-    }
-    const auto message = sessionActionPrompt(action);
-    if (message.type() != QDBusMessage::MethodCallMessage) return;
-    auto *watcher = new QDBusPendingCallWatcher(
-        QDBusConnection::sessionBus().asyncCall(message, 5000), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher]() {
-        const QDBusPendingReply<> reply = *watcher;
-        if (reply.isError()) {
-            qCWarning(SYSTEM_TRAY) << "Unable to show session confirmation:" << reply.error();
-            Q_EMIT sessionActionFailed();
-        }
-        watcher->deleteLater();
-    });
-}
-
-bool SystemTray::canSleep() const
-{
-    auto *session = static_cast<SessionManagement *>(m_sessionManagement);
-    return session && session->canSuspend();
-}
 
 void SystemTray::launchApplication(const QString &desktopName)
 {
@@ -359,6 +306,11 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_needsUpdate = !builtForRunning(QStringLiteral(TEMPERANCE_BUILT_PLASMA), runningPlasma,
                                      QStringLiteral(TEMPERANCE_BUILT_QT), runningQt);
     m_calendarFeeds = new CalendarFeeds(this);
+    // Present on every build, so the bar's bindings always have them; a build
+    // for another Plasma or Qt never starts them.
+    m_performance = new PerformanceController(this);
+    m_audio = new AudioStatus(this);
+    m_session = new SessionActions(this);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
     if (m_needsUpdate) {
         qCWarning(SYSTEM_TRAY) << "Temperance was built for Plasma" << TEMPERANCE_BUILT_PLASMA << "and Qt" << TEMPERANCE_BUILT_QT
@@ -366,7 +318,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
                                << "are running; it leaves notifications and the tray to Plasma until a rebuild";
         return;
     }
-    m_sessionManagement = new SessionManagement(this);
+    m_session->start();
     setHasConfigurationInterface(true);
 }
 
@@ -390,17 +342,7 @@ void SystemTray::init()
 
     initSettingsAndRegistry();
 
-    // Performance profiles are a capability-gated extension. A successful
-    // helper discovery unlocks the control without creating a separate build
-    // or exposing device-specific setup to everyone else. The list is read
-    // once here, again whenever Control Center opens, and after a preset is
-    // applied; the helper is never run on a timer.
-    m_performanceHelper = QStandardPaths::findExecutable(u"z13ctl-plus"_s);
-    if (!m_performanceHelper.isEmpty()) {
-        m_screenRefresh = new ScreenRefresh([this](std::function<void()> done) { readPerformancePresets(std::move(done)); }, this);
-        Q_EMIT screenRefreshChanged();
-    }
-    refreshPerformancePresets();
+    m_performance->start();
 
     // This applet replaces Plasma's notification presentation. Own the public
     // notification service directly so the stock popup UI is never created.
@@ -411,12 +353,7 @@ void SystemTray::init()
                                << "Temperance shows no notifications while it does";
     }
 
-    auto *audioContext = PulseAudioQt::Context::instance();
-    auto *audioServer = audioContext->server();
-    if (audioServer) {
-        connect(audioServer, &PulseAudioQt::Server::defaultSinkChanged, this, &SystemTray::updateDefaultAudioSink);
-        updateDefaultAudioSink(audioServer->defaultSink());
-    }
+    m_audio->start();
 
     // we don't want to automatically propagate the activated signal from the Applet to the Containment
     // even if SystemTray is of type Containment, it is de facto Applet and should act like one
@@ -449,400 +386,6 @@ void SystemTray::initNeedingUpdate()
 bool SystemTray::needsUpdate() const
 {
     return m_needsUpdate;
-}
-
-void SystemTray::updateDefaultAudioSink(PulseAudioQt::Sink *sink)
-{
-    if (m_defaultAudioSink == sink) {
-        return;
-    }
-    if (m_defaultAudioSink) {
-        disconnect(m_defaultAudioSink, nullptr, this, nullptr);
-    }
-    m_defaultAudioSink = sink;
-    if (m_defaultAudioSink) {
-        connect(m_defaultAudioSink, &PulseAudioQt::Sink::volumeChanged, this, &SystemTray::volumeChanged);
-        connect(m_defaultAudioSink, &PulseAudioQt::Sink::mutedChanged, this, &SystemTray::volumeChanged);
-    }
-    Q_EMIT volumeChanged();
-}
-
-int SystemTray::volumePercent() const
-{
-    if (!m_defaultAudioSink) {
-        return 0;
-    }
-    return qRound(100.0 * m_defaultAudioSink->volume() / PulseAudioQt::normalVolume());
-}
-
-bool SystemTray::volumeMuted() const
-{
-    return m_defaultAudioSink && m_defaultAudioSink->isMuted();
-}
-
-bool SystemTray::volumeAvailable() const
-{
-    return m_defaultAudioSink && m_defaultAudioSink->isVolumeWritable();
-}
-
-void SystemTray::setVolumePercent(int percent)
-{
-    if (!volumeAvailable()) {
-        return;
-    }
-    const int bounded = std::clamp(percent, 0, 100);
-    m_defaultAudioSink->setVolume(qRound64(PulseAudioQt::normalVolume() * bounded / 100.0));
-}
-
-QStringList SystemTray::performancePresets() const
-{
-    return m_performancePresets;
-}
-
-QString SystemTray::activePerformancePreset() const
-{
-    return m_activePerformancePreset;
-}
-
-ScreenRefresh *SystemTray::screenRefresh() const
-{
-    return m_screenRefresh;
-}
-
-void SystemTray::refreshPerformancePresets()
-{
-    readPerformancePresets({});
-}
-
-void SystemTray::readPerformancePresets(std::function<void()> done)
-{
-    if (m_performanceHelper.isEmpty()) {
-        return;
-    }
-    auto *process = new QProcess(this);
-    connect(process, &QProcess::finished, this, [this, process, done](int exitCode, QProcess::ExitStatus status) {
-        if (status == QProcess::NormalExit && exitCode == 0) {
-            QStringList presets;
-            QString active;
-            const QString output = QString::fromUtf8(process->readAllStandardOutput());
-            const auto lines = output.split(u'\n', Qt::SkipEmptyParts);
-            for (const QString &rawLine : lines) {
-                const QString line = rawLine.trimmed();
-                const qsizetype colon = line.indexOf(u':');
-                if (colon <= 0 || line.startsWith(u"Auto:")) {
-                    continue;
-                }
-                QString name = line.left(colon).trimmed();
-                const QString activeSuffix = u" (active)"_s;
-                if (name.endsWith(activeSuffix)) {
-                    name.chop(activeSuffix.size());
-                    active = name;
-                }
-                if (!name.isEmpty() && !presets.contains(name)) {
-                    presets.append(name);
-                }
-            }
-            if (presets != m_performancePresets) {
-                m_performancePresets = presets;
-                Q_EMIT performancePresetsChanged();
-            }
-            if (active != m_activePerformancePreset) {
-                m_activePerformancePreset = active;
-                Q_EMIT activePerformancePresetChanged();
-            }
-            if (m_screenRefresh && !active.isEmpty()) {
-                m_screenRefresh->setProfile(active);
-            }
-        }
-        process->deleteLater();
-        if (done) {
-            done();
-        }
-    });
-    process->start(m_performanceHelper, {u"preset"_s, u"list"_s});
-    refreshPerformanceState();
-}
-
-QVariantMap SystemTray::performancePresetSettings() const
-{
-    return m_performancePresetSettings;
-}
-
-bool SystemTray::performanceAutoSwitch() const
-{
-    return m_performanceAutoSwitch;
-}
-
-QString SystemTray::performanceAcPreset() const
-{
-    return m_performanceAcPreset;
-}
-
-QString SystemTray::performanceBatteryPreset() const
-{
-    return m_performanceBatteryPreset;
-}
-
-int SystemTray::performanceBatteryLimit() const
-{
-    return m_performanceBatteryLimit;
-}
-
-bool SystemTray::performanceBusy() const
-{
-    return m_performanceBusy;
-}
-
-void SystemTray::setPerformanceBusy(bool busy)
-{
-    if (m_performanceBusy == busy) {
-        return;
-    }
-    m_performanceBusy = busy;
-    Q_EMIT performanceBusyChanged();
-}
-
-// Sends each request to the z13ctl-plus daemon in turn, one connection per
-// request as its own client does, and stops at the first refusal.
-void SystemTray::sendPerformanceRequests(QList<QJsonObject> requests,
-                                         std::function<void(bool ok, const QJsonObject &reply)> done)
-{
-    if (requests.isEmpty()) {
-        done(true, {});
-        return;
-    }
-    const QJsonObject request = requests.takeFirst();
-    const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation)
-        + u"/z13ctl-plus/z13ctl-plus.sock"_s;
-    auto *socket = new QLocalSocket(this);
-    auto finished = std::make_shared<bool>(false);
-    auto finish = [this, socket, finished, requests, done](bool ok, const QJsonObject &reply) {
-        if (*finished) {
-            return;
-        }
-        *finished = true;
-        socket->disconnect(this);
-        socket->deleteLater();
-        if (!ok || requests.isEmpty()) {
-            done(ok, reply);
-        } else {
-            sendPerformanceRequests(requests, done);
-        }
-    };
-    connect(socket, &QLocalSocket::connected, this, [socket, request]() {
-        socket->write(QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n');
-    });
-    connect(socket, &QLocalSocket::readyRead, this, [socket, finish]() {
-        if (!socket->canReadLine()) {
-            return;
-        }
-        const QJsonObject reply = QJsonDocument::fromJson(socket->readLine()).object();
-        finish(reply.value(u"ok"_s).toBool(), reply);
-    });
-    connect(socket, &QLocalSocket::errorOccurred, this, [finish](QLocalSocket::LocalSocketError) {
-        finish(false, {});
-    });
-    QTimer::singleShot(5000, socket, [finish]() {
-        finish(false, {});
-    });
-    socket->connectToServer(path);
-}
-
-void SystemTray::refreshPerformanceState()
-{
-    if (m_performanceHelper.isEmpty() || m_performanceBusy) {
-        return;
-    }
-    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"get-state"_s}}}, [this](bool ok, const QJsonObject &reply) {
-        if (!ok) {
-            return;
-        }
-        const QJsonObject state = reply.value(u"state"_s).toObject();
-        // Each preset as the Performance page edits it. A preset without
-        // power limits or a fan curve leaves them to the profile's firmware,
-        // so those keys are left out rather than filled with live values.
-        QVariantMap settings;
-        const QJsonObject presets = state.value(u"presets"_s).toObject();
-        for (auto it = presets.begin(); it != presets.end(); ++it) {
-            const QJsonObject preset = it.value().toObject();
-            QVariantMap entry;
-            entry.insert(u"profile"_s, preset.value(u"profile"_s).toString());
-            entry.insert(u"epp"_s, preset.value(u"cpu_power"_s).toObject().value(u"epp"_s).toString());
-            const QJsonObject tdp = preset.value(u"tdp"_s).toObject();
-            if (!tdp.isEmpty()) {
-                entry.insert(u"pl1"_s, tdp.value(u"pl1_spl"_s).toInt());
-                entry.insert(u"pl2"_s, tdp.value(u"pl2_sppt"_s).toInt());
-                entry.insert(u"pl3"_s, tdp.value(u"fppt"_s).toInt());
-            }
-            const QJsonArray points = preset.value(u"fan_curve"_s).toObject().value(u"points"_s).toArray();
-            if (points.size() == 8) {
-                QStringList curve;
-                for (qsizetype i = 0; i < points.size(); ++i) {
-                    const QJsonObject point = points.at(i).toObject();
-                    curve.append(u"%1:%2"_s.arg(point.value(u"temp"_s).toInt()).arg(point.value(u"pwm"_s).toInt()));
-                }
-                entry.insert(u"fanCurve"_s, curve.join(u','));
-            }
-            settings.insert(it.key(), entry);
-        }
-        const QJsonObject policy = state.value(u"power_policy"_s).toObject();
-        // The live threshold first; the daemon's own record when the
-        // battery could not be read.
-        int batteryLimit = state.value(u"battery_detail"_s).toObject().value(u"threshold_pct"_s).toInt();
-        if (batteryLimit <= 0) {
-            batteryLimit = state.value(u"battery_limit"_s).toInt();
-        }
-        m_performancePresetSettings = settings;
-        m_performanceAutoSwitch = policy.value(u"enabled"_s).toBool();
-        m_performanceAcPreset = policy.value(u"ac_preset"_s).toString();
-        m_performanceBatteryPreset = policy.value(u"battery_preset"_s).toString();
-        m_performanceBatteryLimit = batteryLimit;
-        Q_EMIT performanceStateChanged();
-    });
-}
-
-// The daemon can only save what is live, so a preset is changed by applying
-// it, setting only what the Performance page changed, saving it under the
-// same name and applying the preset that was active before. On any refusal
-// the earlier preset is applied again, so the machine never stays on a
-// half-edited preset. Nothing else saves a preset.
-void SystemTray::savePerformancePreset(const QString &name, const QVariantMap &settings)
-{
-    static const QStringList profiles{u"quiet"_s, u"balanced"_s, u"performance"_s};
-    static const QStringList epps{u"power"_s, u"balance_power"_s, u"balance_performance"_s, u"performance"_s};
-    if (m_performanceHelper.isEmpty() || m_performanceBusy || !m_performancePresets.contains(name)) {
-        Q_EMIT performancePresetSaved(name, false, QString());
-        return;
-    }
-
-    QList<QJsonObject> changes;
-    if (settings.contains(u"profile"_s)) {
-        const QString profile = settings.value(u"profile"_s).toString();
-        if (!profiles.contains(profile)) {
-            Q_EMIT performancePresetSaved(name, false, QString());
-            return;
-        }
-        changes.append(QJsonObject{{u"cmd"_s, u"profile"_s}, {u"set"_s, profile}});
-    }
-    if (settings.value(u"tdpReset"_s).toBool()) {
-        changes.append(QJsonObject{{u"cmd"_s, u"tdp-reset"_s}});
-    } else if (settings.contains(u"pl1"_s)) {
-        const int pl1 = settings.value(u"pl1"_s).toInt();
-        const int pl2 = settings.value(u"pl2"_s).toInt();
-        const int pl3 = settings.value(u"pl3"_s).toInt();
-        // Sustained power stays where the helper allows it without force;
-        // the boosts within the hardware's maximum, as the helper checks.
-        if (pl1 < 5 || pl1 > 75 || pl2 < 5 || pl2 > 93 || pl3 < 5 || pl3 > 93) {
-            Q_EMIT performancePresetSaved(name, false, QString());
-            return;
-        }
-        changes.append(QJsonObject{{u"cmd"_s, u"tdp"_s},
-                                   {u"pl1"_s, QString::number(pl1)},
-                                   {u"pl2"_s, QString::number(pl2)},
-                                   {u"pl3"_s, QString::number(pl3)}});
-    }
-    if (settings.value(u"fanReset"_s).toBool()) {
-        changes.append(QJsonObject{{u"cmd"_s, u"fancurve-reset"_s}});
-    } else if (settings.contains(u"fanCurve"_s)) {
-        // Eight temp:pwm points, temperatures rising and speeds never falling.
-        const QStringList points = settings.value(u"fanCurve"_s).toString().split(u',');
-        bool valid = points.size() == 8;
-        int lastTemp = -1;
-        int lastPwm = 0;
-        for (const QString &point : points) {
-            const QStringList parts = point.split(u':');
-            bool tempOk = false;
-            bool pwmOk = false;
-            const int temp = parts.value(0).toInt(&tempOk);
-            const int pwm = parts.value(1).toInt(&pwmOk);
-            if (parts.size() != 2 || !tempOk || !pwmOk || temp <= lastTemp || temp > 120 || pwm < lastPwm || pwm > 255) {
-                valid = false;
-                break;
-            }
-            lastTemp = temp;
-            lastPwm = pwm;
-        }
-        if (!valid) {
-            Q_EMIT performancePresetSaved(name, false, QString());
-            return;
-        }
-        changes.append(QJsonObject{{u"cmd"_s, u"fancurve"_s}, {u"set"_s, points.join(u',')}});
-    }
-    if (settings.contains(u"epp"_s)) {
-        const QString epp = settings.value(u"epp"_s).toString();
-        if (!epps.contains(epp)) {
-            Q_EMIT performancePresetSaved(name, false, QString());
-            return;
-        }
-        changes.append(QJsonObject{{u"cmd"_s, u"cpu-epp"_s}, {u"set"_s, epp}});
-    }
-    if (changes.isEmpty()) {
-        Q_EMIT performancePresetSaved(name, true, QString());
-        return;
-    }
-
-    // With no preset active there is nothing to return to, so the edited
-    // preset stays applied.
-    const QString restore = m_activePerformancePreset.isEmpty() ? name : m_activePerformancePreset;
-    const QJsonObject restoreRequest{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, restore}};
-    QList<QJsonObject> requests{QJsonObject{{u"cmd"_s, u"preset-apply"_s}, {u"name"_s, name}}};
-    requests.append(changes);
-    requests.append(QJsonObject{{u"cmd"_s, u"preset-save"_s}, {u"name"_s, name}});
-    setPerformanceBusy(true);
-    sendPerformanceRequests(requests, [this, name, restoreRequest](bool saved, const QJsonObject &reply) {
-        const QString detail = saved ? QString() : reply.value(u"error"_s).toString();
-        sendPerformanceRequests({restoreRequest}, [this, name, saved, detail](bool, const QJsonObject &) {
-            setPerformanceBusy(false);
-            Q_EMIT performancePresetSaved(name, saved, detail);
-            refreshPerformancePresets();
-        });
-    });
-}
-
-void SystemTray::setPerformanceBatteryLimit(int percent)
-{
-    // The helper accepts 40 to 100 percent.
-    if (m_performanceHelper.isEmpty() || m_performanceBusy || percent < 40 || percent > 100) {
-        return;
-    }
-    setPerformanceBusy(true);
-    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"batterylimit"_s}, {u"set"_s, QString::number(percent)}}},
-                            [this](bool, const QJsonObject &) {
-                                setPerformanceBusy(false);
-                                refreshPerformanceState();
-                            });
-}
-
-void SystemTray::setPerformancePowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset)
-{
-    if (m_performanceHelper.isEmpty() || m_performanceBusy
-        || (!acPreset.isEmpty() && !m_performancePresets.contains(acPreset))
-        || (!batteryPreset.isEmpty() && !m_performancePresets.contains(batteryPreset))) {
-        return;
-    }
-    setPerformanceBusy(true);
-    sendPerformanceRequests({QJsonObject{{u"cmd"_s, u"power-policy-set"_s},
-                              {u"enabled"_s, enabled},
-                              {u"ac_preset"_s, acPreset},
-                              {u"battery_preset"_s, batteryPreset}}},
-                            [this](bool, const QJsonObject &) {
-                                setPerformanceBusy(false);
-                                refreshPerformancePresets();
-                            });
-}
-
-void SystemTray::applyPerformancePreset(const QString &name)
-{
-    if (m_performanceHelper.isEmpty() || m_performanceBusy || name.isEmpty()
-        || (!m_performancePresets.isEmpty() && !m_performancePresets.contains(name))) {
-        return;
-    }
-    auto *process = new QProcess(this);
-    connect(process, &QProcess::finished, this, [this, process](int, QProcess::ExitStatus) {
-        process->deleteLater();
-        QTimer::singleShot(300, this, &SystemTray::refreshPerformancePresets);
-    });
-    process->start(m_performanceHelper, {u"preset"_s, u"apply"_s, name});
 }
 
 void SystemTray::initSettingsAndRegistry()
@@ -1445,6 +988,21 @@ void SystemTray::scroll(const QString &service, int delta, const QString &direct
 CalendarFeeds *SystemTray::calendarFeeds() const
 {
     return m_calendarFeeds;
+}
+
+PerformanceController *SystemTray::performance() const
+{
+    return m_performance;
+}
+
+AudioStatus *SystemTray::audio() const
+{
+    return m_audio;
+}
+
+SessionActions *SystemTray::session() const
+{
+    return m_session;
 }
 
 K_PLUGIN_CLASS_WITH_JSON(SystemTray, "metadata.json")

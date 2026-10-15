@@ -107,7 +107,8 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(co.goodinput.temperance
-    CPP_SOURCES src/systemtray.cpp src/calendarfeeds.cpp src/screenrefresh.cpp
+    CPP_SOURCES src/systemtray.cpp src/audiostatus.cpp src/calendarfeeds.cpp
+        src/performancecontroller.cpp src/screenrefresh.cpp src/sessionactions.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
@@ -136,6 +137,8 @@ plasma_add_applet(co.goodinput.temperance
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
+        qml/TodayEvents.qml
+        qml/WeatherReading.qml
         qml/config.qml
         qml/main.qml
     RESOURCES

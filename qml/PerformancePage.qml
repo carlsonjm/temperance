@@ -32,12 +32,12 @@ Item {
     readonly property color accentTextColor: (accentColor.r * 0.299 + accentColor.g * 0.587 + accentColor.b * 0.114) > 0.58
         ? "#102729" : "#FFFFFF"
 
-    readonly property var presets: Plasmoid.performancePresets
-    readonly property string activePreset: Plasmoid.activePerformancePreset
-    readonly property bool busy: Plasmoid.performanceBusy
-    readonly property var refreshRates: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rates : []
-    readonly property int refreshRate: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.rate : 0
-    readonly property bool refreshHeld: Plasmoid.screenRefresh ? Plasmoid.screenRefresh.held : false
+    readonly property var presets: Plasmoid.performance.presets
+    readonly property string activePreset: Plasmoid.performance.activePreset
+    readonly property bool busy: Plasmoid.performance.busy
+    readonly property var refreshRates: Plasmoid.performance.screenRefresh ? Plasmoid.performance.screenRefresh.rates : []
+    readonly property int refreshRate: Plasmoid.performance.screenRefresh ? Plasmoid.performance.screenRefresh.rate : 0
+    readonly property bool refreshHeld: Plasmoid.performance.screenRefresh ? Plasmoid.performance.screenRefresh.held : false
     readonly property int slowestRate: refreshRates.length > 0 ? refreshRates[0] : 0
     readonly property int fastestRate: refreshRates.length > 0 ? refreshRates[refreshRates.length - 1] : 0
 
@@ -117,7 +117,7 @@ Item {
     }
 
     function loadEditor(name) {
-        const settings = (name && Plasmoid.performancePresetSettings[name]) || {};
+        const settings = (name && Plasmoid.performance.presetSettings[name]) || {};
         editName = name || "";
         savedProfile = settings.profile || "";
         stagedProfile = savedProfile;
@@ -213,12 +213,12 @@ Item {
         }
         saveError = "";
         saving = true;
-        Plasmoid.savePerformancePreset(editName, settings);
+        Plasmoid.performance.savePreset(editName, settings);
     }
 
     Connections {
-        target: Plasmoid
-        function onPerformancePresetSaved(name, ok, detail) {
+        target: Plasmoid.performance
+        function onPresetSaved(name, ok, detail) {
             if (!page.saving) return;
             page.saving = false;
             if (ok) {
@@ -236,11 +236,11 @@ Item {
                     : i18n("Couldn't save to %1, which is unchanged.", name);
             }
         }
-        function onPerformanceStateChanged() {
+        function onSettingsChanged() {
             page.chargeDraft = 0;
             if (!page.dirty && !page.saving) page.loadEditor(page.editName);
         }
-        function onPerformancePresetsChanged() {
+        function onPresetsChanged() {
             if (page.presets.indexOf(page.editName) < 0) page.open();
         }
     }
@@ -405,7 +405,7 @@ Item {
                     Accessible.name: i18n("Profile")
                     onActivated: index => {
                         const name = page.presets[index];
-                        if (name !== page.activePreset) Plasmoid.applyPerformancePreset(name);
+                        if (name !== page.activePreset) Plasmoid.performance.applyPreset(name);
                     }
                     // A refused apply leaves the profile in use showing.
                     Connections {
@@ -437,7 +437,7 @@ Item {
             }
             AccentSlider {
                 id: chargeSlider
-                readonly property int stored: Plasmoid.performanceBatteryLimit > 0 ? Plasmoid.performanceBatteryLimit : 100
+                readonly property int stored: Plasmoid.performance.batteryLimit > 0 ? Plasmoid.performance.batteryLimit : 100
                 Layout.fillWidth: true
                 from: 40
                 to: 100
@@ -447,7 +447,7 @@ Item {
                 Accessible.name: i18n("Charge limit")
                 function commit() {
                     if (page.chargeDraft > 0 && page.chargeDraft !== chargeSlider.stored)
-                        Plasmoid.setPerformanceBatteryLimit(page.chargeDraft);
+                        Plasmoid.performance.setBatteryLimit(page.chargeDraft);
                 }
                 onMoved: {
                     page.chargeDraft = Math.round(chargeSlider.value);
@@ -486,7 +486,7 @@ Item {
                 PlasmaComponents.Switch {
                     checked: page.refreshRate === page.fastestRate
                     Accessible.name: i18n("%1 Hz refresh rate", page.fastestRate)
-                    onToggled: Plasmoid.screenRefresh.choose(checked ? page.fastestRate : page.slowestRate)
+                    onToggled: Plasmoid.performance.screenRefresh.choose(checked ? page.fastestRate : page.slowestRate)
                 }
             }
             DetailLabel {
@@ -505,10 +505,10 @@ Item {
                     wrapMode: Text.Wrap
                 }
                 PlasmaComponents.Switch {
-                    checked: Plasmoid.performanceAutoSwitch
+                    checked: Plasmoid.performance.autoSwitch
                     enabled: !page.busy
                     Accessible.name: i18n("Switch when plugged in or unplugged")
-                    onToggled: Plasmoid.setPerformancePowerPolicy(checked, Plasmoid.performanceAcPreset, Plasmoid.performanceBatteryPreset)
+                    onToggled: Plasmoid.performance.setPowerPolicy(checked, Plasmoid.performance.acPreset, Plasmoid.performance.batteryPreset)
                 }
             }
             Repeater {
@@ -520,7 +520,7 @@ Item {
                     id: sourceRow
                     required property var modelData
                     Layout.fillWidth: true
-                    enabled: Plasmoid.performanceAutoSwitch && !page.busy
+                    enabled: Plasmoid.performance.autoSwitch && !page.busy
                     PlasmaComponents.Label {
                         Layout.fillWidth: true
                         text: sourceRow.modelData.label
@@ -529,14 +529,14 @@ Item {
                         Layout.preferredWidth: Kirigami.Units.gridUnit * 9
                         model: page.presets
                         currentIndex: page.presets.indexOf(sourceRow.modelData.battery
-                            ? Plasmoid.performanceBatteryPreset : Plasmoid.performanceAcPreset)
+                            ? Plasmoid.performance.batteryPreset : Plasmoid.performance.acPreset)
                         Accessible.name: sourceRow.modelData.label
                         onActivated: index => {
                             const name = page.presets[index];
                             if (sourceRow.modelData.battery) {
-                                Plasmoid.setPerformancePowerPolicy(true, Plasmoid.performanceAcPreset, name);
+                                Plasmoid.performance.setPowerPolicy(true, Plasmoid.performance.acPreset, name);
                             } else {
-                                Plasmoid.setPerformancePowerPolicy(true, name, Plasmoid.performanceBatteryPreset);
+                                Plasmoid.performance.setPowerPolicy(true, name, Plasmoid.performance.batteryPreset);
                             }
                         }
                     }

@@ -57,7 +57,7 @@ Item {
     function sessionShown(id) {
         const config = Plasmoid.configuration;
         switch (id) {
-        case "sleep": return config.showSleep && Plasmoid.canSleep();
+        case "sleep": return config.showSleep && Plasmoid.session.canSleep();
         case "lock": return config.showLock;
         case "restart": return config.showRestart;
         case "logout": return config.showLogout;
@@ -159,7 +159,7 @@ Item {
     function refreshControlCenter() {
         if (systemTrayState.expanded
                 && (systemTrayState.page === "control" || systemTrayState.page === "performance"))
-            Plasmoid.refreshPerformancePresets();
+            Plasmoid.performance.refresh();
         if (popup.performanceShown && systemTrayState.expanded) performancePage.open();
     }
 
@@ -665,8 +665,8 @@ Item {
             visible: !systemTrayState.activeApplet && systemTrayState.page === "control"
             activateAppletById: itemId => root.activateAppletById(itemId)
             controlCenterModel: root.controlCenterModel
-            performancePresets: Plasmoid.performancePresets
-            activePerformancePreset: Plasmoid.activePerformancePreset
+            performancePresets: Plasmoid.performance.presets
+            activePerformancePreset: Plasmoid.performance.activePreset
             openPerformancePage: () => { systemTrayState.page = "performance"; }
             accentColor: root.accentColor
         }

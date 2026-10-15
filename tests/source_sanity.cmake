@@ -197,7 +197,7 @@ endif()
 string(FIND "${systemtray_cpp}" "if (m_needsUpdate) return initNeedingUpdate();" refuse_position)
 string(FIND "${systemtray_cpp}" "NotificationManager::Server::self().init();" server_position)
 string(FIND "${systemtray_cpp}" "to Plasma until a rebuild\";\n        return;" refuse_ctor_position)
-string(FIND "${systemtray_cpp}" "new SessionManagement(this)" session_position)
+string(FIND "${systemtray_cpp}" "m_session->start();" session_position)
 if(refuse_position LESS 0 OR server_position LESS refuse_position
    OR refuse_ctor_position LESS 0 OR session_position LESS refuse_ctor_position
    OR main_qml MATCHES "showNotifications: true"
