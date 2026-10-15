@@ -1220,8 +1220,8 @@ private Q_SLOTS:
       QVERIFY(!state->property("expanded").toBool());
     }
 
-    // A mouse still opens the one control it clicks, and the tooltip it
-    // rests on.
+    // A mouse still opens the one control it clicks, and resting on the
+    // bell raises no name over the bar: the page it opens names itself.
     QTest::mouseClick(&window, Qt::LeftButton, {}, centreOf(trayItem));
     QTRY_VERIFY(state->property("expanded").toBool());
     QCOMPARE(state->property("page").toString(), QStringLiteral("tray"));
@@ -1239,7 +1239,8 @@ private Q_SLOTS:
     QTest::qWait(300);
     QTest::mouseMove(&window, centreOf(bellButton) + QPoint(0, 1));
     QTest::mouseMove(&window, centreOf(bellButton));
-    QTRY_VERIFY_WITH_TIMEOUT(visibleToolTips() > 0, 3000);
+    QTest::qWait(1500);
+    QCOMPARE(visibleToolTips(), 0);
     QTest::mouseMove(&window, {0, 0});
 
     // Without the bar the panel's own neighbours decide again.

@@ -1903,16 +1903,16 @@ ContainmentItem {
                             anchors.bottom: parent.bottom
                             objectName: "temperance-review-notifications"
                             z: 30
-                            // The slim row's bell says what its chip counts.
+                            // The slim row's bell says what its chip counts, to
+                            // a screen reader.
                             text: !root.slim ? i18n("Review all notifications")
                                 : root.unreadCount > 0
                                 ? i18ncp("@info:tooltip", "Notifications, %1 unread", "Notifications, %1 unread", root.unreadCount)
                                 : i18nc("@info:tooltip", "Notifications")
                             onClicked: root.openNotifications()
-                            PlasmaComponents.ToolTip {
-                                text: reviewNotificationsButton.text
-                                visible: root.slim && reviewNotificationsButton.hovered
-                            }
+                            // No tooltip in the slim row: the page it opens
+                            // names itself, and a name over the bar covers
+                            // the controls beside it.
                         }
 
                         Item {

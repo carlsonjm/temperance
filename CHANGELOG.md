@@ -15,7 +15,8 @@ This file records user-visible changes.
   from them, the icons grow out of the bar finger-sized in a strip below it:
   slide to one, which lifts and shows its name, and let go to open its page.
   Let go back in the bar or past either end and nothing opens. A mouse,
-  touchpad or pen still uses each icon, and a finger raises no tooltip.
+  touchpad or pen still uses each icon. The bell no longer shows its name
+  over the bar: the page it opens names itself.
 - A bar that paints its own clock can say on the session bus how much room it
   leaves beside it, and the Status Bar takes that width. Without such a bar it
   measures its neighbours as before.

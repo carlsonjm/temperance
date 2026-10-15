@@ -53,8 +53,9 @@ name shows beneath it, and its mark in the bar lifts too. Nothing opens while
 the finger moves. Lifted over a control, its page opens, staying open if it was
 already; lifted back in the bar or past either end of the strip, nothing opens.
 Either way the strip goes back into the bar at Plasma's animation speed. The
-strip follows a light or dark style as the pages do, and no tooltip rises from
-a finger. A mouse, touchpad or pen still uses each control by itself.
+strip follows a light or dark style as the pages do. A mouse, touchpad or pen
+still uses each control by itself, and no name rises over the slim row from
+the bell: the page it opens names itself.
 
 ## Edges
 
