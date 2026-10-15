@@ -10,8 +10,9 @@ import org.kde.plasma.components as PlasmaComponents
 
 // The slim row's status controls drawn finger-sized, in a strip that grows
 // out of the bar while a finger pulls down from it. The bar is a few
-// millimetres tall, so the finger chooses here instead: the control under it
-// lifts, its neighbours a little less, and its name shows beneath it.
+// millimetres tall, so the finger chooses here instead: a tile marks the
+// control under it and its name shows beneath it. The controls themselves
+// keep still and the same size, so the strip reads calmly under the finger.
 //
 // The strip only draws. The finger stays with the panel that took its press,
 // and the panel says how far the strip has grown and where the finger is.
@@ -27,22 +28,16 @@ Item {
     property var entries: []
     // How far the strip has grown out of the bar, 0 to 1.
     property real growth: 0
-    // The finger's x in the strip's coordinates, and the entry under it.
-    property real fingerX: -1
+    // The entry under the finger.
     property int selected: -1
     // Along the bottom of the screen the strip grows up out of the bar.
     property bool upward: false
 
     // A finger is about 16 mm wide, 78 logical pixels on the tablet the row
     // is drawn for, so each control is that far from the next. Its mark is
-    // about half that, as in the bar, leaving room to lift without touching
-    // its neighbour.
+    // about half that, as in the bar.
     readonly property int pitch: 78
     readonly property int iconSize: 40
-    // The control under the finger is drawn this much larger; its neighbours
-    // a share of it that falls away over one and a half controls.
-    readonly property real lift: 0.3
-    readonly property real reach: 1.5
     readonly property int padding: 8
     readonly property int iconZone: 60
     readonly property int labelHeight: 18
@@ -77,14 +72,6 @@ Item {
             if (x < right || i === columnWidths.length - 1) return i;
         }
         return -1;
-    }
-
-    // How much of the lift an entry takes, by its distance from the finger,
-    // as a dock magnifies the icons near the pointer.
-    function liftAt(index) {
-        if (selected < 0 || index >= restCentres.length) return 0;
-        const distance = Math.abs(fingerX - restCentres[index]) / pitch;
-        return distance >= reach ? 0 : (1 + Math.cos(Math.PI * distance / reach)) / 2;
     }
 
     function mix(from, to, amount) {
@@ -168,17 +155,12 @@ Item {
             readonly property real barScale: key === "calendar" ? 13 / 22
                 : key === "battery" && !strip.status.batteryOnAC ? 12 / 22
                 : strip.barIconSize / strip.iconSize
-            property real liftScale: 1 + strip.lift * strip.liftAt(index)
             objectName: "temperance-magnifier-" + key
             width: strip.columnWidths[index] ?? strip.pitch
             height: strip.iconZone
             x: strip.mix(modelData.barX, strip.restCentres[index] ?? 0, strip.eased) - width / 2
             y: strip.mix(modelData.barY, strip.iconCentreY, strip.eased) - height / 2
-            scale: strip.mix(barScale, 1, strip.eased) * strip.mix(1, liftScale, strip.eased)
-            Behavior on liftScale {
-                enabled: strip.status.motionEnabled
-                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
-            }
+            scale: strip.mix(barScale, 1, strip.eased)
 
             // The bell, or with something unread its chip; slashed under
             // do not disturb.

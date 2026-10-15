@@ -77,9 +77,6 @@ ContainmentItem {
     // threshold is past a tap's wobble, Qt's 10 px, and two thirds of a
     // 24 px bar, so a press at the bar's top is pulled out of the bar.
     readonly property int statusPullThreshold: 16
-    // How much further the finger pulls before the strip is fully grown:
-    // about where the strip's own controls are.
-    readonly property int magnifierGrowDistance: 48
     // The gap between the bar and the strip.
     readonly property int magnifierGap: 4
     // None, pressed (a tap so far), or pulled (choosing in the strip).
@@ -1160,6 +1157,26 @@ ContainmentItem {
         return null;
     }
 
+    // The control nearest a finger's press, a press between two taking the
+    // closer: the strip grows out with that one under the finger.
+    function statusControlNearest(sceneX) {
+        if (vertical) return null;
+        const controls = [reviewNotificationsButton, weatherStatusButton, controlCenterButton,
+            trayButton, batteryStatusButton, statusClock];
+        let nearest = null;
+        let best = Infinity;
+        for (const control of controls) {
+            if (!control.visible) continue;
+            const x = control.mapFromItem(null, sceneX, 0).x;
+            const distance = x < 0 ? -x : x >= control.width ? x - control.width : 0;
+            if (distance < best) {
+                best = distance;
+                nearest = control;
+            }
+        }
+        return nearest;
+    }
+
     // The control a touch outside the row's own surface reaches. Inside the
     // surface the controls answer for themselves: a pointer's press reaches
     // this handler as well as the control's, and acting on both opened a page
@@ -1192,6 +1209,14 @@ ContainmentItem {
         + (notificationControls.visible ? notificationRail.x + notificationControls.x
             : weatherStatusButton.visible ? weatherStatusButton.x : controlCenterButton.x)
 
+    // The part of the panel a finger uses for its controls, in the panel's
+    // own coordinates: the slim row's run of controls, else the whole panel.
+    // A bar holding the panel along the top of the screen keeps this part
+    // for the controls and leaves the rest, the ticker's room, to a pull
+    // that means the workspaces.
+    readonly property rect fingerControlsArea: statusTouch.visible
+        ? Qt.rect(statusTouch.x, 0, statusTouch.width, height) : Qt.rect(0, 0, width, height)
+
     // The slim row's status controls, for a finger. It takes the finger's
     // press, so no control under it also acts on it or shows its tooltip;
     // a mouse, touchpad or pen passes through to the controls themselves.
@@ -1222,6 +1247,7 @@ ContainmentItem {
     function beginStatusTouch(point) {
         lastTouchAt = Date.now();
         magnifierShrink.stop();
+        magnifierSettle.stop();
         magnifierShown = false;
         magnifierGrowth = 0;
         magnifierSelected = -1;
@@ -1237,14 +1263,14 @@ ContainmentItem {
             if (statusPull < statusPullThreshold) return;
             openMagnifier();
         }
-        magnifierGrowth = Math.max(0, Math.min(1,
-            (statusPull - statusPullThreshold) / magnifierGrowDistance));
-        magnifierFingerX = root.mapFromItem(null, point.sceneX, 0).x - magnifierAnchor.x;
-        // Back in the bar the finger chooses nothing; lifted there, it
+        // Out of the bar the strip grows to its full size at once, however
+        // far the finger has gone, so the finger chooses from the start;
+        // back in the bar it goes back, chooses nothing, and lifted there
         // cancels.
-        magnifierSelected = statusPull >= statusPullThreshold
-            ? magnifier.indexAt(magnifierFingerX) : -1;
-        reachedControl = magnifierSelected >= 0 ? magnifierEntries[magnifierSelected].control : null;
+        const out = statusPull >= statusPullThreshold;
+        settleMagnifier(out ? 1 : 0);
+        magnifierFingerX = root.mapFromItem(null, point.sceneX, 0).x - magnifierAnchor.x;
+        magnifierSelected = out ? magnifier.indexAt(magnifierFingerX) : -1;
     }
 
     function endStatusTouch(point) {
@@ -1304,7 +1330,7 @@ ContainmentItem {
             barX: 0, barY: 0 }));
         magnifierEntries = entries;
         const stripWidth = magnifier.width;
-        const pressed = statusControlAt(statusTouchStart.x);
+        const pressed = statusControlNearest(statusTouchStart.x);
         const pressedIndex = entries.findIndex(entry => entry.control === pressed);
         const pressX = root.mapFromItem(null, statusTouchStart.x, 0).x;
         let left = pressedIndex >= 0 ? pressX - magnifier.restCentres[pressedIndex]
@@ -1324,8 +1350,30 @@ ContainmentItem {
         statusTouchPhase = 2;
     }
 
+    // The strip grows or goes back while the finger is still down, quickly.
+    function settleMagnifier(to) {
+        if (magnifierSettle.running ? magnifierSettle.to === to : magnifierGrowth === to) return;
+        magnifierSettle.stop();
+        if (!motionEnabled) {
+            magnifierGrowth = to;
+            return;
+        }
+        magnifierSettle.from = magnifierGrowth;
+        magnifierSettle.to = to;
+        magnifierSettle.start();
+    }
+
+    NumberAnimation {
+        id: magnifierSettle
+        target: root
+        property: "magnifierGrowth"
+        duration: Kirigami.Units.shortDuration
+        easing.type: Easing.OutCubic
+    }
+
     // The strip goes back into the bar at Plasma's animation speed.
     function closeMagnifier() {
+        magnifierSettle.stop();
         magnifierShrink.from = magnifierGrowth;
         magnifierShrink.restart();
     }
@@ -1370,7 +1418,6 @@ ContainmentItem {
             status: root
             entries: root.magnifierEntries
             growth: root.magnifierGrowth
-            fingerX: root.magnifierFingerX
             selected: root.magnifierSelected
             upward: root.magnifierUpward
         }

@@ -44,18 +44,21 @@ status controls, from the bell to the row's end, answer a finger as one. A tap
 anywhere on them opens Control Center, and closes it when it is open there.
 Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
 24 px bar, the controls grow out of the bar into a strip of their own beside it,
-following the finger until, 48 px further, the strip is whole. There each
-control is 78 px from the next, about 16 mm on the Z13, with its mark at 40 px,
-and the strip is placed so the control pressed comes out under the finger, kept
-on the screen. The finger chooses by where it is over the strip, not over the
-bar: that control lifts most and its neighbours less, as a dock magnifies, its
-name shows beneath it, and its mark in the bar lifts too. Nothing opens while
-the finger moves. Lifted over a control, its page opens, staying open if it was
+whole at once, however far the finger has gone. There each control is 78 px
+from the next, about 16 mm on the Z13, with its mark at 40 px, and the strip is
+placed so the control pressed, or the nearer one to a press between two, comes
+out under the finger, kept on the screen. The finger chooses by where it is
+over the strip, not over the bar: a tile marks that control and its name shows
+beneath it, while the controls keep still and the same size, in the strip and
+in the bar. Nothing opens while the finger moves. Lifted over a control, its page opens, staying open if it was
 already; lifted back in the bar or past either end of the strip, nothing opens.
 Either way the strip goes back into the bar at Plasma's animation speed. The
 strip follows a light or dark style as the pages do. A mouse, touchpad or pen
 still uses each control by itself, and no name rises over the slim row from
-the bell: the page it opens names itself.
+the bell: the page it opens names itself. The panel gives that run of controls
+as `fingerControlsArea`, in its own coordinates, so a bar holding it along the
+top of the screen keeps only the controls from a pull meant for the
+workspaces and leaves the ticker's room to it.
 
 ## Edges
 

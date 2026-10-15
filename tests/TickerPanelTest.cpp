@@ -1062,8 +1062,9 @@ private Q_SLOTS:
       }
     }
 
-    // Pulled down from the bar, the controls grow out of it finger-sized,
-    // following the pull, in a window of their own below the bar.
+    // Pulled down from the bar, the controls grow out of it finger-sized, in
+    // a window of their own below the bar: fully, as soon as the pull leaves
+    // the bar, however far the finger has gone.
     QWindow *magnifierWindow = nullptr;
     for (auto *candidate : rightFace->findChildren<QObject *>())
       if (candidate->objectName() == QStringLiteral("temperance-magnifier-window"))
@@ -1090,8 +1091,7 @@ private Q_SLOTS:
     QVERIFY(!magnifierWindow->isVisible());
     pullTo(trayAt + QPoint(0, qRound(threshold) - 4), trayAt + QPoint(0, qRound(threshold) + 12));
     QTRY_VERIFY(magnifierWindow->isVisible());
-    const qreal partly = rightFace->property("magnifierGrowth").toReal();
-    QVERIFY(partly > 0 && partly < 1);
+    QTRY_COMPARE(rightFace->property("magnifierGrowth").toReal(), 1.);
     pullTo(trayAt + QPoint(0, qRound(threshold) + 12), trayAt + QPoint(0, 90));
     QCOMPARE(rightFace->property("magnifierGrowth").toReal(), 1.);
     // Grown, it stays put however far the finger goes.
@@ -1111,17 +1111,26 @@ private Q_SLOTS:
     auto *bellFace = findItem(strip, QStringLiteral("temperance-magnifier-notifications"));
     auto *nameLabel = findItem(strip, QStringLiteral("temperance-magnifier-label"));
     QVERIFY(trayFace && controlFace && bellFace && nameLabel);
-    // The pressed control grew out under the finger and is chosen: it lifts
-    // in the bar and in the strip, more than its neighbour, with its name.
+    // The pressed control grew out under the finger and is chosen: its tile
+    // sits behind it and its name shows. Nothing grows or lifts to say so,
+    // in the strip or in the bar.
     const auto selectedKey = [&] {
       const int index = rightFace->property("magnifierSelected").toInt();
       const auto entries = rightFace->property("magnifierEntries").toList();
       return index >= 0 && index < entries.size()
           ? entries.at(index).toMap().value(QStringLiteral("key")).toString() : QString();
     };
+    auto *selection = findItem(strip, QStringLiteral("temperance-magnifier-selection"));
+    QVERIFY(selection);
+    const auto stillAndMarked = [&](QQuickItem *chosen) {
+      for (auto *face : {trayFace, controlFace, bellFace})
+        if (face->scale() != 1.) return false;
+      const qreal tileCentre = selection->x() + selection->width() / 2;
+      return selection->isVisible() && qAbs(tileCentre - (chosen->x() + chosen->width() / 2)) < 1;
+    };
     QCOMPARE(selectedKey(), QStringLiteral("tray"));
-    QCOMPARE(rightFace->property("reachedControl").value<QObject *>(), trayItem);
-    QTRY_VERIFY(trayFace->scale() > controlFace->scale() + 0.05);
+    QVERIFY(!rightFace->property("reachedControl").value<QObject *>());
+    QTRY_VERIFY(stillAndMarked(trayFace));
     QTRY_VERIFY(nameLabel->opacity() > 0.99);
     QCOMPARE(nameLabel->property("text").toString(), QStringLiteral("System Tray"));
     // No page opens while the finger chooses.
@@ -1155,8 +1164,8 @@ private Q_SLOTS:
     pullTo(at, overStrip(1, at.y()));
     at = overStrip(1, at.y());
     QCOMPARE(selectedKey(), QStringLiteral("control"));
-    QCOMPARE(rightFace->property("reachedControl").value<QObject *>(), controlItem);
-    QTRY_VERIFY(controlFace->scale() > trayFace->scale() + 0.05);
+    QVERIFY(!rightFace->property("reachedControl").value<QObject *>());
+    QTRY_VERIFY(stillAndMarked(controlFace));
     QCOMPARE(nameLabel->property("text").toString(), QStringLiteral("Control Center"));
     pullTo(at, overStrip(0, at.y()));
     at = overStrip(0, at.y());
@@ -1200,7 +1209,7 @@ private Q_SLOTS:
     pullTo(trayAt, trayAt + QPoint(0, 90));
     QTRY_VERIFY(magnifierWindow->isVisible());
     pullTo(trayAt + QPoint(0, 90), trayAt + QPoint(-30, 2));
-    QCOMPARE(rightFace->property("magnifierGrowth").toReal(), 0.);
+    QTRY_COMPARE(rightFace->property("magnifierGrowth").toReal(), 0.);
     QCOMPARE(rightFace->property("magnifierSelected").toInt(), -1);
     QTest::touchEvent(&window, finger).release(0, trayAt + QPoint(-30, 2));
     QTRY_VERIFY(!magnifierWindow->isVisible());
@@ -1218,6 +1227,36 @@ private Q_SLOTS:
       QTRY_VERIFY(!magnifierWindow->isVisible());
       QTest::qWait(300);
       QVERIFY(!state->property("expanded").toBool());
+    }
+
+    // Pressed between two controls, the strip grows out with the nearer one
+    // under the finger, chosen.
+    {
+      const qreal controlRight = controlItem->mapToScene({controlItem->width(), 0}).x();
+      const qreal trayLeft = trayItem->mapToScene({0, 0}).x();
+      const QPoint between(qRound(trayLeft - qMax(0., trayLeft - controlRight) / 4), trayAt.y());
+      qInfo() << "T1_BETWEEN" << controlRight << trayLeft << between;
+      QTest::touchEvent(&window, finger).press(0, between);
+      pullTo(between, between + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      QCOMPARE(selectedKey(), QStringLiteral("tray"));
+      pullTo(between + QPoint(0, 90), between + QPoint(0, 2));
+      QTest::touchEvent(&window, finger).release(0, between + QPoint(0, 2));
+      QTRY_VERIFY(!magnifierWindow->isVisible());
+      QTest::qWait(300);
+      QVERIFY(!state->property("expanded").toBool());
+    }
+
+    // The panel says which part of it the finger's controls take: from the
+    // bell to the row's end, not the ticker's room before it.
+    {
+      const QRectF area = rightFace->property("fingerControlsArea").toRectF();
+      const qreal bellLeft = rightFace->mapFromItem(bellButton, QPointF(0, 0)).x();
+      qInfo() << "T1_FINGER_AREA" << area << bellLeft << rightFace->width();
+      QVERIFY(qAbs(area.left() - bellLeft) <= 1);
+      QVERIFY(area.left() > 0);
+      QVERIFY(area.right() <= rightFace->width() + 1);
+      QCOMPARE(area.height(), rightFace->height());
     }
 
     // A mouse still opens the one control it clicks, and resting on the
