@@ -16,6 +16,8 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QFileInfo>
+#include <QImage>
+#include <QPainter>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <functional>
@@ -756,7 +758,8 @@ private Q_SLOTS:
 
   // A 24 px panel along the top of the screen, with its own clock: the slim
   // row fits the panel's height, the ticker still reads, checks off and
-  // opens the history, and the pages open below the bar.
+  // opens the history, the pages open below the bar, and a finger chooses
+  // among the status controls in a finger-sized strip pulled out of it.
   void slimTopBar() {
     // The bar's clock is its own painting, so it publishes the room beside it.
     auto hostBus = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
@@ -1001,6 +1004,300 @@ private Q_SLOTS:
     NotificationManager::Server::self().setInhibited(false);
     QTRY_VERIFY(showsChip(QStringLiteral("1")));
     QVERIFY(!bell->property("slashed").toBool());
+    // A finger on the status controls. They are too small to press one by
+    // one, so the finger's press is taken for all of them, and a tap opens
+    // the page of the control nearest it, as a click would: another
+    // control's page in its place, or closed by a second tap on it.
+    state->setProperty("expanded", false);
+    QTRY_VERIFY(!popup->isVisible());
+    auto *statusTouch = findItem(rightFace, QStringLiteral("temperance-status-touch"));
+    auto *trayItem = findItem(rightFace, QStringLiteral("temperance-tray"));
+    auto *controlItem = findItem(rightFace, QStringLiteral("temperance-control-center"));
+    auto *anchorItem = findItem(rightFace, QStringLiteral("temperance-magnifier-anchor"));
+    QVERIFY(statusTouch && statusTouch->isVisible() && trayItem && controlItem && anchorItem);
+    const auto centreOf = [](QQuickItem *item) {
+      return item->mapToScene({item->width() / 2, item->height() / 2}).toPoint();
+    };
+    // The touch area runs from the bell to the row's end, the bar's height.
+    QVERIFY(statusTouch->mapToScene({0, 0}).x() <= bellButton->mapToScene({0, 0}).x() + 0.5);
+    QVERIFY(statusTouch->height() >= thickness - 0.5);
+    const auto fingerTap = [&](const QPoint &at) {
+      QTest::touchEvent(&window, finger).press(0, at);
+      QTest::qWait(60);
+      QTest::touchEvent(&window, finger).release(0, at);
+    };
+    fingerTap(centreOf(trayItem));
+    QTRY_VERIFY(state->property("expanded").toBool());
+    QCOMPARE(state->property("page").toString(), QStringLiteral("tray"));
+    QTest::qWait(300);
+    fingerTap(centreOf(controlItem));
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("control"));
+    QVERIFY(state->property("expanded").toBool());
+    QTest::qWait(300);
+    fingerTap(centreOf(bellButton));
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QVERIFY(state->property("expanded").toBool());
+    QTest::qWait(300);
+    fingerTap(centreOf(bellButton));
+    QTRY_VERIFY(!state->property("expanded").toBool());
+    QTRY_VERIFY(!popup->isVisible());
+    QTest::qWait(300);
+
+    // Held still, a finger raises no tooltip over its neighbours.
+    const auto visibleToolTips = [&] {
+      int shown = 0;
+      for (auto *candidate : rightFace->findChildren<QObject *>())
+        if (candidate->inherits("QQuickToolTip") && candidate->property("visible").toBool()) {
+          qInfo() << "T1_TOOLTIP" << candidate->property("text") << candidate->parent();
+          ++shown;
+        }
+      return shown;
+    };
+    // A pointer left over the bar would rightly raise one.
+    QTest::mouseMove(&window, {0, 0});
+    QTRY_COMPARE(visibleToolTips(), 0);
+    for (auto *held : {bellButton, controlItem, trayItem}) {
+      const QPoint at = centreOf(held);
+      QTest::touchEvent(&window, finger).press(0, at);
+      QTest::qWait(1500);
+      QCOMPARE(visibleToolTips(), 0);
+      QTest::touchEvent(&window, finger).release(0, at);
+      QTest::qWait(400);
+      QCOMPARE(visibleToolTips(), 0);
+      if (state->property("expanded").toBool()) {
+        state->setProperty("expanded", false);
+        QTRY_VERIFY(!popup->isVisible());
+        QTest::qWait(200);
+      }
+    }
+
+    // Pulled down from the bar, the controls grow out of it finger-sized, in
+    // a window of their own below the bar: fully, as soon as the pull leaves
+    // the bar, however far the finger has gone.
+    QWindow *magnifierWindow = nullptr;
+    for (auto *candidate : rightFace->findChildren<QObject *>())
+      if (candidate->objectName() == QStringLiteral("temperance-magnifier-window"))
+        magnifierWindow = qobject_cast<QWindow *>(candidate);
+    QVERIFY(magnifierWindow && !magnifierWindow->isVisible());
+    auto *magnifierDialog = qobject_cast<PlasmaQuick::Dialog *>(magnifierWindow);
+    QVERIFY(magnifierDialog);
+    auto *strip = magnifierDialog->mainItem();
+    QVERIFY(strip);
+    const qreal threshold = rightFace->property("statusPullThreshold").toReal();
+    const auto pullTo = [&](const QPoint &from, const QPoint &to) {
+      const QPoint step = (to - from) / 6;
+      for (int i = 1; i <= 6; ++i) {
+        QTest::qWait(16);
+        QTest::touchEvent(&window, finger).move(0, i == 6 ? to : from + step * i);
+      }
+      QTest::qWait(16);
+    };
+    const QPoint trayAt = centreOf(trayItem);
+    QTest::touchEvent(&window, finger).press(0, trayAt);
+    // Short of the threshold nothing grows.
+    pullTo(trayAt, trayAt + QPoint(0, qRound(threshold) - 4));
+    QTest::qWait(100);
+    QVERIFY(!magnifierWindow->isVisible());
+    pullTo(trayAt + QPoint(0, qRound(threshold) - 4), trayAt + QPoint(0, qRound(threshold) + 12));
+    QTRY_VERIFY(magnifierWindow->isVisible());
+    QTRY_COMPARE(rightFace->property("magnifierGrowth").toReal(), 1.);
+    pullTo(trayAt + QPoint(0, qRound(threshold) + 12), trayAt + QPoint(0, 90));
+    QCOMPARE(rightFace->property("magnifierGrowth").toReal(), 1.);
+    // Grown, it stays put however far the finger goes.
+    pullTo(trayAt + QPoint(0, 90), trayAt + QPoint(0, 140));
+    QCOMPARE(rightFace->property("magnifierGrowth").toReal(), 1.);
+    // It sits under the bar, where the panel thinks it is.
+    const QRect stripRect = placed(magnifierWindow);
+    const qreal anchorLeft = anchorItem->mapToGlobal(QPointF(0, 0)).x();
+    qInfo() << "T1_MAGNIFIER" << stripRect << anchorLeft << barBottom << strip->size();
+    QVERIFY(stripRect.top() >= barBottom);
+    QVERIFY(qAbs(stripRect.left() - anchorLeft) <= 1);
+    QCOMPARE(stripRect.width(), qRound(strip->width()));
+    // Each control is a finger wide there.
+    QVERIFY(strip->property("pitch").toReal() >= 64);
+    auto *trayFace = findItem(strip, QStringLiteral("temperance-magnifier-tray"));
+    auto *controlFace = findItem(strip, QStringLiteral("temperance-magnifier-control"));
+    auto *bellFace = findItem(strip, QStringLiteral("temperance-magnifier-notifications"));
+    auto *nameLabel = findItem(strip, QStringLiteral("temperance-magnifier-label"));
+    QVERIFY(trayFace && controlFace && bellFace && nameLabel);
+    // The pressed control grew out under the finger and is chosen: its tile
+    // sits behind it and its name shows. Nothing grows or lifts to say so,
+    // in the strip or in the bar.
+    const auto selectedKey = [&] {
+      const int index = rightFace->property("magnifierSelected").toInt();
+      const auto entries = rightFace->property("magnifierEntries").toList();
+      return index >= 0 && index < entries.size()
+          ? entries.at(index).toMap().value(QStringLiteral("key")).toString() : QString();
+    };
+    auto *selection = findItem(strip, QStringLiteral("temperance-magnifier-selection"));
+    QVERIFY(selection);
+    const auto stillAndMarked = [&](QQuickItem *chosen) {
+      for (auto *face : {trayFace, controlFace, bellFace})
+        if (face->scale() != 1.) return false;
+      const qreal tileCentre = selection->x() + selection->width() / 2;
+      return selection->isVisible() && qAbs(tileCentre - (chosen->x() + chosen->width() / 2)) < 1;
+    };
+    QCOMPARE(selectedKey(), QStringLiteral("tray"));
+    QVERIFY(!rightFace->property("reachedControl").value<QObject *>());
+    QTRY_VERIFY(stillAndMarked(trayFace));
+    QTRY_VERIFY(nameLabel->opacity() > 0.99);
+    QCOMPARE(nameLabel->property("text").toString(), QStringLiteral("System Tray"));
+    // No page opens while the finger chooses.
+    QVERIFY(!state->property("expanded").toBool());
+    // A picture of the grown strip under the bar, when one is asked for.
+    if (const QString shot = qEnvironmentVariable("TEMPERANCE_MAGNIFIER_SHOT"); !shot.isEmpty()) {
+      QTest::qWait(400);
+      const QImage bar = window.grabWindow();
+      const QImage grown = qobject_cast<QQuickWindow *>(magnifierWindow)->grabWindow();
+      const QRect around = QRect(stripRect.left() - 40, 0, stripRect.width() + 80,
+                                 stripRect.bottom() + 40).intersected(screen);
+      QImage picture(around.size() * bar.devicePixelRatio(), QImage::Format_ARGB32);
+      picture.fill(QColor(QStringLiteral("#6b7280")));
+      QPainter painter(&picture);
+      painter.scale(bar.devicePixelRatio(), bar.devicePixelRatio());
+      painter.drawImage(QPointF(-around.left(), 0), bar);
+      painter.drawImage(QPointF(stripRect.left() - around.left(), stripRect.top()), grown);
+      painter.end();
+      QVERIFY(picture.save(shot));
+      qInfo() << "T1_MAGNIFIER_SHOT" << shot;
+    }
+
+    // Sliding sideways chooses by where the finger is over the magnified
+    // strip, not over the bar's small controls.
+    const auto restCentres = strip->property("restCentres").toList();
+    QCOMPARE(restCentres.size(), 3);
+    const auto overStrip = [&](int index, int y) {
+      return QPoint(qRound(anchorItem->mapToScene({restCentres.at(index).toReal(), 0}).x()), y);
+    };
+    QPoint at = trayAt + QPoint(0, 140);
+    pullTo(at, overStrip(1, at.y()));
+    at = overStrip(1, at.y());
+    QCOMPARE(selectedKey(), QStringLiteral("control"));
+    QVERIFY(!rightFace->property("reachedControl").value<QObject *>());
+    QTRY_VERIFY(stillAndMarked(controlFace));
+    QCOMPARE(nameLabel->property("text").toString(), QStringLiteral("Control Center"));
+    pullTo(at, overStrip(0, at.y()));
+    at = overStrip(0, at.y());
+    QCOMPARE(selectedKey(), QStringLiteral("notifications"));
+    QVERIFY(nameLabel->property("text").toString().startsWith(QStringLiteral("Notifications")));
+    QVERIFY(!state->property("expanded").toBool());
+    // Lifted over a control, its page opens and the strip goes back.
+    QTest::touchEvent(&window, finger).release(0, at);
+    QTRY_VERIFY(state->property("expanded").toBool());
+    QCOMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QTRY_VERIFY(!magnifierWindow->isVisible());
+    QVERIFY(!rightFace->property("reachedControl").value<QObject *>());
+
+    // Chosen again with a page open, the page changes; the same page stays.
+    const auto pullAndLiftOver = [&](QQuickItem *from, int index) {
+      const QPoint start = centreOf(from);
+      QTest::touchEvent(&window, finger).press(0, start);
+      pullTo(start, start + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      const QPoint over = overStrip(index, start.y() + 90);
+      pullTo(start + QPoint(0, 90), over);
+      QTest::touchEvent(&window, finger).release(0, over);
+      QTRY_VERIFY(!magnifierWindow->isVisible());
+    };
+    pullAndLiftOver(bellButton, 1);
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("control"));
+    QVERIFY(state->property("expanded").toBool());
+    pullAndLiftOver(trayItem, 1);
+    QTest::qWait(200);
+    QCOMPARE(state->property("page").toString(), QStringLiteral("control"));
+    QVERIFY(state->property("expanded").toBool());
+    pullAndLiftOver(controlItem, 2);
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("tray"));
+    state->setProperty("expanded", false);
+    QTRY_VERIFY(!popup->isVisible());
+    QTest::qWait(300);
+
+    // Slid back up into the bar and lifted there, it cancels: the strip goes
+    // back and nothing opens.
+    QTest::touchEvent(&window, finger).press(0, trayAt);
+    pullTo(trayAt, trayAt + QPoint(0, 90));
+    QTRY_VERIFY(magnifierWindow->isVisible());
+    pullTo(trayAt + QPoint(0, 90), trayAt + QPoint(-30, 2));
+    QTRY_COMPARE(rightFace->property("magnifierGrowth").toReal(), 0.);
+    QCOMPARE(rightFace->property("magnifierSelected").toInt(), -1);
+    QTest::touchEvent(&window, finger).release(0, trayAt + QPoint(-30, 2));
+    QTRY_VERIFY(!magnifierWindow->isVisible());
+    QTest::qWait(300);
+    QVERIFY(!state->property("expanded").toBool());
+    // Lifted off either end of the strip, it cancels too.
+    for (const qreal past : {-24., strip->width() + 24.}) {
+      QTest::touchEvent(&window, finger).press(0, trayAt);
+      pullTo(trayAt, trayAt + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      const QPoint off(qRound(anchorItem->mapToScene({past, 0}).x()), trayAt.y() + 90);
+      pullTo(trayAt + QPoint(0, 90), off);
+      QCOMPARE(rightFace->property("magnifierSelected").toInt(), -1);
+      QTest::touchEvent(&window, finger).release(0, off);
+      QTRY_VERIFY(!magnifierWindow->isVisible());
+      QTest::qWait(300);
+      QVERIFY(!state->property("expanded").toBool());
+    }
+
+    // Pressed between two controls, the strip grows out with the nearer one
+    // under the finger, chosen.
+    {
+      const qreal controlRight = controlItem->mapToScene({controlItem->width(), 0}).x();
+      const qreal trayLeft = trayItem->mapToScene({0, 0}).x();
+      const QPoint between(qRound(trayLeft - qMax(0., trayLeft - controlRight) / 4), trayAt.y());
+      qInfo() << "T1_BETWEEN" << controlRight << trayLeft << between;
+      QTest::touchEvent(&window, finger).press(0, between);
+      pullTo(between, between + QPoint(0, 90));
+      QTRY_VERIFY(magnifierWindow->isVisible());
+      QCOMPARE(selectedKey(), QStringLiteral("tray"));
+      pullTo(between + QPoint(0, 90), between + QPoint(0, 2));
+      QTest::touchEvent(&window, finger).release(0, between + QPoint(0, 2));
+      QTRY_VERIFY(!magnifierWindow->isVisible());
+      QTest::qWait(300);
+      QVERIFY(!state->property("expanded").toBool());
+    }
+
+    // The panel says which part of it the finger's controls take: from the
+    // bell to the row's end, not the ticker's room before it.
+    {
+      const QRectF area = rightFace->property("fingerControlsArea").toRectF();
+      const qreal bellLeft = rightFace->mapFromItem(bellButton, QPointF(0, 0)).x();
+      qInfo() << "T1_FINGER_AREA" << area << bellLeft << rightFace->width();
+      QVERIFY(qAbs(area.left() - bellLeft) <= 1);
+      QVERIFY(area.left() > 0);
+      QVERIFY(area.right() <= rightFace->width() + 1);
+      QCOMPARE(area.height(), rightFace->height());
+    }
+
+    // A mouse still opens the one control it clicks, and resting on the
+    // bell raises no name over the bar: the page it opens names itself.
+    QTest::mouseClick(&window, Qt::LeftButton, {}, centreOf(trayItem));
+    QTRY_VERIFY(state->property("expanded").toBool());
+    QCOMPARE(state->property("page").toString(), QStringLiteral("tray"));
+    QTest::qWait(300);
+    QTest::mouseClick(&window, Qt::LeftButton, {}, centreOf(trayItem));
+    QTRY_VERIFY(!state->property("expanded").toBool());
+    QTRY_VERIFY(!popup->isVisible());
+    QTest::qWait(300);
+    // Room measured before the dock arrived is measured again as the page
+    // opens, so the page still fits below the bar.
+    const qreal room = rightFace->property("notificationPopupHeightLimit").toReal();
+    QVERIFY(room > 1);
+    rightFace->setProperty("notificationPopupHeightLimit", room + 5000);
+    QTest::mouseClick(&window, Qt::LeftButton, {}, centreOf(bellButton));
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QVERIFY(state->property("expanded").toBool());
+    QVERIFY(!magnifierWindow->isVisible());
+    QCOMPARE(rightFace->property("notificationPopupHeightLimit").toReal(), room);
+    QTRY_VERIFY(placed(popup).top() >= barBottom);
+    state->setProperty("expanded", false);
+    QTRY_VERIFY(!popup->isVisible());
+    QTest::qWait(300);
+    QTest::mouseMove(&window, centreOf(bellButton) + QPoint(0, 1));
+    QTest::mouseMove(&window, centreOf(bellButton));
+    QTest::qWait(1500);
+    QCOMPARE(visibleToolTips(), 0);
+    QTest::mouseMove(&window, {0, 0});
+
     // Without the bar the panel's own neighbours decide again.
     hostBus.unregisterService(QStringLiteral("co.goodinput.ContextBar"));
     QTRY_VERIFY(rightFace->width() < 520);

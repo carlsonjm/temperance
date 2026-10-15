@@ -39,12 +39,35 @@ event, a flick to check a line off, a tap to open the history. With the time and
 the date both off, as on a bar that draws its own clock, the clock takes no room;
 both on, its two lines are tight in a 24 px bar.
 
+A finger cannot choose between controls that small, so in the slim row the
+status controls, from the bell to the row's end, take a finger's press as one.
+A tap opens the page of the control nearest it, as a click would, a tap between
+two taking the nearer, and a second tap on it closes the page.
+Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
+24 px bar, the controls grow out of the bar into a strip of their own beside it,
+whole at once, however far the finger has gone. There each control is 78 px
+from the next, about 16 mm on the Z13, with its mark at 40 px, and the strip is
+placed so the control pressed, or the nearer one to a press between two, comes
+out under the finger, kept on the screen. The finger chooses by where it is
+over the strip, not over the bar: a tile marks that control and its name shows
+beneath it, while the controls keep still and the same size, in the strip and
+in the bar. Nothing opens while the finger moves. Lifted over a control, its page opens, staying open if it was
+already; lifted back in the bar or past either end of the strip, nothing opens.
+Either way the strip goes back into the bar at Plasma's animation speed. The
+strip follows a light or dark style as the pages do. A mouse, touchpad or pen
+still uses each control by itself, and no name rises over the slim row from
+the bell: the page it opens names itself. The panel gives that run of controls
+as `fingerControlsArea`, in its own coordinates, so a bar holding it along the
+top of the screen keeps only the controls from a pull meant for the
+workspaces and leaves the ticker's room to it.
+
 ## Edges
 
 Pages and important banners open away from the panel's edge, above a panel along
 the bottom and below one along the top, and come in from the panel's side. A page
 sits 18 px from the row and a banner 10 px further, since its window type has no
-clearance of its own.
+clearance of its own. The slim row's strip of status controls sits 4 px from the
+bar.
 
 ## Host interfaces
 

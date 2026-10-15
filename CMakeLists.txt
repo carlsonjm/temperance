@@ -112,6 +112,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
         qml/BellGlyph.qml
+        qml/BoltGlyph.qml
         qml/CalendarPage.qml
         qml/CompactApplet.qml
         qml/ConfigAppearance.qml
@@ -132,10 +133,12 @@ plasma_add_applet(co.goodinput.temperance
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml
         qml/StatusColors.qml
+        qml/StatusMagnifier.qml
         qml/StatusClock.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
+        qml/TrayGlyph.qml
         qml/config.qml
         qml/main.qml
     RESOURCES
