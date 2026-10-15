@@ -8,7 +8,10 @@ import org.kde.plasma.plasmoid
 
 // The temperature the weather icon shows. It reads Plasma's Weather widget,
 // and when that gives none and the online fallback is allowed, asks
-// Open-Meteo for the widget's place.
+// Open-Meteo for the widget's place. The widget's live reading and its
+// station's coordinates are its own internals, which a Plasma release may
+// change; the place it is set to is its saved setting, so the fallback
+// still finds it then (tests/WeatherContractTest.cpp watches the rest).
 Item {
     id: reading
     visible: false
@@ -32,6 +35,14 @@ Item {
         const tooltip = String(applet.toolTipSubText || "").replace(/<[^>]*>/g, " ");
         const match = tooltip.match(/-?[0-9]+(?:\.[0-9]+)?\s*°/);
         return match ? match[0].replace(/\s+/g, "") : "—°";
+    }
+
+    // The place the Weather widget is set to: its saved setting first, then
+    // the name its tooltip gives.
+    function placeName() {
+        const settings = applet && applet.Plasmoid ? applet.Plasmoid.configuration : null;
+        const saved = settings ? String(settings.placeDisplayName || "").trim() : "";
+        return saved || String(applet.toolTipMainText || "").trim();
     }
 
     function fetchCurrentTemperature(latitude, longitude) {
@@ -76,9 +87,9 @@ Item {
             return;
         }
 
-        // Some providers expose only a display location. Resolve that once,
-        // then use the same lightweight current-temperature request.
-        const location = String(applet.toolTipMainText || "").trim();
+        // Without coordinates, the place the widget is set to is resolved
+        // once, then the same lightweight current-temperature request is used.
+        const location = placeName();
         if (!location) {
             pending = false;
             return;

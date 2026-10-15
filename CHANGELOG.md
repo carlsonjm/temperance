@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The weather icon finds the Weather widget's place from its saved setting,
+  so with the online fallback on it keeps showing a temperature after a
+  Plasma update changes the widget's inner workings, instead of "—°".
 - On Z13 tablets, a fan curve keeps the fans at a fifth of full speed or more
   from 70 °C, so no saved curve leaves them off while the machine is hot.
   Temperance runs only the system's own z13ctl-plus, and stops a call to it
