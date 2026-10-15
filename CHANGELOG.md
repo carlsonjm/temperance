@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- A calendar link pasted as plain http is read over https, so its private
+  address never crosses the network unencrypted.
 - On a Plasma or Qt other than the one it was built for, the Status Bar shows
   only that it needs an update and leaves notifications and the tray to Plasma,
   rather than failing or taking the panel down after a system update. The

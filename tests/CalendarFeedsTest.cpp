@@ -56,6 +56,14 @@ int main(int argc, char **argv)
     check(CalendarFeeds::normalizedLink(QStringLiteral("  webcal://p01.icloud.com/published/2/abc  "))
               == QStringLiteral("https://p01.icloud.com/published/2/abc"),
           QStringLiteral("webcal becomes https"));
+    // A private address is a secret: one pasted as plain http is read over
+    // https, never in the clear.
+    check(CalendarFeeds::normalizedLink(QStringLiteral("http://calendar.example.com/private/abc.ics"))
+              == QStringLiteral("https://calendar.example.com/private/abc.ics"),
+          QStringLiteral("http becomes https"));
+    check(CalendarFeeds::normalizedLink(QStringLiteral("HTTP://calendar.example.com/a.ics"))
+              == QStringLiteral("https://calendar.example.com/a.ics"),
+          QStringLiteral("an upper-case HTTP becomes https"));
     check(CalendarFeeds::normalizedLink(QStringLiteral("my calendar")).isEmpty(), QStringLiteral("plain text is refused"));
     check(CalendarFeeds::normalizedLink(QStringLiteral("ftp://example.com/a.ics")).isEmpty(),
           QStringLiteral("other schemes are refused"));
@@ -123,6 +131,11 @@ int main(int argc, char **argv)
           QStringLiteral("a picked colour replaces the calendar's"));
     check(picked.value(1).toMap().value(QStringLiteral("color")) == QStringLiteral("turquoise"),
           QStringLiteral("an event's own colour still wins over a pick"));
+    // A colour saved under a link's earlier spelling still finds it.
+    CalendarFeeds respelled;
+    respelled.setColors({{QStringLiteral("http://calendar.example.com/a.ics"), QStringLiteral("#3DAEE9")}});
+    check(respelled.colors().value(QStringLiteral("https://calendar.example.com/a.ics")) == QStringLiteral("#3DAEE9"),
+          QStringLiteral("a colour picked for an http link follows it to https"));
 
     // A link that fails reports it; a file that is not a calendar says so.
     CalendarFeeds broken;

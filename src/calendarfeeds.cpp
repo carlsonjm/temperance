@@ -99,8 +99,16 @@ QVariantMap CalendarFeeds::colors() const
     return m_colors;
 }
 
-void CalendarFeeds::setColors(const QVariantMap &colors)
+void CalendarFeeds::setColors(const QVariantMap &picked)
 {
+    // Keyed as the links are, so a colour saved with an earlier spelling of a
+    // link, such as http, still finds its calendar.
+    QVariantMap colors;
+    for (auto it = picked.cbegin(); it != picked.cend(); ++it) {
+        const QString link = normalizedLink(it.key());
+        if (!link.isEmpty())
+            colors.insert(link, it.value());
+    }
     if (colors == m_colors)
         return;
     m_colors = colors;
@@ -112,13 +120,19 @@ void CalendarFeeds::setColors(const QVariantMap &colors)
 QString CalendarFeeds::normalizedLink(const QString &link)
 {
     QString text = link.trimmed();
-    if (text.startsWith(QLatin1String("webcal://"), Qt::CaseInsensitive))
-        text = QLatin1String("https://") + text.mid(int(qstrlen("webcal://")));
+    // A private address is a secret, so it is only ever sent encrypted: webcal
+    // and plain http are read over https, which every calendar service serves.
+    for (const QLatin1String prefix : {QLatin1String("webcal://"), QLatin1String("http://")}) {
+        if (text.startsWith(prefix, Qt::CaseInsensitive)) {
+            text = QLatin1String("https://") + text.mid(prefix.size());
+            break;
+        }
+    }
     const QUrl url(text, QUrl::StrictMode);
     const QString scheme = url.scheme().toLower();
     if (!url.isValid())
         return {};
-    if ((scheme == QLatin1String("https") || scheme == QLatin1String("http")) && !url.host().isEmpty())
+    if (scheme == QLatin1String("https") && !url.host().isEmpty())
         return url.toString();
     if (scheme == QLatin1String("file") && !url.path().isEmpty())
         return url.toString();

@@ -44,8 +44,8 @@ public:
     QVariantList feeds() const;
     int revision() const;
 
-    // A webcal:// address is the same feed over https. Anything that is not a
-    // web address after trimming returns empty.
+    // A webcal:// or http:// address is the same feed over https; a local
+    // file stays as it is. Anything else after trimming returns empty.
     Q_INVOKABLE static QString normalizedLink(const QString &link);
 
     // Events of every linked calendar that fall in the month, keyed by day of
