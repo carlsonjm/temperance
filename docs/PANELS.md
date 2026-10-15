@@ -63,6 +63,15 @@ as `fingerControlsArea`, in its own coordinates, so a bar holding it along the
 top of the screen keeps only the controls from a pull meant for the
 workspaces and leaves the ticker's room to it.
 
+A desktop that turns off Plasma's own popups for the volume and the screen's
+brightness can ask the row to show them instead (`showLevels`, off by default).
+As either changes, by a key or another application, the speaker or the sun
+comes into the row before Control Center's button with a short track showing
+how full, for a second and a half after the last change, opening and closing
+at Plasma's animation speed. It shows nothing for the first reading, nothing
+while Control Center is open, since its sliders already say it, and nothing
+when the setting is off.
+
 ## Edges
 
 Pages and important banners open away from the panel's edge, above a panel along

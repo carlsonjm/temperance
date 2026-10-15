@@ -113,6 +113,10 @@
       <label>Whether the date is shown with the time</label>
       <default>false</default>
     </entry>
+    <entry name="showLevels" type="Bool">
+      <label>Whether a change of volume or screen brightness is shown for a moment in the status area, for a desktop that turns Plasma's own popups for them off</label>
+      <default>false</default>
+    </entry>
     <entry name="calendarLinks" type="StringList">
       <label>Private iCal addresses of the calendars whose events the calendar shows</label>
       <default></default>

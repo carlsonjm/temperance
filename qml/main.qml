@@ -2306,6 +2306,23 @@ ContainmentItem {
                 PlasmaComponents.ToolTip { text: i18n("Weather") }
             }
 
+            LevelReading {
+                id: levelReading
+                objectName: "temperance-level-reading"
+                audio: Plasmoid.audio
+                watching: Plasmoid.configuration.showLevels === true
+                quiet: systemTrayState.expanded && systemTrayState.page === "control"
+                ink: tone.text
+                track: tone.wash(0.24)
+                pitch: root.statusPitch
+                iconSize: root.statusIconSize
+                motionEnabled: root.motionEnabled
+                Layout.preferredWidth: room
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
+                Layout.fillHeight: true
+            }
+
             StatusIconButton {
                 id: controlCenterButton
                 objectName: "temperance-control-center"
