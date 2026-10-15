@@ -29,16 +29,36 @@ ContainmentItem {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property int itemSize: Kirigami.Units.iconSizes.smallMedium
+    // The row is drawn for a 42 px surface. A horizontal panel too thin to
+    // hold that, a bar along the top of the screen say, gets the slim row:
+    // the same controls, smaller and on one line, in the height the panel
+    // gives. The panel's thickness alone decides; no setting chooses it.
+    readonly property real rowHeight: vertical || height <= 0 ? 42 : Math.min(42, height)
+    readonly property bool slim: rowHeight < 34
     // The status icons are drawn a third larger than the panel's small icons
     // and set one pitch apart with no gap, so the row reads as one group. The
     // pitch is narrower than a fingertip wants, so each icon also answers a
     // touch anywhere in the panel's height above or below it.
-    readonly property int statusPitch: 34
+    readonly property int statusPitch: slim ? 28 : 34
     // The drawn outlines, the bell and the wired port, are kept to the size
     // of the theme's filled marks beside them, in a line lighter than 2 px:
     // an outline reads larger than a filled mark of the same box.
-    readonly property int bellSize: 21
-    readonly property real bellStroke: 1.75
+    readonly property int bellSize: slim ? 16 : 21
+    readonly property real bellStroke: slim ? 1.5 : 1.75
+    // The bell sits a little low, keeping one optical baseline whether its
+    // clapper shows or its mark replaces it. The slim row puts the mark
+    // beside the bell rather than under it, so the bell stays near centre.
+    readonly property real bellDrop: slim ? 1 : bellSize * 0.1
+    readonly property int countPixelSize: slim ? 10 : 13
+    // A theme's status icon, at a size themes draw: 24, or 16 in the slim
+    // row. A symbolic one fills its box, so it is asked for smaller.
+    readonly property int statusIconSize: slim ? 16 : 24
+    readonly property int symbolicIconSize: slim ? 16 : 21
+    readonly property int wiredGlyphSize: slim ? 14 : 18
+    // The battery's percentage, and the slim row's line of text.
+    readonly property int statusTextPixelSize: slim ? 12 : 15
+    readonly property font slimFont: Qt.font({ family: Kirigami.Theme.defaultFont.family, pixelSize: 13 })
+    readonly property font slimSmallFont: Qt.font({ family: Kirigami.Theme.defaultFont.family, pixelSize: 11 })
     // The status control a touch outside every control's own box is on.
     property Item reachedControl: null
     // When a finger last pressed or lifted anywhere on the panel. Its press and
@@ -96,7 +116,7 @@ ContainmentItem {
         + statusPitch // network
         + statusPitch // tray
         + (notificationsEnabled ? notificationRail.Layout.minimumWidth : 0)
-        + (weatherEnabled ? statusPitch : 0)
+        + (weatherEnabled ? weatherStatusButton.Layout.preferredWidth : 0)
         + (hasBattery ? batteryStatusButton.Layout.preferredWidth : 0)
         + (clockEnabled ? statusClock.implicitWidth
             + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
@@ -293,6 +313,8 @@ ContainmentItem {
                 enabled: root.motionEnabled
                 NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
             }
+            // Elsewhere the label keeps the system font it starts with.
+            Binding { target: tickerLabel; property: "font"; value: root.slimFont; when: root.slim }
         }
 
         onTextChanged: {
@@ -361,7 +383,7 @@ ContainmentItem {
         property color glyphColor: railControlButton.pressed ? Qt.lighter(root.accentColor, 1.18)
             : railControlButton.hovered ? root.accentColor : tone.text
         implicitWidth: root.statusPitch
-        implicitHeight: 32
+        implicitHeight: Math.min(32, root.rowHeight)
         display: PlasmaComponents.AbstractButton.IconOnly
         Behavior on glyphColor { ColorAnimation { duration: 120 } }
         background: null
@@ -374,7 +396,7 @@ ContainmentItem {
                 height: root.bellSize
                 anchors.centerIn: parent
                 // Keep the same optical baseline when the clapper returns.
-                anchors.verticalCenterOffset: root.bellSize * 0.1
+                anchors.verticalCenterOffset: root.bellDrop
                 strokeWidth: root.bellStroke
                 glyphColor: railControlButton.glyphColor
                 clapperProgress: root.bellMarked ? 0 : 1
@@ -490,18 +512,18 @@ ContainmentItem {
             EthernetGlyph {
                 visible: statusIconButton.ethernet
                 anchors.centerIn: parent
-                width: 18
-                height: 18
+                width: root.wiredGlyphSize
+                height: root.wiredGlyphSize
                 strokeWidth: root.bellStroke
             }
             Kirigami.Icon {
                 visible: !statusIconButton.ethernet
                 anchors.centerIn: parent
                 source: statusIconButton.statusIcon
-                // 24 is a size themes draw status icons at, so the theme's
-                // own drawing is used rather than one scaled from another
-                // size; Kirigami would otherwise round either size down.
-                implicitWidth: statusIconButton.symbolic ? 21 : 24
+                // 24 and 16 are sizes themes draw status icons at, so the
+                // theme's own drawing is used rather than one scaled from
+                // another size; Kirigami would otherwise round a size down.
+                implicitWidth: statusIconButton.symbolic ? root.symbolicIconSize : root.statusIconSize
                 implicitHeight: implicitWidth
                 roundToIconSize: false
                 // Some themes' symbolic drawings carry a fixed colour rather
@@ -532,20 +554,29 @@ ContainmentItem {
     }
 
     implicitWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
-    implicitHeight: 42
+    implicitHeight: slim ? rowHeight : 42
     Layout.fillWidth: false
     Layout.minimumWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMinimumWidth : compactWidth
     // Responsive mode follows actual neighboring applet geometry. It has no
     // configured, display-derived, or percentage-based width target.
     Layout.preferredWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
     Layout.maximumWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
-    Layout.minimumHeight: 42
-    Layout.preferredHeight: 42
-    Layout.maximumHeight: 42
+    // A thin panel's own thickness, so the row never asks for more than it has.
+    Layout.minimumHeight: slim ? rowHeight : 42
+    Layout.preferredHeight: slim ? rowHeight : 42
+    Layout.maximumHeight: slim ? rowHeight : 42
 
     function refreshResponsiveWidth() {
         notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
         if (!adaptiveWidth) return;
+        // A host that paints its own clock says how much room it leaves
+        // beside it; the row's own inset stays inside that width.
+        if (Plasmoid.hostAvailableWidth > 0) {
+            const given = Math.max(responsiveMinimumWidth, Plasmoid.hostAvailableWidth);
+            if (Math.abs(given - responsiveMeasuredWidth) > 1)
+                responsiveMeasuredWidth = given;
+            return;
+        }
         Plasmoid.watchPanelGeometry(root);
         const measured = Plasmoid.availablePanelWidth(root, responsiveMinimumWidth, 6);
         if (Math.abs(measured - responsiveMeasuredWidth) > 1)
@@ -557,7 +588,12 @@ ContainmentItem {
     Connections {
         target: Plasmoid
         function onPanelGeometryChanged() { Qt.callLater(root.refreshResponsiveWidth); }
+        function onHostAvailableWidthChanged() { Qt.callLater(root.refreshResponsiveWidth); }
     }
+    // The output this window is on, for the host's clock; asked once it is
+    // known, and again only when the window moves to another output.
+    readonly property string outputName: Screen.name
+    onOutputNameChanged: if (!needsUpdate) Plasmoid.watchHostClock(outputName)
 
     function registerApplet(itemId, applet) {
         if (!itemId || !applet) return;
@@ -1081,6 +1117,7 @@ ContainmentItem {
 
     Component.onCompleted: {
         appletInstantiator.active = true;
+        if (!needsUpdate) Plasmoid.watchHostClock(outputName);
         Qt.callLater(refreshResponsiveWidth);
     }
 
@@ -1536,7 +1573,8 @@ ContainmentItem {
                             && systemTrayState.page === "notifications"
                             && systemTrayState.expanded
                         color: "transparent"
-                        clip: true
+                        // The slim row's count reaches past the bell's column.
+                        clip: !root.slim
                         // A resting pointer, a pen held over it included, shows the
                         // latest line. A finger does not rest: on the bell it
                         // opens the history. Its press also arrives as a hover
@@ -1609,20 +1647,31 @@ ContainmentItem {
 
                         Item {
                             id: notificationCountBadge
+                            // The bell's top: centred canvas, its optical
+                            // offset, the 0.083 normalized crown, half the stroke.
+                            readonly property real bellTop: notificationControls.height / 2
+                                - root.bellSize / 2 + root.bellDrop + root.bellSize * 0.083
+                                - root.bellStroke / 2
                             anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
+                            // The slim row has no room under the bell, so the
+                            // count rides at its shoulder, level with its crown.
+                            anchors.horizontalCenterOffset: root.slim ? root.bellSize * 0.35 + width / 2 : 0
                             // Bell rim: centered canvas, its optical offset,
                             // 0.708 normalized rim, half the stroke. Keep five
                             // logical pixels below that painted rim, so the
                             // count reads apart from the bell, and never past
                             // the bottom of the control.
-                            y: Math.min(notificationControls.height - height,
+                            // Either way it stays inside the row.
+                            y: root.slim ? Math.max(0, Math.min(notificationControls.height - height, bellTop))
+                                : Math.min(notificationControls.height - height,
                                 notificationControls.height / 2 - root.bellSize / 2
-                                + root.bellSize * 0.1 + root.bellSize * 0.708
+                                + root.bellDrop + root.bellSize * 0.708
                                 + root.bellStroke / 2 + 5)
                             visible: opacity > 0
                             opacity: root.bellMarked ? 1 : 0
                             scale: root.bellMarked ? 1 : 0.72
-                            width: Math.max(18, notificationCountLabel.implicitWidth + 6)
+                            width: root.slim ? notificationCountLabel.implicitWidth
+                                : Math.max(18, notificationCountLabel.implicitWidth + 6)
                             height: countInk.tightBoundingRect.height
                             z: 40
                             Behavior on opacity {
@@ -1645,7 +1694,7 @@ ContainmentItem {
                                 text: root.attentionPages > 0 ? root.attentionPages : "✓"
                                 // Larger than the clock's date, so the count
                                 // reads at arm's length under the smaller bell.
-                                font.pixelSize: 13
+                                font.pixelSize: root.countPixelSize
                                 font.weight: Font.Medium
                                 color: tone.text
                             }
@@ -1658,8 +1707,10 @@ ContainmentItem {
                         visible: root.tickerEnabled
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.topMargin: 4
-                        Layout.bottomMargin: 4
+                        // The slim row gives the ticker its whole height, for
+                        // the finger that flicks it.
+                        Layout.topMargin: root.slim ? 0 : 4
+                        Layout.bottomMargin: root.slim ? 0 : 4
                         clip: true
 
                         Item {
@@ -1936,6 +1987,7 @@ ContainmentItem {
                                     text: period ? lead.slice(0, lead.length - period.length - 1) : lead
                                     textFormat: Text.PlainText
                                     color: tone.secondaryText
+                                    Binding { target: eventTimeLabel; property: "font"; value: root.slimFont; when: root.slim }
                                 }
                                 PlasmaComponents.Label {
                                     id: eventPeriodLabel
@@ -1944,10 +1996,11 @@ ContainmentItem {
                                     Layout.leftMargin: -eventLine.spacing / 2
                                     text: eventTimeLabel.period
                                     textFormat: Text.PlainText
-                                    font: Kirigami.Theme.smallFont
+                                    font: root.slim ? root.slimSmallFont : Kirigami.Theme.smallFont
                                     color: tone.secondaryText
                                 }
                                 PlasmaComponents.Label {
+                                    id: eventTitleLabel
                                     Layout.fillWidth: true
                                     Layout.alignment: Qt.AlignBaseline
                                     Layout.maximumWidth: Math.max(0, eventLayer.width
@@ -1959,6 +2012,7 @@ ContainmentItem {
                                     color: tone.text
                                     elide: Text.ElideRight
                                     maximumLineCount: 1
+                                    Binding { target: eventTitleLabel; property: "font"; value: root.slimFont; when: root.slim }
                                 }
                                 // A notification passes; the dot says this one
                                 // stays. It takes the calendar's colour where the
@@ -2005,9 +2059,14 @@ ContainmentItem {
             Item {
                 id: weatherStatusButton
                 visible: root.weatherEnabled
-                Layout.preferredWidth: root.statusPitch
-                Layout.minimumWidth: root.statusPitch
-                Layout.maximumWidth: root.statusPitch
+                // The slim row has no room under the icon, so the temperature
+                // follows it on the line, and the control widens to hold both.
+                Layout.preferredWidth: root.slim
+                    ? Math.max(root.statusPitch, Math.ceil(root.statusPitch / 2 + root.statusIconSize / 2
+                        + 3 + weatherTemperatureLabel.implicitWidth + 5))
+                    : root.statusPitch
+                Layout.minimumWidth: Layout.preferredWidth
+                Layout.maximumWidth: Layout.preferredWidth
                 Layout.fillHeight: true
                 Accessible.name: i18n("Weather")
                 Accessible.role: Accessible.Button
@@ -2019,11 +2078,14 @@ ContainmentItem {
                     hovered: weatherStatusHover.hovered
 
                     Kirigami.Icon {
+                        id: weatherIcon
                         anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: -1
+                        // In the slim row, centred in the control's first pitch.
+                        anchors.horizontalCenterOffset: root.slim
+                            ? (root.statusPitch - parent.width) / 2 : -1
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 21
-                        height: 21
+                        width: root.slim ? root.statusIconSize : 21
+                        height: width
                         // Kirigami would round 21 down to 16.
                         roundToIconSize: false
                         source: root.weatherIcon()
@@ -2034,16 +2096,20 @@ ContainmentItem {
                     // too thin to hold it lower.
                     Item {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        y: Math.min(parent.height / 2 + 8, (parent.height + root.height) / 2 - height)
-                        width: Math.max(22, weatherTemperatureLabel.implicitWidth + 8)
-                        height: 15
+                        anchors.horizontalCenterOffset: root.slim
+                            ? root.statusPitch / 2 + weatherIcon.width / 2 + 3 + width / 2 - parent.width / 2 : 0
+                        y: root.slim ? (parent.height - height) / 2
+                            : Math.min(parent.height / 2 + 8, (parent.height + root.height) / 2 - height)
+                        width: root.slim ? weatherTemperatureLabel.implicitWidth
+                            : Math.max(22, weatherTemperatureLabel.implicitWidth + 8)
+                        height: root.slim ? weatherTemperatureLabel.implicitHeight : 15
                         z: 2
 
                         PlasmaComponents.Label {
                             id: weatherTemperatureLabel
                             anchors.centerIn: parent
                             text: root.weatherText()
-                            font.pixelSize: 10
+                            font.pixelSize: root.slim ? root.statusTextPixelSize : 10
                             font.weight: Font.Medium
                             color: tone.text
                         }
@@ -2099,11 +2165,12 @@ ContainmentItem {
                         id: trayGlyph
                         // The mark's size; the canvas leaves room around it for
                         // the ring drawn while the tray is open.
-                        readonly property real mark: 12
+                        readonly property real mark: root.slim ? 9 : 12
                         anchors.centerIn: parent
                         anchors.verticalCenterOffset: 1
                         width: Math.round(mark * 28 / 9)
                         height: width
+                        onWidthChanged: requestPaint()
                         Connections {
                             target: trayButton
                             function onRippleProgressChanged() { trayGlyph.requestPaint(); }
@@ -2198,15 +2265,17 @@ ContainmentItem {
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.batteryLabel() || "—"
-                        font.pixelSize: 15
+                        font.pixelSize: root.statusTextPixelSize
                         // The clock's weight: a status is not louder than the time.
                         font.weight: Font.Normal
                         color: tone.text
                     }
                     Canvas {
                         anchors.centerIn: parent
-                        width: 24
-                        height: 24
+                        // The bolt stands in for a theme's status icon.
+                        width: root.statusIconSize
+                        height: root.statusIconSize
+                        onWidthChanged: requestPaint()
                         visible: root.batteryOnAC
                         readonly property color ink: tone.text
                         onInkChanged: requestPaint()
@@ -2245,6 +2314,7 @@ ContainmentItem {
                 dateTime: systemClock.dateTime
                 showTime: root.timeEnabled
                 showDate: root.dateEnabled
+                timePixelSize: root.slim ? 13 : 15
                 fontFamily: Plasmoid.configuration.clockFontFamily || ""
                 Accessible.role: Accessible.Button
                 Accessible.onPressAction: activate()
@@ -2384,8 +2454,10 @@ ContainmentItem {
                     clip: true
                     property real entranceProgress: 0
                     opacity: entranceProgress
+                    // In from the panel's side, as the pages come.
                     transform: Translate {
-                        y: (1 - criticalCard.entranceProgress) * 12
+                        y: (1 - criticalCard.entranceProgress)
+                            * (Plasmoid.location === PlasmaCore.Types.TopEdge ? -12 : 12)
                     }
                     onVisibleChanged: {
                         if (visible) {

@@ -9,6 +9,7 @@
 #include <Plasma/Corona>
 #include "CoronaScreen.h"
 #include <PlasmaQuick/AppletQuickItem>
+#include <PlasmaQuick/Dialog>
 #include <QApplication>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -36,6 +37,25 @@ public:
                QGuiApplication::primaryScreen())
         ->geometry();
   }
+};
+// A bar that paints its own clock and says how much room it leaves beside it.
+class StandInContextBar : public QObject {
+  Q_OBJECT
+  Q_CLASSINFO("D-Bus Interface", "co.goodinput.ContextBar")
+public:
+  int right = 600;
+  QStringList asked;
+public Q_SLOTS:
+  QString clockExtent(const QString &outputName) {
+    asked << outputName;
+    return QStringLiteral("{\"schema\":\"co.goodinput.shuffle.clock-extent\",\"version\":1,"
+                          "\"output\":\"%1\",\"presenting\":true,\"bar\":{\"height\":24},"
+                          "\"clock\":{\"left\":0,\"right\":0,\"center\":0},"
+                          "\"available\":{\"left\":0,\"right\":%2}}")
+        .arg(outputName).arg(right);
+  }
+Q_SIGNALS:
+  void clockExtentChanged(const QString &outputName);
 };
 class TickerPanelTest : public QObject {
   Q_OBJECT
@@ -732,6 +752,226 @@ private Q_SLOTS:
     QVERIFY(boundaryError <= 2.);
     // The root's actual allocation, not its preferred hint, owns the rail.
     // Native layout gaps can leave a few pixels below the requested width.
+  }
+
+  // A 24 px panel along the top of the screen, with its own clock: the slim
+  // row fits the panel's height, the ticker still reads, checks off and
+  // opens the history, and the pages open below the bar.
+  void slimTopBar() {
+    // The bar's clock is its own painting, so it publishes the room beside it.
+    auto hostBus = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
+                                                 QStringLiteral("stand-in-bar"));
+    StandInContextBar host;
+    QVERIFY(hostBus.registerObject(QStringLiteral("/ContextBar"), &host,
+                                   QDBusConnection::ExportAllSlots |
+                                       QDBusConnection::ExportAllSignals));
+    QVERIFY(hostBus.registerService(QStringLiteral("co.goodinput.ContextBar")));
+    TickerCorona corona;
+    auto shell = KPackage::PackageLoader::self()->loadPackage(
+        QStringLiteral("Plasma/Shell"));
+    shell.setPath(QStringLiteral("org.kde.plasma.desktop"));
+    corona.setKPackage(shell);
+    auto *panel = corona.createContainment(QStringLiteral("org.kde.panel"));
+    QVERIFY(panel);
+    panel->setFormFactor(Plasma::Types::Horizontal);
+    panel->setLocation(Plasma::Types::TopEdge);
+    auto *face = PlasmaQuick::AppletQuickItem::itemForApplet(panel);
+    QVERIFY(face);
+    QQuickWindow window;
+    window.setFlags(Qt::FramelessWindowHint);
+    window.setScreen(QGuiApplication::screens().value(
+        qEnvironmentVariableIntValue("ITASCA_TEST_SCREEN"),
+        QGuiApplication::primaryScreen()));
+    const auto screen = window.screen()->geometry();
+    constexpr int bar = 24;
+    auto *surface = LayerShellQt::Window::get(&window);
+    surface->setScreen(window.screen());
+    surface->setScope(QStringLiteral("itasca-private-slim-fixture"));
+    surface->setLayer(LayerShellQt::Window::LayerTop);
+    surface->setAnchors(
+        LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop) |
+        LayerShellQt::Window::AnchorLeft | LayerShellQt::Window::AnchorRight);
+    surface->setDesiredSize({screen.width(), bar});
+    surface->setKeyboardInteractivity(
+        LayerShellQt::Window::KeyboardInteractivityNone);
+    surface->setExclusiveZone(bar);
+    window.setGeometry(screen.x(), screen.y(), screen.width(), bar);
+    face->setParentItem(window.contentItem());
+    face->setSize({qreal(screen.width()), qreal(bar)});
+    auto *spacer = panel->createApplet(QStringLiteral("org.kde.plasma.panelspacer"));
+    QVERIFY(spacer);
+    hint(PlasmaQuick::AppletQuickItem::itemForApplet(spacer),
+         "plasmoid.configuration.expanding", true);
+    auto *right = panel->createApplet(QStringLiteral("co.goodinput.temperance"));
+    QVERIFY(right);
+    right->config().writeEntry("extraItems", QStringList{});
+    auto *rightFace = PlasmaQuick::AppletQuickItem::itemForApplet(right);
+    QVERIFY(rightFace);
+    hint(rightFace, "plasmoid.configuration.showWeather", false);
+    hint(rightFace, "plasmoid.configuration.showTime", false);
+    hint(rightFace, "plasmoid.configuration.showDate", false);
+    window.show();
+    QTest::qWait(1000);
+    // Nothing sits to its left: the width is the room the bar says it
+    // leaves, asked once, and asked again when the bar says it moved.
+    QTRY_COMPARE(qRound(rightFace->width()), 600);
+    QCOMPARE(host.asked.size(), 1);
+    QCOMPARE(host.asked.first(), window.screen()->name());
+    host.right = 520;
+    Q_EMIT host.clockExtentChanged(window.screen()->name());
+    QTRY_COMPARE(qRound(rightFace->width()), 520);
+    QCOMPARE(host.asked.size(), 2);
+    // What earlier fixtures left in the shared store is read already.
+    auto *history = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-notification-history"));
+    auto *rail = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-rail-notifications"));
+    auto *checked = rightFace->findChild<QObject *>(
+        QStringLiteral("temperance-checked-notifications"));
+    QVERIFY(history && rail && checked);
+    const QDateTime readMark = QDateTime::currentDateTime().addSecs(1);
+    QVERIFY(history->setProperty("lastRead", readMark));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QTRY_VERIFY(QDateTime::currentDateTime() > readMark.addMSecs(50));
+
+    // The row takes the panel's height and asks for no more.
+    QTRY_VERIFY(rightFace->property("slim").toBool());
+    const qreal thickness = rightFace->height();
+    QVERIFY(thickness > 0 && thickness <= bar);
+    QVERIFY(QQmlProperty::read(rightFace, QStringLiteral("Layout.minimumHeight"),
+                               qmlContext(rightFace)).toReal() <= thickness);
+    QVERIFY(QQmlProperty::read(rightFace, QStringLiteral("Layout.maximumHeight"),
+                               qmlContext(rightFace)).toReal() <= thickness);
+    auto *row = findItem(rightFace, QStringLiteral("temperance-compact-surface"));
+    QVERIFY(row);
+    QCOMPARE(row->height(), thickness);
+    const qreal pitch = rightFace->property("statusPitch").toReal();
+    const auto insideRow = [&](QQuickItem *item) {
+      const QRectF box = item->mapRectToItem(row, item->boundingRect());
+      return box.top() >= -0.5 && box.bottom() <= thickness + 0.5;
+    };
+    for (const char *name : {"temperance-ticker-controls", "temperance-control-center",
+                             "temperance-tray", "temperance-bell-glyph"}) {
+      auto *item = findItem(rightFace, QString::fromLatin1(name));
+      QVERIFY2(item && item->isVisible(), name);
+      qInfo() << "T1_SLIM" << name << item->mapRectToItem(row, item->boundingRect());
+      QVERIFY2(insideRow(item), name);
+    }
+    for (const char *name : {"temperance-ticker-controls", "temperance-control-center",
+                             "temperance-tray"})
+      QVERIFY2(findItem(rightFace, QString::fromLatin1(name))->width() >= pitch, name);
+    // The bar draws its own clock, so this one is gone, not squeezed.
+    auto *clock = findItem(rightFace, QStringLiteral("temperance-clock"));
+    QVERIFY(clock && !clock->isVisible());
+
+    // A notification reads on one line, centred in the bar.
+    auto posted = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.Notifications"),
+        QStringLiteral("/org/freedesktop/Notifications"),
+        QStringLiteral("org.freedesktop.Notifications"),
+        QStringLiteral("Notify"));
+    const auto notify = [&](const QString &summary, uchar urgency) {
+      auto message = posted;
+      message.setArguments({QStringLiteral("T1 fixture"), uint(0), QString(),
+                            summary, QStringLiteral("Body"), QStringList{},
+                            QVariantMap{{QStringLiteral("urgency"),
+                                         QVariant::fromValue(urgency)}}, -1});
+      QDBusPendingCallWatcher sent(
+          QDBusConnection::sessionBus().asyncCall(message));
+      QSignalSpy done(&sent, &QDBusPendingCallWatcher::finished);
+      return done.wait(3000);
+    };
+    auto *tickerArea = findItem(rightFace, QStringLiteral("temperance-ticker-content"));
+    auto *tickerControls = findItem(rightFace, QStringLiteral("temperance-ticker-controls"));
+    auto *count = findItem(rightFace, QStringLiteral("temperance-notification-count"));
+    QVERIFY(tickerArea && tickerControls && count);
+    QVERIFY(notify(QStringLiteral("Slim fixture"), 1));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
+    auto *ticker = findItem(rightFace, QStringLiteral("temperance-live-ticker"));
+    QVERIFY(ticker);
+    auto *label = findItem(ticker, QStringLiteral("temperance-ticker-label"));
+    QVERIFY(label);
+    QCOMPARE(label->property("lineCount").toInt(), 1);
+    QVERIFY(insideRow(label));
+    const qreal labelCentre = label->mapToItem(row, QPointF(0, label->height() / 2)).y();
+    qInfo() << "T1_SLIM_LINE" << label->mapRectToItem(row, label->boundingRect()) << thickness;
+    QVERIFY(qAbs(labelCentre - thickness / 2) <= 1.5);
+    QTRY_VERIFY(count->parentItem()->opacity() > 0.9);
+    QVERIFY(insideRow(count->parentItem()));
+
+    // A flick checks it off; the bell keeps a check for it.
+    auto *finger = QTest::createTouchDevice();
+    const QPoint from = tickerArea->mapToScene(
+        QPointF(tickerArea->width() / 2, tickerArea->height() / 2)).toPoint();
+    QTest::touchEvent(&window, finger).press(0, from);
+    for (int step = 1; step <= 4; ++step) {
+      QTest::qWait(12);
+      QTest::touchEvent(&window, finger).move(0, from - QPoint(step * 25, 0));
+    }
+    QTest::touchEvent(&window, finger).release(0, from - QPoint(100, 0));
+    QTRY_COMPARE(rail->property("count").toInt(), 0);
+    QTRY_COMPARE(checked->property("count").toInt(), 1);
+    QTRY_COMPARE(count->property("text").toString(), QString::fromUtf8("✓"));
+    QVERIFY(insideRow(count->parentItem()));
+
+    // A tap on the line opens the history, below the bar.
+    tickerControls->setProperty("revealed", false);
+    QTRY_VERIFY(!rightFace->property("notificationCopyActive").toBool());
+    QVERIFY(notify(QStringLiteral("Tap fixture"), 1));
+    QTRY_COMPARE(rail->property("count").toInt(), 1);
+    QTRY_VERIFY_WITH_TIMEOUT(rightFace->property("notificationCopyActive").toBool(), 5000);
+    QTest::qWait(400);
+    const QPoint tap = tickerArea->mapToScene(
+        QPointF(tickerArea->width() - 12, tickerArea->height() / 2)).toPoint();
+    QTest::touchEvent(&window, finger).press(0, tap);
+    QTest::touchEvent(&window, finger).release(0, tap);
+    auto *state = qvariant_cast<QObject *>(rightFace->property("systemTrayState"));
+    QVERIFY(state);
+    QTRY_COMPARE(state->property("page").toString(), QStringLiteral("notifications"));
+    QTRY_VERIFY(state->property("expanded").toBool());
+    QWindow *popup = nullptr;
+    for (auto *candidate : rightFace->findChildren<QObject *>())
+      if (candidate->objectName() == QStringLiteral("popupWindow"))
+        popup = qobject_cast<QWindow *>(candidate);
+    QVERIFY(popup);
+    QTRY_VERIFY(popup->isVisible());
+    // Where the popup asks to be put: a Wayland client is not told where it
+    // went.
+    const qreal barBottom = rightFace->mapToGlobal(QPointF(0, thickness)).y();
+    const auto placed = [](QWindow *candidate) {
+      auto *dialog = qobject_cast<PlasmaQuick::Dialog *>(candidate);
+      return dialog ? QRect(dialog->popupPosition(dialog->visualParent(), dialog->size()),
+                            dialog->size())
+                    : QRect();
+    };
+    QTest::qWait(500);
+    const QRect page = placed(popup);
+    qInfo() << "T1_SLIM_POPUP" << page << barBottom;
+    QVERIFY(page.isValid() && page.top() >= barBottom);
+    state->setProperty("expanded", false);
+
+    // An important banner comes below the bar too.
+    QVERIFY(notify(QStringLiteral("Critical fixture"), 2));
+    QWindow *banner = nullptr;
+    QTRY_VERIFY_WITH_TIMEOUT([&] {
+      for (auto *candidate : QGuiApplication::topLevelWindows())
+        if (candidate != &window && candidate != popup && candidate->isVisible()
+            && candidate->inherits("PlasmaQuick::Dialog"))
+          banner = candidate;
+      return banner != nullptr;
+    }(), 5000);
+    QTest::qWait(500);
+    const QRect alert = placed(banner);
+    qInfo() << "T1_SLIM_BANNER" << alert << barBottom;
+    QVERIFY(alert.isValid() && alert.top() >= barBottom);
+    QVERIFY(alert.bottom() <= screen.bottom());
+    // Without the bar the panel's own neighbours decide again.
+    hostBus.unregisterService(QStringLiteral("co.goodinput.ContextBar"));
+    QTRY_VERIFY(rightFace->width() < 520);
+    QCOMPARE(host.asked.size(), 2);
+    hostBus.unregisterObject(QStringLiteral("/ContextBar"));
+    face->setParentItem(nullptr);
   }
 };
 QTEST_MAIN(TickerPanelTest)

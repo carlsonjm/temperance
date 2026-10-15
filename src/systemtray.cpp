@@ -17,6 +17,7 @@
 #include <KLocalizedString>
 
 #include "calendarfeeds.h"
+#include "clockextent.h"
 #include "screenrefresh.h"
 
 #include <QScreen>
@@ -1149,6 +1150,23 @@ void SystemTray::watchGeometryItem(QQuickItem *item)
         connect(item, &QQuickItem::windowChanged, this, changed);
         connect(item, &QQuickItem::parentChanged, this, changed);
     }
+}
+
+void SystemTray::watchHostClock(const QString &outputName)
+{
+    if (m_needsUpdate) {
+        return;
+    }
+    if (!m_clockExtent) {
+        m_clockExtent = new ClockExtent(this);
+        connect(m_clockExtent, &ClockExtent::availableWidthChanged, this, &SystemTray::hostAvailableWidthChanged);
+    }
+    m_clockExtent->setOutput(outputName);
+}
+
+int SystemTray::hostAvailableWidth() const
+{
+    return m_clockExtent ? m_clockExtent->availableWidth() : 0;
 }
 
 void SystemTray::watchPanelGeometry(QQuickItem *visualParent)
