@@ -380,6 +380,8 @@ Item {
                     width: performanceEntry.width
                     padding: 6
                     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                    // Inside Control Center's window, so it goes with it.
+                    popupType: QQC2.Popup.Item
                     background: Rectangle {
                         color: tone.surface
                         radius: 18
