@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The bell can show itself alone while notifications wait, without the count,
+  the ✓ or the slim row's chip (`waitingShows`: `count`, the default, or
+  `bell`). A screen reader still hears the count.
+- An important banner can stay until it is dismissed: a banner lifetime of 0
+  (`priorityAlertDuration`) keeps it. The shortest timed lifetime is now 3
+  seconds, from 5.
 - Control Center's More menu closes as soon as one of its actions is chosen,
   and whenever Control Center closes, instead of staying on screen.
 - Lock stands in Control Center's header by default, first in the row,

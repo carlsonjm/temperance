@@ -260,6 +260,17 @@ private Q_SLOTS:
     auto *bell = findItem(rightFace, QStringLiteral("temperance-bell-glyph"));
     QVERIFY(bell);
     QTRY_VERIFY(bell->property("clapperProgress").toReal() < 0.01);
+    // Set to show the bell alone, the clapper stays and nothing is marked,
+    // while the bell's name still says what is unread.
+    auto *reviewButton = findItem(rightFace, QStringLiteral("temperance-review-notifications"));
+    QVERIFY(reviewButton);
+    hint(rightFace, "plasmoid.configuration.waitingShows", QStringLiteral("bell"));
+    QTRY_VERIFY(!count->parentItem()->isVisible());
+    QTRY_VERIFY(bell->property("clapperProgress").toReal() > 0.99);
+    QVERIFY(reviewButton->property("text").toString().contains(QStringLiteral("1")));
+    hint(rightFace, "plasmoid.configuration.waitingShows", QStringLiteral("count"));
+    QTRY_VERIFY(count->parentItem()->opacity() > 0.9);
+    QTRY_VERIFY(bell->property("clapperProgress").toReal() < 0.01);
     QVERIFY(notify(QStringLiteral("Drag fixture")));
     QTRY_COMPARE(rail->property("count").toInt(), 1);
     QVERIFY(QMetaObject::invokeMethod(rightFace, "revealNotificationText"));
@@ -923,6 +934,14 @@ private Q_SLOTS:
     QVERIFY(count->parentItem()->opacity() < 0.01);
     QVERIFY(bellButton->property("text").toString().contains(QStringLiteral("Notifications")));
     QVERIFY(bellButton->property("text").toString().contains(QStringLiteral("1")));
+    // Set to show the bell alone, the bell stays with no chip and still
+    // says the count to a screen reader; set back, the chip returns.
+    hint(rightFace, "plasmoid.configuration.waitingShows", QStringLiteral("bell"));
+    QTRY_VERIFY(showsBell());
+    QVERIFY(count->parentItem()->opacity() < 0.01);
+    QVERIFY(bellButton->property("text").toString().contains(QStringLiteral("1")));
+    hint(rightFace, "plasmoid.configuration.waitingShows", QStringLiteral("count"));
+    QTRY_VERIFY(showsChip(QStringLiteral("1")));
 
     // A flick checks it off; the bell keeps a check for it.
     auto *finger = QTest::createTouchDevice();

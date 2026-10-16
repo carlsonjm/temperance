@@ -30,6 +30,9 @@ its place, and its touch, to a chip in the highlight colour holding the count: a
 waiting and those checked off but not yet read in the history; with nothing
 unread the bell comes back, and do not disturb shows the slashed bell and no chip.
 The two cross-fade at Plasma's animation speed.
+Set to show the bell alone (`waitingShows` set to `bell`), the bar keeps the bell
+with its clapper in either row, with no count, ✓ or chip, and the bell's
+accessible name says the count instead.
 
 The slim row takes the panel's height and asks for no more. Each control is still
 at least one step wide and runs the bar's full height, so a touch anywhere on the

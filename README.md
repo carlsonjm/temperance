@@ -84,9 +84,9 @@ weather sections are turned off.
 - **Tray Entries** controls which native tray entries appear in the panel, in the
   popup, or nowhere.
 - **Appearance** controls session controls, the highlight color, automatic or fixed
-  width, optional notification and weather sections, temperature unit, weather
-  application, the clock and its font, important-alert behavior, popup pin, and
-  Control Center entries.
+  width, optional notification and weather sections, the bell's count,
+  temperature unit, weather application, the clock and its font, important-alert
+  behavior, popup pin, and Control Center entries.
 - **Calendar** links calendars by their private address and sets each one's color.
 
 Weather starts off. When online weather fallback is enabled, Temperance sends the
