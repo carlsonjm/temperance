@@ -53,7 +53,10 @@ ContainmentItem {
     // shows the slashed bell instead, whatever waits.
     readonly property real bellDrop: slim ? 1 : bellSize * 0.1
     readonly property int unreadCount: attentionPages + checkedNotifications.count
-    readonly property bool bellShowsCount: slim && !doNotDisturb && unreadCount > 0
+    // Set to show the bell alone, it keeps its clapper and wears no mark or
+    // chip; its name still says the count, to a screen reader.
+    readonly property bool bellCounts: Plasmoid.configuration.waitingShows !== "bell"
+    readonly property bool bellShowsCount: bellCounts && slim && !doNotDisturb && unreadCount > 0
     readonly property string unreadText: unreadCount > 9
         ? i18nc("@info:status more than nine unread", "9+") : Qt.locale().toString(unreadCount)
     // A theme's status icon, at a size themes draw: 24, or 16 in the slim
@@ -165,8 +168,14 @@ ContainmentItem {
     readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
     readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
     readonly property bool clockEnabled: timeEnabled || dateEnabled
-    readonly property int priorityAlertFreshnessMs: Math.max(5,
-        Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20)) * 1000
+    // 0 keeps a banner until it is dismissed; it still has to arrive within
+    // the default window to be shown, so old alerts never replay at login.
+    readonly property bool priorityAlertsUntilDismissed:
+        Number(Plasmoid.configuration.priorityAlertDuration) === 0
+    readonly property int priorityAlertFreshnessMs: (priorityAlertsUntilDismissed ? 20 : Math.max(3,
+        Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20))) * 1000
+    // Banners shown while they are kept until dismissed, by key.
+    property var heldPriorityNotifications: ({})
     // Unset, the unit follows the region: Fahrenheit where the region
     // measures in US units, Celsius everywhere else.
     readonly property string regionTemperatureUnit:
@@ -184,7 +193,7 @@ ContainmentItem {
     ]
     // The bell wears a mark below its rim, in place of its clapper: the lines
     // waiting, or ✓ once all are checked off and the history is still unread.
-    readonly property bool bellMarked: hasAttention || checkedNotifications.count > 0
+    readonly property bool bellMarked: bellCounts && (hasAttention || checkedNotifications.count > 0)
     readonly property bool hasAttention: notificationsEnabled
         && (railNotifications.count > 0 || demoNotificationVisible || tickerEvent !== null)
     readonly property int notificationPages: railNotifications.count > 0 ? railNotifications.count
@@ -224,6 +233,11 @@ ContainmentItem {
 
     function isPriorityNotificationMinimized(model, modelIndex) {
         return Boolean(minimizedPriorityNotifications[
+            priorityNotificationKey(model, modelIndex)]);
+    }
+
+    function isPriorityNotificationHeld(model, modelIndex) {
+        return priorityAlertsUntilDismissed && Boolean(heldPriorityNotifications[
             priorityNotificationKey(model, modelIndex)]);
     }
 
@@ -1469,10 +1483,15 @@ ContainmentItem {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
             const expired = Boolean(sourceModel.data(idx,
                 NotificationManager.Notifications.ExpiredRole));
-            const isFresh = root.isFreshNotification(sourceModel, idx);
-            return !expired && isFresh
-                && root.isPriorityNotificationCandidate(sourceModel, idx)
-                && !root.isPriorityNotificationMinimized(sourceModel, idx);
+            if (expired || root.isPriorityNotificationMinimized(sourceModel, idx))
+                return false;
+            if (root.isPriorityNotificationHeld(sourceModel, idx))
+                return true;
+            const shown = root.isFreshNotification(sourceModel, idx)
+                && root.isPriorityNotificationCandidate(sourceModel, idx);
+            if (shown && root.priorityAlertsUntilDismissed)
+                root.heldPriorityNotifications[root.priorityNotificationKey(sourceModel, idx)] = true;
+            return shown;
         }
         Component.onCompleted: sourceModel = notificationHistory
     }
@@ -1489,7 +1508,8 @@ ContainmentItem {
                 || root.isFreshLogoutCancellation(sourceModel, idx);
             const reservedForBanner = root.notificationsEnabled
                 && Plasmoid.configuration.showPriorityBanners
-                && root.isPriorityNotificationCandidate(sourceModel, idx);
+                && (root.isPriorityNotificationCandidate(sourceModel, idx)
+                    || root.isPriorityNotificationHeld(sourceModel, idx));
             // A minimized banner remains in history, but has already had its
             // presentation. Do not queue another automatic readout.
             // Do not disturb stops the ticker as it stops Plasma's popups, and
@@ -1829,9 +1849,9 @@ ContainmentItem {
                             anchors.bottom: parent.bottom
                             objectName: "temperance-review-notifications"
                             z: 30
-                            // The slim row's bell says what its chip counts, to
-                            // a screen reader.
-                            text: !root.slim ? i18n("Review all notifications")
+                            // The slim row's bell, and a bell set to show no
+                            // count, says the count to a screen reader.
+                            text: !root.slim && root.bellCounts ? i18n("Review all notifications")
                                 : root.unreadCount > 0
                                 ? i18ncp("@info:tooltip", "Notifications, %1 unread", "Notifications, %1 unread", root.unreadCount)
                                 : i18nc("@info:tooltip", "Notifications")

@@ -27,6 +27,7 @@ KCMUtils.ScrollViewKCM {
     property bool cfg_adaptiveWidth
     property bool cfg_showNotifications
     property bool cfg_showTicker
+    property string cfg_waitingShows
     property bool cfg_showWeather
     property bool cfg_showTime
     property bool cfg_showDate
@@ -153,6 +154,20 @@ KCMUtils.ScrollViewKCM {
             onToggled: page.cfg_showTicker = checked
         }
 
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18n("While notifications wait:")
+            textRole: "label"
+            valueRole: "value"
+            model: [
+                { "label": i18n("Count them under the bell"), "value": "count" },
+                { "label": i18n("Show the bell alone"), "value": "bell" }
+            ]
+            enabled: page.cfg_showNotifications
+            Component.onCompleted: currentIndex = Math.max(0,
+                indexOfValue(page.cfg_waitingShows))
+            onActivated: page.cfg_waitingShows = currentValue
+        }
+
         QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Weather:")
             text: i18n("Show current conditions and temperature")
@@ -233,15 +248,26 @@ KCMUtils.ScrollViewKCM {
             onToggled: page.cfg_showPriorityBanners = checked
         }
 
+        // 0 keeps a banner until it is dismissed; below it, 3 seconds is the
+        // shortest, so a step down from 3 or up from 0 skips 1 and 2.
         QQC2.SpinBox {
             Kirigami.FormData.label: i18n("Banner lifetime:")
-            from: 5
+            from: 0
             to: 60
             value: page.cfg_priorityAlertDuration
             enabled: page.cfg_showNotifications && page.cfg_showPriorityBanners
-            onValueModified: page.cfg_priorityAlertDuration = value
-            textFromValue: (value, locale) => i18np("%1 second", "%1 seconds", value)
-            valueFromText: (text, locale) => parseInt(text, 10) || 20
+            onValueModified: {
+                if (value > 0 && value < 3)
+                    value = page.cfg_priorityAlertDuration === 0 ? 3 : 0;
+                page.cfg_priorityAlertDuration = value;
+            }
+            textFromValue: (value, locale) => value === 0 ? i18n("Until dismissed")
+                : i18np("%1 second", "%1 seconds", value)
+            valueFromText: (text, locale) => {
+                const seconds = parseInt(text, 10);
+                return text === i18n("Until dismissed") || seconds === 0 ? 0
+                    : Number.isFinite(seconds) ? Math.max(3, seconds) : 20;
+            }
         }
 
         QQC2.Label {
