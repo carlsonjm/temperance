@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Notifications and the other pages stop above a dock or panel along the
+  bottom of the screen, and scroll inside, instead of running down behind it.
 - On a horizontal panel too thin for its row, such as a 24 px bar along the top
   of the screen, the Status Bar draws a slim row by itself: smaller marks, the
   temperature beside its icon, and the ticker on one line, all inside the bar.

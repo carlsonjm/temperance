@@ -613,7 +613,22 @@ int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
 {
     if (!visualParent || !visualParent->window() || !visualParent->window()->screen())
         return 600;
-    const QRect screen = visualParent->window()->screen()->availableGeometry();
+    QScreen *const qscreen = visualParent->window()->screen();
+    QRect screen = qscreen->availableGeometry();
+    // On Wayland Qt reports the whole output as available: panels' reserved
+    // edges, such as a dock along the bottom, are known only to the shell.
+    // Its own room for windows is the one to stay inside, so the popup stops
+    // above a dock rather than running under it.
+    if (const Plasma::Corona *const shell = corona()) {
+        for (int id = 0, count = int(shell->numScreens()); id < count; ++id) {
+            if (shell->screenGeometry(id) != qscreen->geometry())
+                continue;
+            const QRect room = shell->availableScreenRect(id);
+            if (room.isValid())
+                screen = screen.intersected(room);
+            break;
+        }
+    }
     const QPointF top = visualParent->mapToGlobal(QPointF(0, 0));
     const QPointF bottom = visualParent->mapToGlobal(QPointF(0, visualParent->height()));
     qreal space = screen.height();
