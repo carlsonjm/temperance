@@ -83,7 +83,7 @@
     </entry>
     <entry name="sessionRow" type="StringList">
       <label>Session actions that stand in Control Center's header row, in order; any other shown action waits in the More menu. Shut Down always stands in the row, and actions the row has no room for move to the menu</label>
-      <default>sleep,restart,shutdown</default>
+      <default>lock,sleep,restart,shutdown</default>
     </entry>
     <entry name="compactWidth" type="Int">
       <label>Manual width of the panel widget in pixels when responsive layout is disabled</label>

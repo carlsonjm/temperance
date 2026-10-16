@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center's More menu closes as soon as one of its actions is chosen,
+  and whenever Control Center closes, instead of staying on screen.
+- Lock stands in Control Center's header by default, first in the row,
+  before Sleep. The header keeps the buttons in the order `sessionRow` lists
+  them, Shut Down included.
 - Notifications and the other pages stop above a dock or panel along the
   bottom of the screen, and scroll inside, instead of running down behind it.
 - On a horizontal panel too thin for its row, such as a 24 px bar along the top

@@ -138,8 +138,8 @@ and all-day events stay in the calendar card.
 ## Control Center and tray
 
 Session controls live in the Control Center header: Shut Down always, then the
-`sessionRow` actions (Sleep and Restart by default) as room allows, the rest (Lock
-and Log Out by default) behind More. Sleep needs a machine that can sleep;
+`sessionRow` actions in listed order (Lock, Sleep, Restart) as room allows, the
+rest (Log Out) behind More. Sleep needs a machine that can sleep;
 Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down
 go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
