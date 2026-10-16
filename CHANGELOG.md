@@ -4,6 +4,7 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning notifications off no longer takes the battery off the bar with it.
 - The bell can show itself alone while notifications wait, without the count,
   the ✓ or the slim row's chip (`waitingShows`: `count`, the default, or
   `bell`). A screen reader still hears the count.
