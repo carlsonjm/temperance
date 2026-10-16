@@ -25,6 +25,13 @@ find_package(LibKWorkspace REQUIRED)
 find_package(KF6PulseAudioQt REQUIRED)
 find_package(KF6Screen REQUIRED)
 
+# Every object depends on the Plasma and Qt it was compiled against. A package
+# update keeps its headers' old timestamps, so an existing build directory
+# would link stale objects against the new libraries; naming the versions on
+# every compile line makes a change of either rebuild everything.
+add_compile_definitions(
+    TEMPERANCE_BUILD_STACK="plasma-${Plasma_VERSION}-workspace-${LibNotificationManager_VERSION}-qt-${Qt6_VERSION}")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
