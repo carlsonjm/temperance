@@ -93,7 +93,6 @@ LIVE_DOCUMENTS = (
     "docs/AMBIENT-BOUNDARY.md",
     "docs/ARCHITECTURE.md",
     "docs/INPUT.md",
-    "docs/ROADMAP.md",
     "docs/README.md",
 )
 
@@ -116,7 +115,6 @@ WORD_BUDGETS = {
     "docs/AMBIENT-BOUNDARY.md": 295,
     "docs/ARCHITECTURE.md": 1875,
     "docs/INPUT.md": 1655,
-    "docs/ROADMAP.md": 270,
     "docs/README.md": 215,
     "packaging/README.md": 235,
 }

@@ -1,7 +1,7 @@
 # Architecture
 
 How Temperance works and why. Inputs are in `INPUT.md`, the Ambient split in
-`AMBIENT-BOUNDARY.md`, plans in `ROADMAP.md`.
+`AMBIENT-BOUNDARY.md`.
 
 ## What Temperance is
 
