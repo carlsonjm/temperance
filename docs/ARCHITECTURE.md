@@ -20,9 +20,8 @@ It reports what changed through notifications; Ambient owns what is ongoing.
 
 Adaptive mode measures from Temperance's right edge to the nearest visible
 non-spacer applet on its left, leaving the configured gap. Plasma can move an
-ancestor AppletContainer without changing a child root's local geometry, so the
-watcher observes each relevant root and its ancestor chain, including
-reparenting. Updates are event driven: no polling, no guessed width.
+ancestor AppletContainer without changing a root's local geometry, so the
+watcher follows each root, its ancestors and reparenting. Updates are event driven, never polled or guessed.
 
 Manual mode uses a fixed configured width. In both modes controls keep their
 minimum widths, and the ticker clips, scrolls or drops optional content inside the
@@ -203,7 +202,8 @@ it. The Open-Meteo fallback the README describes is the only other provider.
 ## Licensing, packaging and checks
 
 Inherited KDE and libdbusmenu code keeps its SPDX identity and licence texts, and
-vendored Lucide/Feather assets keep their ISC/MIT notice. Product metadata,
+vendored Lucide/Feather assets keep their ISC/MIT notice. `src/shared` is
+Tettegouche's code, copied as `tools/shared.sh` records. Product metadata,
 third-party notices, the icon manifest and installed assets stay in sync.
 
 `packaging/build-release.sh` is the supported release path. A release holds the

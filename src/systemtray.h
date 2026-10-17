@@ -16,6 +16,7 @@
 #include <Plasma/Containment>
 
 #include "calendarfeeds.h"
+#include "shared/PanelRoom.h"
 
 class QQuickItem;
 
@@ -145,7 +146,6 @@ private:
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
-    void watchGeometryItem(QQuickItem *item);
 
     KConfigWatcher::Ptr m_configWatcher;
     bool m_xwaylandClientsScale = true;
@@ -164,8 +164,7 @@ private:
     PerformanceController *m_performance = nullptr;
     AudioStatus *m_audio = nullptr;
     SessionActions *m_session = nullptr;
-    QList<QPointer<QQuickItem>> m_watchedGeometryItems;
+    suite::PanelWatch m_panelWatch;
     CalendarFeeds *m_calendarFeeds = nullptr;
-    bool m_watchingPanelGeometry = false;
     ClockExtent *m_clockExtent = nullptr;
 };
