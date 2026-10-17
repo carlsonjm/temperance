@@ -16,6 +16,7 @@
 #include <Plasma/Containment>
 
 #include "calendarfeeds.h"
+#include "shared/PanelRoom.h"
 
 class QQuickItem;
 
@@ -32,6 +33,7 @@ class KJob;
 class AudioStatus;
 class PerformanceController;
 class SessionActions;
+class ClockExtent;
 
 
 class SystemTray : public Plasma::Containment
@@ -53,6 +55,10 @@ class SystemTray : public Plasma::Containment
     // Built for another Plasma or Qt than the one running: the Status Bar
     // shows only that it needs an update (buildmatch.h).
     Q_PROPERTY(bool needsUpdate READ needsUpdate CONSTANT)
+    // The room a host leaves beside a clock it paints itself, in logical
+    // pixels from the clock's edge to the output's far edge; 0 where no
+    // host says (clockextent.h).
+    Q_PROPERTY(int hostAvailableWidth READ hostAvailableWidth NOTIFY hostAvailableWidthChanged)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -85,6 +91,10 @@ public:
     Q_INVOKABLE int availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const;
     Q_INVOKABLE void watchPanelGeometry(QQuickItem *visualParent);
     Q_INVOKABLE int availablePopupHeight(QQuickItem *visualParent) const;
+    // Asks the host about the output the applet's window is on, once, and
+    // again only when the output changes or the host says it moved.
+    Q_INVOKABLE void watchHostClock(const QString &outputName);
+    int hostAvailableWidth() const;
 
     /**
      * @brief isSystemTrayApplet checks if applet is allowed in the System Tray
@@ -120,6 +130,7 @@ public:
 
 Q_SIGNALS:
     void panelGeometryChanged();
+    void hostAvailableWidthChanged();
 
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets
@@ -135,7 +146,6 @@ private:
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
-    void watchGeometryItem(QQuickItem *item);
 
     KConfigWatcher::Ptr m_configWatcher;
     bool m_xwaylandClientsScale = true;
@@ -154,7 +164,7 @@ private:
     PerformanceController *m_performance = nullptr;
     AudioStatus *m_audio = nullptr;
     SessionActions *m_session = nullptr;
-    QList<QPointer<QQuickItem>> m_watchedGeometryItems;
+    suite::PanelWatch m_panelWatch;
     CalendarFeeds *m_calendarFeeds = nullptr;
-    bool m_watchingPanelGeometry = false;
+    ClockExtent *m_clockExtent = nullptr;
 };

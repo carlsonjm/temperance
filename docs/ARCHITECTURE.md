@@ -1,7 +1,7 @@
 # Architecture
 
 How Temperance works and why. Inputs are in `INPUT.md`, the Ambient split in
-`AMBIENT-BOUNDARY.md`, plans in `ROADMAP.md`.
+`AMBIENT-BOUNDARY.md`.
 
 ## What Temperance is
 
@@ -20,9 +20,8 @@ It reports what changed through notifications; Ambient owns what is ongoing.
 
 Adaptive mode measures from Temperance's right edge to the nearest visible
 non-spacer applet on its left, leaving the configured gap. Plasma can move an
-ancestor AppletContainer without changing a child root's local geometry, so the
-watcher observes each relevant root and its ancestor chain, including
-reparenting. Updates are event driven: no polling, no guessed width.
+ancestor AppletContainer without changing a root's local geometry, so the
+watcher follows each root, its ancestors and reparenting. Updates are event driven, never polled or guessed.
 
 Manual mode uses a fixed configured width. In both modes controls keep their
 minimum widths, and the ticker clips, scrolls or drops optional content inside the
@@ -31,7 +30,8 @@ dock.
 
 A container that paints furniture of its own, as Shuffle's band paints its dock,
 is not in the applet list, so the measurement runs past it. Such a container holds
-each component to its own side, and its clamp decides the width.
+each component to its own side, and its clamp decides the width. A host painting
+a clock publishes the width (`PANELS.md`).
 
 ## Status icons
 
@@ -40,10 +40,10 @@ the panel's small icons and set one 34 px step apart with no gaps, so they read 
 one group. Height makes up the width: each icon's touch area runs the panel's
 full height, about 7 by 13 mm on the Z13's band.
 
-The row stays a 42 px surface because the popups are placed from it. The reach
-above and below is a separate handler that acts only outside the row: a pointer's
-press reaches both it and the control, and acting on both opened a page and closed
-it again.
+The row stays a 42 px surface, slim on thinner panels (`PANELS.md`), because the
+popups are placed from it. The reach above and below is a separate handler that
+acts only outside the row: a pointer's press reaches both it and the control, and
+acting on both opened a page and closed it again.
 
 The bell and the wired port are outlines Temperance draws, kept to the size of
 the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
@@ -101,11 +101,11 @@ locale produces, so it never moves the layout. The day period is lowercase, ligh
 and smaller, on the time's baseline.
 
 Each new minute is dealt onto the old like a card dropping in from above. The
-deal keeps its own pace whatever Plasma's animation speed, since nobody waits on the clock and at
-four times the default it could not be seen; only Instant, which counts as reduced
-motion, makes it a fade. Shuffle Lock shows the same clock as a block at a size
-the caller gives, a bold time over the long date set to the time's width, so lock
-and bar share one clock and animation.
+deal keeps its own pace whatever Plasma's animation speed, since nobody waits on
+the clock; only Instant, which counts as reduced motion, makes it a fade. Shuffle
+Lock shows the same clock as a block at a size the caller gives, a bold time over
+the long date set to the time's width, so lock and bar share one clock and
+animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
 (`org.kde.plasma.workspace.calendar`) and holiday plugin.
@@ -137,8 +137,8 @@ and all-day events stay in the calendar card.
 ## Control Center and tray
 
 Session controls live in the Control Center header: Shut Down always, then the
-`sessionRow` actions (Sleep and Restart by default) as room allows, the rest (Lock
-and Log Out by default) behind More. Sleep needs a machine that can sleep;
+`sessionRow` actions in listed order (Lock, Sleep, Restart) as room allows, the
+rest (Log Out) behind More. Sleep needs a machine that can sleep;
 Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down
 go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
 calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
@@ -202,15 +202,16 @@ it. The Open-Meteo fallback the README describes is the only other provider.
 ## Licensing, packaging and checks
 
 Inherited KDE and libdbusmenu code keeps its SPDX identity and licence texts, and
-vendored Lucide/Feather assets keep their ISC/MIT notice. Product metadata,
+vendored Lucide/Feather assets keep their ISC/MIT notice. `src/shared` is
+Tettegouche's code, copied as `tools/shared.sh` records. Product metadata,
 third-party notices, the icon manifest and installed assets stay in sync.
 
 `packaging/build-release.sh` is the supported release path. A release holds the
 native plugin and required artwork and matches the intended build output.
 KCalendarCore is a build and install dependency; the installer checks for it and
 restarts the panel, so an update needs no sign-out. A package identity change
-makes people remove and re-add the widget, as 1.1.0 showed, so identity changes
-only in the suite's coordinated identity work.
+makes people remove and re-add the widget, so identity changes only in the suite's
+coordinated identity work.
 
 Automated checks cover source, notification, session, popup, clock, calendar and
 real-panel geometry contracts. The real-panel fixture pairs Temperance with a

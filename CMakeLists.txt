@@ -25,6 +25,13 @@ find_package(LibKWorkspace REQUIRED)
 find_package(KF6PulseAudioQt REQUIRED)
 find_package(KF6Screen REQUIRED)
 
+# Every object depends on the Plasma and Qt it was compiled against. A package
+# update keeps its headers' old timestamps, so an existing build directory
+# would link stale objects against the new libraries; naming the versions on
+# every compile line makes a change of either rebuild everything.
+add_compile_definitions(
+    TEMPERANCE_BUILD_STACK="plasma-${Plasma_VERSION}-workspace-${LibNotificationManager_VERSION}-qt-${Qt6_VERSION}")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -107,12 +114,13 @@ target_link_libraries(temperance_core PUBLIC
 )
 
 plasma_add_applet(co.goodinput.temperance
-    CPP_SOURCES src/systemtray.cpp src/audiostatus.cpp src/calendarfeeds.cpp
+    CPP_SOURCES src/systemtray.cpp src/audiostatus.cpp src/calendarfeeds.cpp src/clockextent.cpp
         src/performancecontroller.cpp src/screenrefresh.cpp src/sessionactions.cpp
     QML_SOURCES
         qml/AbstractItem.qml
         qml/BackgroundAppItem.qml
         qml/BellGlyph.qml
+        qml/BoltGlyph.qml
         qml/CalendarPage.qml
         qml/CompactApplet.qml
         qml/ConfigAppearance.qml
@@ -124,6 +132,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/ExpandedRepresentation.qml
         qml/ExpanderArrow.qml
         qml/HiddenItemsView.qml
+        qml/LevelReading.qml
         qml/ItemLoader.qml
         qml/NotificationHistoryPage.qml
         qml/OrganizedTrayPage.qml
@@ -133,11 +142,14 @@ plasma_add_applet(co.goodinput.temperance
         qml/PlasmoidPopupsContainer.qml
         qml/PulseAnimation.qml
         qml/StatusColors.qml
+        qml/StatusMagnifier.qml
         qml/StatusClock.qml
+        qml/SpeakerGlyph.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
         qml/TodayEvents.qml
+        qml/TrayGlyph.qml
         qml/WeatherReading.qml
         qml/config.qml
         qml/main.qml
@@ -232,6 +244,14 @@ if(BUILD_TESTING)
     set_tests_properties(temperance_clock_fast_animation PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/fast-animation"
         TIMEOUT 60)
+    add_executable(temperance-clock-extent-test tests/ClockExtentTest.cpp src/clockextent.cpp)
+    target_include_directories(temperance-clock-extent-test PRIVATE src)
+    target_link_libraries(temperance-clock-extent-test PRIVATE Qt6::DBus Qt6::Test)
+    add_test(NAME temperance_clock_extent
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+            $<TARGET_FILE:temperance-clock-extent-test>
+            ${CMAKE_CURRENT_BINARY_DIR}/bin)
+    set_tests_properties(temperance_clock_extent PROPERTIES TIMEOUT 30)
     add_executable(temperance-session-action-test tests/SessionActionTest.cpp)
     target_include_directories(temperance-session-action-test PRIVATE src)
     target_link_libraries(temperance-session-action-test PRIVATE Qt6::DBus)

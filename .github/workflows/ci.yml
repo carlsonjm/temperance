@@ -14,8 +14,11 @@ jobs:
   arch:
     name: Arch Linux (current packages)
     runs-on: ubuntu-latest
+    # Arch Linux's official image as Arch publishes it to GitHub's own
+    # registry, which Actions reaches without Docker Hub's or Amazon's
+    # shared pull limits.
     container:
-      image: public.ecr.aws/docker/library/archlinux:latest
+      image: ghcr.io/archlinux/archlinux:latest
     timeout-minutes: 45
     env:
       # Qt otherwise logs to the journal, which a container lacks, and a

@@ -83,7 +83,7 @@
     </entry>
     <entry name="sessionRow" type="StringList">
       <label>Session actions that stand in Control Center's header row, in order; any other shown action waits in the More menu. Shut Down always stands in the row, and actions the row has no room for move to the menu</label>
-      <default>sleep,restart,shutdown</default>
+      <default>lock,sleep,restart,shutdown</default>
     </entry>
     <entry name="compactWidth" type="Int">
       <label>Manual width of the panel widget in pixels when responsive layout is disabled</label>
@@ -101,6 +101,10 @@
       <label>Whether notifications and today's events scroll in the ticker beside the bell</label>
       <default>true</default>
     </entry>
+    <entry name="waitingShows" type="String">
+      <label>What the bell shows while notifications wait: count for the number waiting, or bell for the bell alone</label>
+      <default>count</default>
+    </entry>
     <entry name="showWeather" type="Bool">
       <label>Whether current weather is shown in the status area</label>
       <default>false</default>
@@ -111,6 +115,10 @@
     </entry>
     <entry name="showDate" type="Bool">
       <label>Whether the date is shown with the time</label>
+      <default>false</default>
+    </entry>
+    <entry name="showLevels" type="Bool">
+      <label>Whether a change of volume or screen brightness is shown for a moment in the status area, for a desktop that turns Plasma's own popups for them off</label>
       <default>false</default>
     </entry>
     <entry name="calendarLinks" type="StringList">
@@ -150,7 +158,7 @@
       <default>true</default>
     </entry>
     <entry name="priorityAlertDuration" type="Int">
-      <label>Seconds important system notifications remain live</label>
+      <label>Seconds important system notifications remain live, from 3; 0 keeps them until dismissed</label>
       <default>20</default>
     </entry>
   </group>

@@ -57,7 +57,7 @@ int main(int argc, char **argv)
     if (!qml.contains(QStringLiteral("Plasmoid.watchPanelGeometry(root)"))
         || !qml.contains(QStringLiteral("function onPanelGeometryChanged()"))) return 13;
     QString navigationFunctions;
-    for (const auto &name : {"activateAppletById", "openSurface"}) {
+    for (const auto &name : {"activateAppletById", "showApplet", "openSurface", "showSurface"}) {
         const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
         const auto finish = qml.indexOf(QStringLiteral("\n    }"), begin);
         if (begin < 0 || finish < 0) return 11;
@@ -68,9 +68,12 @@ int main(int argc, char **argv)
             const appletsById = {weather: {}, audio: {}};
             const systemTrayState = {expanded: false, page: 'control', activeApplet: null,
                 setActiveApplet: function(a) { this.activeApplet = a; if (a) this.expanded = true; }};
+            let measured = 0;
+            function refreshPopupHeightLimit() { ++measured; }
     )JS") + navigationFunctions + QStringLiteral(R"JS(
             openSurface('tray');
             if (!systemTrayState.expanded) throw 'open tray';
+            if (measured !== 1) throw 'room measured as a page opens';
             openSurface('tray');
             if (systemTrayState.expanded) throw 'close tray';
             openSurface('notifications'); openSurface('control');
@@ -86,6 +89,12 @@ int main(int argc, char **argv)
             systemTrayState.expanded = false; systemTrayState.page = 'notifications';
             activateAppletById('audio'); activateAppletById('weather');
             if (systemTrayState.page !== 'control') throw 'bar applet backs to Control Center';
+            // Chosen from the slim row's strip, a page opens and stays open.
+            showSurface('tray'); showSurface('tray');
+            if (!systemTrayState.expanded || systemTrayState.page !== 'tray') throw 'strip keeps tray';
+            showApplet('weather'); showApplet('weather');
+            if (!systemTrayState.expanded || systemTrayState.activeApplet !== appletsById.weather)
+                throw 'strip keeps weather';
             return true;
         })()
     )JS"));
@@ -326,6 +335,56 @@ int main(int argc, char **argv)
         return 20;
     }
     insetItem->setParentItem(nullptr);
+    // The level reading: quiet at start and while it only reads the volume
+    // again, shown for a change, never while not asked to watch or while
+    // Control Center is open.
+    {
+        QQmlComponent audioComponent(&engine);
+        audioComponent.setData(QByteArrayLiteral("import QtQuick\nQtObject { property int percent: 40; "
+            "property bool muted: false; property bool available: true; signal volumeChanged() }"), QUrl());
+        std::unique_ptr<QObject> audio(audioComponent.create());
+        QQmlComponent readingComponent(&engine,
+            QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/co/goodinput/temperance/LevelReading.qml")),
+            QQmlComponent::PreferSynchronous);
+        std::unique_ptr<QObject> reading(audio ? readingComponent.createWithInitialProperties({
+            {QStringLiteral("audio"), QVariant::fromValue(audio.get())},
+            {QStringLiteral("watching"), true}, {QStringLiteral("motionEnabled"), false}}) : nullptr);
+        if (!reading) {
+            qCritical() << readingComponent.errors();
+            return 22;
+        }
+        const auto kind = [&] { return reading->property("kind").toString(); };
+        const auto change = [&](int percent) {
+            audio->setProperty("percent", percent);
+            QMetaObject::invokeMethod(audio.get(), "volumeChanged");
+            app.processEvents();
+        };
+        change(40);
+        if (!kind().isEmpty()) {
+            qCritical() << "The level reading shows a volume read again";
+            return 22;
+        }
+        change(55);
+        if (kind() != QLatin1String("volume") || qAbs(reading->property("level").toReal() - 0.55) > 0.001
+            || reading->property("room").toReal() <= 0) {
+            qCritical() << "The level reading does not show a change of volume" << kind();
+            return 22;
+        }
+        reading->setProperty("kind", QString());
+        reading->setProperty("quiet", true);
+        change(60);
+        if (!kind().isEmpty()) {
+            qCritical() << "The level reading speaks over Control Center";
+            return 22;
+        }
+        reading->setProperty("quiet", false);
+        reading->setProperty("watching", false);
+        change(70);
+        if (!kind().isEmpty()) {
+            qCritical() << "The level reading shows a change it was not asked to watch";
+            return 22;
+        }
+    }
     qInfo("Built Temperance plugin and nested QML components loaded successfully");
     return 0;
 }

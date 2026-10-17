@@ -11,7 +11,7 @@ this table, so add a new one here in the same change.
 | `README.md` | What Temperance is, compatibility, build and settings |
 | `docs/ARCHITECTURE.md` | How Temperance works and why |
 | `docs/INPUT.md` | Every touch, click and key it answers |
-| `docs/ROADMAP.md` | What is planned |
+| `docs/PANELS.md` | Panel thickness, edges and host interfaces |
 | `docs/AMBIENT-BOUNDARY.md` | The split with Ambient Tettegouche |
 | `docs/README.md` | This table |
 | `CHANGELOG.md` | User-visible changes by release |

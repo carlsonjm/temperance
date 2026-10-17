@@ -13,11 +13,13 @@
 #include "buildmatch.h"
 #include "debug.h"
 #include "systemtray.h"
-#include "suitesettings.h"
+#include "shared/SuitePresence.h"
+#include "shared/SuiteSettings.h"
 #include <KLocalizedString>
 
 #include "audiostatus.h"
 #include "calendarfeeds.h"
+#include "clockextent.h"
 #include "performancecontroller.h"
 #include "sessionactions.h"
 
@@ -66,6 +68,19 @@ using namespace Qt::StringLiterals;
 // to warn before it installs a build the running Plasma or Qt will not run.
 [[gnu::used]] static const char builtFor[] =
     "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
+
+// Inside Shuffle the widget goes by Shuffle's name for it, in its title and
+// its Configure entry; elsewhere it keeps its own.
+static void useShuffleName(Plasma::Applet *applet, const QString &name)
+{
+    if (!suite::shuffleInstalled()) {
+        return;
+    }
+    applet->setTitle(name);
+    if (QAction *configure = applet->internalAction(QStringLiteral("configure"))) {
+        configure->setText(i18nc("@action:inmenu %1 is the widget's name", "Configure %1…", name));
+    }
+}
 
 void SystemTray::launchApplication(const QString &desktopName)
 {
@@ -337,7 +352,7 @@ void SystemTray::init()
     migrateFromSystrayContainer();
 
     Containment::init();
-    openConfigureInSuiteSettings(this, QStringLiteral("status"));
+    suite::openConfigureInSuiteSettings(this, QStringLiteral("status"));
     useShuffleName(this, i18nc("@title Shuffle's name for this widget", "Status Bar"));
 
     initSettingsAndRegistry();
@@ -612,7 +627,22 @@ int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
 {
     if (!visualParent || !visualParent->window() || !visualParent->window()->screen())
         return 600;
-    const QRect screen = visualParent->window()->screen()->availableGeometry();
+    QScreen *const qscreen = visualParent->window()->screen();
+    QRect screen = qscreen->availableGeometry();
+    // On Wayland Qt reports the whole output as available: panels' reserved
+    // edges, such as a dock along the bottom, are known only to the shell.
+    // Its own room for windows is the one to stay inside, so the popup stops
+    // above a dock rather than running under it.
+    if (const Plasma::Corona *const shell = corona()) {
+        for (int id = 0, count = int(shell->numScreens()); id < count; ++id) {
+            if (shell->screenGeometry(id) != qscreen->geometry())
+                continue;
+            const QRect room = shell->availableScreenRect(id);
+            if (room.isValid())
+                screen = screen.intersected(room);
+            break;
+        }
+    }
     const QPointF top = visualParent->mapToGlobal(QPointF(0, 0));
     const QPointF bottom = visualParent->mapToGlobal(QPointF(0, visualParent->height()));
     qreal space = screen.height();
@@ -625,100 +655,31 @@ int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
 
 int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const
 {
-    minimumWidth = std::max(1, minimumWidth);
-    gap = std::max(0, gap);
-
-    if (!visualParent || !visualParent->window() || !containment()) {
-        return minimumWidth;
-    }
-
-    QQuickItem *ownItem = PlasmaQuick::AppletQuickItem::itemForApplet(const_cast<SystemTray *>(this));
-    if (!ownItem || ownItem->window() != visualParent->window()) {
-        ownItem = visualParent;
-    }
-
-    const qreal ownLeft = ownItem->mapToGlobal(QPointF(0, 0)).x();
-    const qreal ownRight = ownItem->mapToGlobal(QPointF(ownItem->width(), 0)).x();
-    qreal nearestLeftEdge = -1;
-
-    // Furniture a container paints rather than hosts is not in this walk, so
-    // there the measurement runs past it. Such a container holds its components
-    // to their side, as Shuffle's band does, and that clamp decides the width.
-
-    for (Plasma::Applet *applet : containment()->applets()) {
-        if (!applet || applet == this || applet->destroyed()) {
-            continue;
-        }
-
-        const QString pluginId = applet->pluginMetaData().pluginId();
-        if (pluginId == u"org.kde.plasma.panelspacer"_s
-            || pluginId == u"org.kde.plasma.marginsseparator"_s
-            || !PlasmaQuick::AppletQuickItem::hasItemForApplet(applet)) {
-            continue;
-        }
-
-        auto *item = PlasmaQuick::AppletQuickItem::itemForApplet(applet);
-        if (!item || !item->isVisible() || item->window() != ownItem->window()) {
-            continue;
-        }
-
-        const qreal itemRight = item->mapToGlobal(QPointF(item->width(), 0)).x();
-        if (itemRight <= ownLeft + 1 && itemRight > nearestLeftEdge) {
-            nearestLeftEdge = itemRight;
-        }
-    }
-
-    if (nearestLeftEdge < 0) {
-        return minimumWidth;
-    }
-
-    return std::max(minimumWidth,
-                    static_cast<int>(std::floor(ownRight - nearestLeftEdge - gap)));
+    return suite::panelRoom(const_cast<SystemTray *>(this), visualParent, minimumWidth, gap, suite::Toward::Before);
 }
 
-void SystemTray::watchGeometryItem(QQuickItem *item)
+void SystemTray::watchHostClock(const QString &outputName)
 {
-    m_watchedGeometryItems.removeIf([](const QPointer<QQuickItem> &watched) {
-        return watched.isNull();
-    });
-    // availablePanelWidth() uses scene coordinates. Plasma moves ancestor
-    // AppletContainers while the applet roots keep their local x and width.
-    // Observe that entire dependency chain, including reparenting; the queued
-    // QML refresh will subscribe to any newly assigned ancestors.
-    for (; item; item = item->parentItem()) {
-        if (m_watchedGeometryItems.contains(item)) {
-            continue;
-        }
-        m_watchedGeometryItems.append(item);
-        const auto changed = [this] { Q_EMIT panelGeometryChanged(); };
-        connect(item, &QQuickItem::xChanged, this, changed);
-        connect(item, &QQuickItem::widthChanged, this, changed);
-        connect(item, &QQuickItem::visibleChanged, this, changed);
-        connect(item, &QQuickItem::windowChanged, this, changed);
-        connect(item, &QQuickItem::parentChanged, this, changed);
+    if (m_needsUpdate) {
+        return;
     }
+    if (!m_clockExtent) {
+        m_clockExtent = new ClockExtent(this);
+        connect(m_clockExtent, &ClockExtent::availableWidthChanged, this, &SystemTray::hostAvailableWidthChanged);
+    }
+    m_clockExtent->setOutput(outputName);
+}
+
+int SystemTray::hostAvailableWidth() const
+{
+    return m_clockExtent ? m_clockExtent->availableWidth() : 0;
 }
 
 void SystemTray::watchPanelGeometry(QQuickItem *visualParent)
 {
-    watchGeometryItem(visualParent);
-    if (!containment()) {
-        return;
-    }
-    if (!m_watchingPanelGeometry) {
-        m_watchingPanelGeometry = true;
-        connect(containment(), &Plasma::Containment::appletAdded, this,
-                [this](Plasma::Applet *) {
-                    QTimer::singleShot(0, this, [this] { Q_EMIT panelGeometryChanged(); });
-                });
-        connect(containment(), &Plasma::Containment::appletRemoved, this,
-                [this](Plasma::Applet *) { Q_EMIT panelGeometryChanged(); });
-    }
-    for (Plasma::Applet *applet : containment()->applets()) {
-        if (applet && PlasmaQuick::AppletQuickItem::hasItemForApplet(applet)) {
-            watchGeometryItem(PlasmaQuick::AppletQuickItem::itemForApplet(applet));
-        }
-    }
+    m_panelWatch.follow(this, visualParent, [this] {
+        Q_EMIT panelGeometryChanged();
+    });
 }
 
 bool SystemTray::isSystemTrayApplet(const QString &appletId)

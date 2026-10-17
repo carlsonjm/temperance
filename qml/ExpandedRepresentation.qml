@@ -13,6 +13,7 @@ import org.kde.kcmutils as KCM
 import org.kde.kirigami as Kirigami
 import org.kde.notificationmanager as NotificationManager
 import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
@@ -129,10 +130,13 @@ Item {
 
     property real presentationOffset: 24
     property real presentationOpacity: 0
+    // The page comes out of the panel: up from one along the bottom, down
+    // from one along the top.
+    readonly property bool belowPanel: Plasmoid.location === PlasmaCore.Types.TopEdge
     opacity: presentationOpacity
     scale: 0.985 + (1 - Math.min(1, presentationOffset / 24)) * 0.015
-    transformOrigin: Item.Bottom
-    transform: Translate { y: popup.presentationOffset }
+    transformOrigin: belowPanel ? Item.Top : Item.Bottom
+    transform: Translate { y: popup.belowPanel ? -popup.presentationOffset : popup.presentationOffset }
 
     property alias hiddenLayout: compatibilityLayout
     property alias plasmoidContainer: container
@@ -166,11 +170,13 @@ Item {
     Connections {
         target: systemTrayState
         function onExpandedChanged() {
+            if (!systemTrayState.expanded) sessionMenu.close();
             if (systemTrayState.expanded) Qt.callLater(popup.playEntrance);
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
             popup.refreshControlCenter();
         }
         function onPageChanged() {
+            sessionMenu.close();
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
             popup.refreshControlCenter();
         }
@@ -469,6 +475,17 @@ Item {
                         width: 150
                         padding: 6
                         closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                        // Drawn inside Control Center's own window, so it
+                        // goes when Control Center does, never left standing
+                        // on screen as a window of its own.
+                        popupType: QQC2.Popup.Item
+                        // Closes before acting: an action that hides
+                        // Control Center or covers the screen must not
+                        // leave the menu open behind it.
+                        function choose(id) {
+                            close();
+                            controlPage.requestSessionAction(id);
+                        }
                         background: Rectangle {
                             color: tone.surface
                             radius: 12
@@ -478,27 +495,27 @@ Item {
                         SessionMenuItem {
                             visible: popup.inSessionMenu("sleep")
                             text: popup.sessionText("sleep")
-                            onTriggered: controlPage.requestSessionAction("sleep")
+                            onTriggered: sessionMenu.choose("sleep")
                         }
                         SessionMenuItem {
                             visible: popup.inSessionMenu("lock")
                             text: popup.sessionText("lock")
-                            onTriggered: controlPage.requestSessionAction("lock")
+                            onTriggered: sessionMenu.choose("lock")
                         }
                         SessionMenuItem {
                             visible: popup.inSessionMenu("restart")
                             text: popup.sessionText("restart")
-                            onTriggered: controlPage.requestSessionAction("restart")
+                            onTriggered: sessionMenu.choose("restart")
                         }
                         SessionMenuItem {
                             visible: popup.inSessionMenu("logout")
                             text: popup.sessionText("logout")
-                            onTriggered: controlPage.requestSessionAction("logout")
+                            onTriggered: sessionMenu.choose("logout")
                         }
                         SessionMenuItem {
                             visible: popup.inSessionMenu("switchUser")
                             text: popup.sessionText("switchUser")
-                            onTriggered: controlPage.requestSessionAction("switchUser")
+                            onTriggered: sessionMenu.choose("switchUser")
                         }
                     }
                 }

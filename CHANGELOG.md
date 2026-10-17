@@ -4,6 +4,41 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning notifications off no longer takes the battery off the bar with it.
+- The bell can show itself alone while notifications wait, without the count,
+  the ✓ or the slim row's chip (`waitingShows`: `count`, the default, or
+  `bell`). A screen reader still hears the count.
+- An important banner can stay until it is dismissed: a banner lifetime of 0
+  (`priorityAlertDuration`) keeps it. The shortest timed lifetime is now 3
+  seconds, from 5.
+- Control Center's More menu closes as soon as one of its actions is chosen,
+  and whenever Control Center closes, instead of staying on screen.
+- Lock stands in Control Center's header by default, first in the row,
+  before Sleep. The header keeps the buttons in the order `sessionRow` lists
+  them, Shut Down included.
+- Notifications and the other pages stop above a dock or panel along the
+  bottom of the screen, and scroll inside, instead of running down behind it.
+- On a horizontal panel too thin for its row, such as a 24 px bar along the top
+  of the screen, the Status Bar draws a slim row by itself: smaller marks, the
+  temperature beside its icon, and the ticker on one line, all inside the bar.
+  With something unread, the bell gives its place to a chip with the count;
+  do not disturb shows the slashed bell. At the usual sizes nothing changes. Pages and
+  important banners open below a bar along the top and come down from it.
+- In the slim row a finger no longer has to find an icon a few millimetres
+  wide. A tap opens the page of the status icon nearest it. Pulled down
+  from them, the icons grow out of the bar finger-sized in a strip below it,
+  at once with the icon pulled from chosen, even at the screen's edge, where
+  the strip cannot stand under it: slide to another, which is marked and
+  named while the icons keep still, and let go to open its page.
+  Let go back in the bar or past either end and nothing opens. A mouse,
+  touchpad or pen still uses each icon. The bell no longer shows its name
+  over the bar: the page it opens names itself.
+- A bar that paints its own clock can say on the session bus how much room it
+  leaves beside it, and the Status Bar takes that width. Without such a bar it
+  measures its neighbours as before.
+- A page opened from a bar along the top no longer lands off the top of the
+  screen when a panel along the bottom arrived after the Status Bar: the room
+  below the bar is measured again each time a page opens.
 - The installer puts Temperance where the system's Qt looks for plugins, so
   it also installs on distributions that keep them outside Arch's folder.
   Removing Temperance puts Plasma's System Tray back on its panel and
