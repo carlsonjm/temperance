@@ -1,39 +1,37 @@
 # Temperance boundary with Ambient Tette
 
-This document defines the live ownership boundary between Temperance and Ambient
-Tette.
+Which status Temperance shows, and which Ambient Tette shows.
 
-Temperance answers **what changed**. It owns notification intake and presentation:
-the ticker, priority banners, grouped history, dismissal, and producer
-actions. Temperance must not turn continuous status into synthetic events.
+Temperance shows **what changed**. It receives and presents notifications:
+the ticker, priority banners, grouped history, dismissal, and the sender's own
+actions. It does not turn continuous status into made-up events.
 
-Ambient Tette answers **what matters now**. It owns ongoing context on its own
+Ambient Tette shows **what matters now**. It shows ongoing context on its own
 side of the dock, including media sessions, transfers, their progress, and their
 live actions.
 
-Preserve these invariants:
+Both sides follow these rules:
 
-- Source applications and services own underlying state and actions.
-- Temperance must not infer progress from notification text, become a second job
-  owner, or continuously repeat live media state.
-- Ambient removes an activity when its authoritative source ends. It must not
-  invent completion from filesystem quiet time or source loss.
-- A transition outcome may enter Temperance through the shared notification path,
-  but the same outcome must not be presented twice.
+- The source application or service holds the real state and actions.
+- Temperance does not read progress out of notification text, track jobs of its
+  own, or keep repeating live media state.
+- Ambient removes an activity when its source says it has ended. It does not
+  guess completion because the filesystem went quiet or the source disappeared.
+- A finished activity's outcome may reach Temperance through the shared
+  notification path, but the user sees it only once.
 - A transfer's end (`transfer.complete`, `transfer.error`) and a drive plugged
-  in (`device.added`) go to the history, never the ticker or a banner: Ambient
-  showed each for a minute first.
-- Temperance changes for Ambient are limited to a proven handoff, duplicate
-  suppression, or shared geometry. Ambient implementation stays in Tette.
+  in (`device.added`) go to the history, not the ticker or a banner: Ambient
+  already showed each for a minute.
+- Temperance changes for Ambient are limited to a proven handoff, hiding
+  duplicates, or shared geometry. Ambient itself is built in Tette.
 
 ## Panel geometry
 
-The center application dock remains physically centered. Temperance measures and
-flexes only inside its own allocation, on whichever side the panel gives it; Tette
-owns its launcher and Ambient strip on the other. Each side reacts to panel
-geometry without moving, sizing, or configuring the other side.
+The application dock stays centered on the panel. Temperance measures and
+resizes only within its own share of the panel, on whichever side the panel
+gives it; Tette has its launcher and Ambient strip on the other. Each side
+responds to panel geometry without moving, sizing or configuring the other.
 
-Temperance must preserve event-driven geometry updates and must not poll the panel,
-write spacer configuration, or claim the center allocation. Surplus width stays
-outside complete activity/control groups rather than being inserted between their
-children.
+Temperance updates its geometry on events. It does not poll the panel, write
+spacer configuration or take the center space. Spare width goes outside whole
+activity and control groups, never between the items inside one.

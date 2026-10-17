@@ -8,15 +8,15 @@ may use, study, modify, fork and redistribute the source under its terms.
 
 ## The names and marks are not part of that licence
 
-The following are not licensed under the GPL and remain the property of the
-copyright holder, Jared Carlson:
+The following are not licensed under the GPL. They belong to the copyright
+holder, Jared Carlson:
 
 - The publisher name **Good Input** and the product name **Shuffle for Plasma**
 - The names **Kadunce**, **Tettegouche** and **Temperance**
 - The Temperance logo and the animated Temperance Bell mark
 
-This is the ordinary arrangement for free software: the code is free to
-redistribute, the identity is not free to reuse.
+This is the usual arrangement for free software: you can redistribute the code,
+but not reuse its identity.
 
 ## What this means in practice
 
@@ -39,12 +39,11 @@ A fork is welcome. It needs its own name.
 
 The action glyphs in `assets/icons/lucide/` are a third-party subset of Lucide,
 licensed under ISC, with inherited Feather icons under MIT. They are not project
-marks and nothing here claims any right in them. See
-`assets/icons/THIRD_PARTY.md`.
+marks, and this file claims no right in them. See `assets/icons/THIRD_PARTY.md`.
 
 The Temperance Bell's outline is adapted from Lucide's `bell` icon under ISC
-(see `THIRD_PARTY_NOTICES.md`). Only its animation and its presentation as
-Temperance's mark are claimed here, never the outline itself.
+(see `THIRD_PARTY_NOTICES.md`). This file claims only its animation and its
+use as Temperance's mark, not the outline itself.
 
 ## Permission
 

@@ -9,27 +9,28 @@ Temperance needs KDE's calendar library, packaged as `kcalendarcore`. The
 installer stops and says so if it is missing.
 
 Double-click `install-system.sh` and choose **Execute**, or open this folder in a
-terminal and run `./install-system.sh`. A terminal stays open so authorization,
-success, or any error is visible. It installs where the system's Qt looks for
-plugins, then restarts the panel; windows and the session are untouched, so an
-update needs no sign out. It reports success only once the system holds this
-package's own files, and says whether the restarted panel has loaded them. The first time, open panel edit mode, choose **Add Widgets**, search for
+terminal and run `./install-system.sh`. A terminal stays open so you can see the
+authorization prompt, the result or any error. The installer puts Temperance
+where the system's Qt looks for plugins and restarts the panel. Your windows and
+session carry on, so an update needs no sign-out. It reports success only when the installed
+files match this package, and says whether the restarted panel has loaded them.
+
+The first time, open panel edit mode, choose **Add Widgets**, search for
 **Temperance**, and drop it into the panel.
 
 **Configure Temperance**, in the widget's menu, selects the highlight color,
 promotes tray entries into Control Center pills, and links calendars. Promoted
 entries leave the organized tray.
 
-The package identity changed in 1.1.0. When upgrading from 1.0.0, remove the
-previous package and add Temperance as a new widget rather than updating the old
-panel instance.
+The package identity changed in 1.1.0. To upgrade from 1.0.0, remove the old
+package and add Temperance to the panel as a new widget.
 
 ## Remove
 
 Run `./uninstall-system.sh`. It puts Plasma's System Tray back on Temperance's
 panel, so notifications show again, and restarts the panel.
 
-This native, architecture-specific plugin runs only on the Plasma and Qt it was
-built for; the installer warns otherwise.
+This plugin runs only on the architecture, Plasma and Qt it was built for; the
+installer warns if yours differ.
 
 The included PNG is Temperance's icon in Add Widgets.

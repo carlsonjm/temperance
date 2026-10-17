@@ -8,24 +8,25 @@ How Temperance works and why. Inputs are in `INPUT.md`, the Ambient split in
 Temperance is a Status Bar for Plasma 6: notifications, weather, battery, Control
 Center, an organized System Tray, and the time and date. It is one native
 containment plugin that replaces the stock System Tray's presentation, not a
-user-local QML-only plasmoid. Keep the root and native-plugin metadata identical,
-keep the custom containment type, and run only on the Plasma and Qt built for,
-elsewhere saying it needs an update.
+user-local QML-only plasmoid. Its root and native-plugin metadata match, it
+keeps the custom containment type, and it runs only on the Plasma and Qt it was
+built for; elsewhere it says it needs an update.
 
 The launcher, task manager, stock panel spacers and Ambient Tettegouche are
-independent applets. Temperance may measure but never configures or owns them.
-It reports what changed through notifications; Ambient owns what is ongoing.
+separate applets, which Temperance may measure but does not configure.
+It reports what changed through notifications; Ambient shows what is ongoing.
 
 ## Width
 
 Adaptive mode measures from Temperance's right edge to the nearest visible
 non-spacer applet on its left, leaving the configured gap. Plasma can move an
 ancestor AppletContainer without changing a root's local geometry, so the
-watcher follows each root, its ancestors and reparenting. Updates are event driven, never polled or guessed.
+watcher follows each root, its ancestors and reparenting. Updates come from
+events, not polling or guesses.
 
 Manual mode uses a fixed configured width. In both modes controls keep their
 minimum widths, and the ticker clips, scrolls or drops optional content inside the
-allocation. Temperance never writes spacer configuration or recenters the task
+allocation. Temperance does not write spacer configuration or recenter the task
 dock.
 
 A container that paints furniture of its own, as Shuffle's band paints its dock,
@@ -41,9 +42,9 @@ one group. Height makes up the width: each icon's touch area runs the panel's
 full height, about 7 by 13 mm on the Z13's band.
 
 The row stays a 42 px surface, slim on thinner panels (`PANELS.md`), because the
-popups are placed from it. The reach above and below is a separate handler that
-acts only outside the row: a pointer's press reaches both it and the control, and
-acting on both opened a page and closed it again.
+popups are placed from it. A separate handler takes presses above and below the
+row and acts only outside it: a pointer's press reaches both it and the control,
+and acting on both opened a page and closed it again.
 
 The bell and the wired port are outlines Temperance draws, kept to the size of
 the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
@@ -59,9 +60,9 @@ freedesktop symbolic one.
 ### One store, one presenter
 
 Temperance initializes `NotificationManager::Server::self()` and suppresses the
-stock Notifications applet while it is loaded. The server is shared storage and
-protocol ownership. Never start a second notification daemon, change D-Bus
-ownership, clear history during a presenter change, or let two presenters race. A
+stock Notifications applet while it is loaded. The server holds the shared storage
+and the D-Bus name. Do not start a second notification daemon, move the D-Bus
+name, clear history during a presenter change, or let two presenters race. A
 stock-presenter option needs a readiness handshake: keep Temperance active until
 the stock applet is complete, destroy and forget the stock applet before restoring
 Temperance, and fall back to Temperance if stock loading fails.
@@ -78,9 +79,9 @@ unrelated arrivals. Priority windows never expose zero-height Wayland geometry,
 and banners keep touch-safe actions, bounded text, direct dismissal and
 reduced-motion behavior.
 
-Presentation never invents urgency, completion or an action the producer did not
-supply: Temperance adds no Snooze, and a private NotificationManager check proves a
-producer's own `snooze` action is kept and dispatched.
+Temperance shows only the urgency, completion and actions producers supply.
+It adds no Snooze; a private NotificationManager check proves a producer's own
+`snooze` action is kept and dispatched.
 
 ### History keeps the producer's meaning
 
@@ -96,8 +97,8 @@ rows contribute their real height so controls stay inside the card.
 
 Temperance draws the time over an optional date at the Status Bar's right end, so
 Shuffle needs no separate clock applet. It uses the system UI font
-or one you pick, in fixed cells that reserve the widest time and date the
-locale produces, so it never moves the layout. The day period is lowercase, light
+or one you pick, in fixed cells sized for the widest time and date the locale
+produces, so the layout never shifts. The day period is lowercase, light
 and smaller, on the time's baseline.
 
 Each new minute is dealt onto the old like a card dropping in from above. The
@@ -112,8 +113,8 @@ The calendar is a small card in the corner, built on Plasma's month grid
 
 Events come from private iCal addresses you paste, as Google, iCloud and
 Outlook give out, read with KCalendarCore every 10 minutes; a failed read keeps the
-last good copy. KDE's full calendar service was rejected: a background service
-with its own database on every install. Each address is kept in the widget's
+last good copy. KDE's full calendar service was rejected for adding a
+background service and database to every install. Each address is kept in the widget's
 settings in your home folder, and anyone holding it can read that
 calendar. Linked calendars are read-only: writing would need a sign-in per service,
 and Google reviews apps that write to calendars.
@@ -140,15 +141,15 @@ Session controls live in the Control Center header: Shut Down always, then the
 `sessionRow` actions in listed order (Lock, Sleep, Restart) as room allows, the
 rest (Log Out) behind More. Sleep needs a machine that can sleep;
 Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down
-go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control but the
-calendar's is one grey pill, or for Back and More a grey circle. In tablet mode
-Plasma's buttons ignore the pointer, so these watch a mouse, trackpad or pen
-themselves, never a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
+go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control except the
+calendar's is a grey pill, or for Back and More a grey circle. In tablet mode
+Plasma's buttons ignore the pointer, so these track a mouse, trackpad or pen
+themselves, but not a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
 Promoted tray entries become Control Center pills in listed order and leave the
 organized tray, which keeps the Apps, Devices, System order and drops empty
-sections from its spacing. Controls the machine cannot use are omitted: battery
-follows authoritative power state, and the Performance entry, placed by
+sections from its spacing. Controls the machine cannot use are left out: battery
+follows the system's power state, and the Performance entry, placed by
 `temperance.performance`, needs the local helper; a right-click lists its profiles.
 The Performance page's refresh-rate switch sets the built-in screen's rate through
 libkscreen. A rate other than the profile's holds until the profile changes, and
@@ -166,11 +167,10 @@ opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 panel; `Dialog.floating` only treats and clamps screen edges. The critical
 notification host carries its own anchor correction, because its window type does
 not inherit AppletPopup clearance, and its own theme, so an alert keeps the look's
-colours whatever ground the bar has. `ExpandedRepresentation.qml` owns the rounded
+colours whatever ground the bar has. `ExpandedRepresentation.qml` provides the rounded
 surface, padding and entrance motion, and `availablePopupHeight()` caps content
-height. Never change padding, content translation or height limits to fix a
-placement error; measure the final window, the painted panel edge and the anchor
-first.
+height. To fix a placement error, first measure the final window, the painted panel edge
+and the anchor; do not change padding, content translation or height limits.
 
 Every page sits on one margin line 16 px in from each edge, shared by the title,
 the content's outer edges and the header's last control, with smaller gaps inside a
@@ -187,8 +187,8 @@ Temperance applies the suite's visual language:
 - Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
   vendored here. Application, provider, weather and tray icons stay with their
   sources.
-- The animated bell, Lucide's Bell redrawn for its clapper and slash, the weather
-  treatment and the custom tray work are protected, not icon-migration targets.
+- The animated bell (Lucide's Bell redrawn for its clapper and slash), the weather
+  treatment and the custom tray work are protected from icon migrations.
 - Controls keep distinct resting, hover, pressed, focus and selected states.
 - Motion is interruptible and follows the platform animation setting, except the
   clock's minute.
@@ -216,5 +216,5 @@ coordinated identity work.
 Automated checks cover source, notification, session, popup, clock, calendar and
 real-panel geometry contracts. The real-panel fixture pairs Temperance with a
 separately built Tettegouche plugin, so it is not part of the automatic run.
-Physical tests remain required for compositor placement, real producers, touch
-and optical alignment, and a control is tested by click as well as by touch.
+Compositor placement, real producers, touch and optical alignment still need
+physical tests; each control is tested by click and by touch.

@@ -35,7 +35,7 @@
 </tr>
 </table>
 
-It replaces Plasma's System Tray presentation and brings its own clock, which can be turned off; other widgets stay independent.
+It replaces Plasma's System Tray presentation and brings its own clock, which you can turn off.
 
 ## Controls
 
@@ -56,7 +56,7 @@ In a release's folder, run `./install-system.sh`, then add **Temperance** from *
 <details>
 <summary>Requirements, upgrading and removing</summary>
 
-The release targets x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on a horizontal Wayland panel, and needs KCalendarCore. Its native plugin runs only on the Plasma and Qt it was built for, elsewhere saying it needs an update. It installs natively, not as a user-local `.plasmoid`.
+The release targets x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on a horizontal Wayland panel, and needs KCalendarCore. Its native plugin runs only on the Plasma and Qt it was built for; elsewhere it says it needs an update. It installs system-wide rather than as a user-local `.plasmoid`.
 
 The package identity changed in 1.1.0: remove 1.0.0 and add Temperance as a new widget. `./uninstall-system.sh` removes it and puts Plasma's System Tray back.
 </details>
@@ -68,15 +68,15 @@ The package identity changed in 1.1.0: remove 1.0.0 and add Temperance as a new 
 
 The bar shows recent notifications, weather, battery, tray entries, and the time over the optional date, in the system font or one you choose. If enabled, volume or brightness changes show briefly. Turned-off sections give their space to the rest.
 
-An app's notifications group together, and keep its own actions, such as reply; Temperance invents none. Critical and selected system alerts show as larger banners, timed or kept until dismissed. The bell counts what waits, or shows itself alone.
+An app's notifications group together and keep the app's own actions, such as reply. Critical and selected system alerts show as larger banners, timed or kept until dismissed. The bell shows how many are waiting, or just the bell.
 </details>
 
 <details>
 <summary>Calendar, Control Center and tray</summary>
 
-The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only, re-read every few minutes. Today's next timed event shows in the bar.
+The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only and refresh every few minutes. Today's next timed event shows in the bar.
 
-In Control Center's header, Shut down always stands; Log out waits behind More; each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray stay with notifications or weather off.
+Control Center's header always shows Shut down and keeps Log out behind More. Each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray work with notifications or weather off.
 </details>
 
 <details>

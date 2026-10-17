@@ -7,8 +7,8 @@ How Temperance fits the panel it sits in, and what a host can tell it.
 
 The row is drawn for a 42 px surface. On a horizontal panel that leaves it under
 34 px, such as a 24 px bar along the top of the screen, Temperance draws the slim
-row instead. The panel's thickness alone decides; no setting picks it, a vertical
-panel always keeps the full row, and at 34 px or more nothing changes.
+row instead. Only the panel's thickness decides; there is no setting for it. A
+vertical panel always keeps the full row, and so does a panel 34 px or thicker.
 
 | Part | Full row | Slim row |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ accessible name says the count instead.
 
 The slim row takes the panel's height and asks for no more. Each control is still
 at least one step wide and runs the bar's full height, so a touch anywhere on the
-bar is a control's, and every mark, the count included, stays inside the bar. The
+bar lands on a control, and every mark, the count included, stays inside the bar. The
 ticker keeps all it does, on one line centred in the bar: notifications, today's
 event, a flick to check a line off, a tap to open the history. With the time and
 the date both off, as on a bar that draws its own clock, the clock takes no room;
@@ -55,13 +55,14 @@ out under the finger, kept on the screen. That control is chosen first. The
 finger then chooses by how far it slides, a control for every 78 px; where the
 screen's edge leaves less room than that to one side, the steps that way
 shorten so the strip's end is reached just short of the edge. A tile marks
-the control chosen and its name shows beneath it, while the controls keep still and the same size, in the strip and
-in the bar. Nothing opens while the finger moves. Lifted over a control, its page opens, staying open if it was
-already; lifted back in the bar or past either end of the strip, nothing opens.
+the chosen control and its name shows beneath it. The controls keep still and
+keep their size, in the strip and in the bar. Nothing opens while the finger
+moves. Lifting over a control opens its page, or leaves it open if it already
+was; lifting back in the bar or past either end of the strip opens nothing.
 Either way the strip goes back into the bar at Plasma's animation speed. The
 strip follows a light or dark style as the pages do. A mouse, touchpad or pen
-still uses each control by itself, and no name rises over the slim row from
-the bell: the page it opens names itself. The panel gives that run of controls
+still uses each control on its own. The bell shows no name over the slim row,
+because the page it opens has its own title. The panel gives that run of controls
 as `fingerControlsArea`, in its own coordinates, so a bar holding it along the
 top of the screen keeps only the controls from a pull meant for the
 workspaces and leaves the ticker's room to it.
@@ -71,9 +72,9 @@ brightness can ask the row to show them instead (`showLevels`, off by default).
 As either changes, by a key or another application, the speaker or the sun
 comes into the row before Control Center's button with a short track showing
 how full, for a second and a half after the last change, opening and closing
-at Plasma's animation speed. It shows nothing for the first reading, nothing
-while Control Center is open, since its sliders already say it, and nothing
-when the setting is off.
+at Plasma's animation speed. It stays hidden for the first reading, while
+Control Center is open (its sliders already show the level), and when the
+setting is off.
 
 ## Edges
 
@@ -86,8 +87,8 @@ bar.
 ## Host interfaces
 
 A host can publish what Temperance cannot measure. Each interface is optional:
-without it, or with an answer Temperance does not read, it behaves as on any
-panel.
+without it, or with an answer Temperance does not read, Temperance behaves as on
+any panel.
 
 ### Clock extent
 
