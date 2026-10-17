@@ -1756,7 +1756,10 @@ ContainmentItem {
                 id: notificationRail
                 objectName: "temperance-notification-rail"
                 Layout.fillWidth: true
-                Layout.minimumWidth: root.statusPitch + 8
+                // With notifications off the rail holds nothing, so it asks
+                // for no room: the width above leaves none for it, and a
+                // floor here would push the battery off the row's end.
+                Layout.minimumWidth: root.notificationsEnabled ? root.statusPitch + 8 : 0
                 Layout.fillHeight: true
                 radius: height / 2
                 color: "transparent"
