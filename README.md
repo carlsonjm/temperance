@@ -1,16 +1,41 @@
 <p align="center">
-  <img src="assets/co.goodinput.temperance.png" width="180" alt="Temperance">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/banner-dark.png">
+    <img src="assets/readme/banner-light.png" alt="Temperance: a quiet Status Bar for KDE Plasma" width="100%">
+  </picture>
 </p>
 
-# Temperance
+<p align="center">
+  <img src="https://img.shields.io/badge/KDE_Plasma-6-1d99f3?style=flat" alt="KDE Plasma 6">
+  <img src="https://img.shields.io/badge/input-touch_first-00b894?style=flat" alt="Touch first">
+  <img src="https://img.shields.io/badge/license-GPL--2.0--or--later-blue?style=flat" alt="GPL-2.0-or-later">
+</p>
 
-Temperance is a Status Bar for KDE Plasma 6. It keeps system state and recent
-changes together in one panel widget: notifications, weather, battery, common
-controls, the System Tray, and the time and date.
+<p align="center">
+  <a href="#install">Install</a> · <a href="#controls">Controls</a> · <a href="docs/README.md">Docs</a> · <a href="https://shuffleplasma.com">Part of Shuffle</a>
+</p>
 
-Temperance replaces Plasma's stock System Tray presentation and brings its own
-clock, which can be turned off where a panel keeps Plasma's. Your launcher, task
-manager, and other panel widgets remain independent.
+<p align="center">Temperance is a Status Bar for KDE Plasma 6: notifications, weather, battery, common controls, the System Tray and the time, in one panel widget.</p>
+
+<p align="center"><img src="assets/readme/showcase.webp" alt="Temperance's Control Center open above the Status Bar" width="100%"></p>
+<p align="center"><sub>Control Center, open above the bar.</sub></p>
+
+## What you get
+
+<table>
+<tr>
+<td width="33%" valign="top"><b>Notifications &amp; Events</b><br>Notifications pass through the bar, then wait in a history under today's events.</td>
+<td width="33%" valign="top"><b>Control Center</b><br>Volume, brightness, connections and, where supported, performance profiles. Lock, Sleep, Restart and Shut down sit in its header.</td>
+<td width="33%" valign="top"><b>System Tray</b><br>App and device icons, each shown in the bar, the popup, or nowhere.</td>
+</tr>
+<tr>
+<td width="33%" valign="top"><b>Clock and calendar</b><br>The time, and the date if you like. Tap for a month with holidays and your calendars.</td>
+<td width="33%" valign="top"><b>Weather</b><br>Current conditions and temperature, off until you turn it on.</td>
+<td width="33%" valign="top"><b>Fits the panel</b><br>Fills the free space, slims for thin panels and stops pages above a bottom dock.</td>
+</tr>
+</table>
+
+It replaces Plasma's System Tray presentation and brings its own clock, which can be turned off; other widgets stay independent.
 
 ## Controls
 
@@ -22,134 +47,75 @@ manager, and other panel widgets remain independent.
 | Calendar | Tap the clock | — |
 | Weather | Tap the weather icon | — |
 
-Tap an open page's icon again to close it. Every other input is in
-[docs/INPUT.md](docs/INPUT.md).
+Tap an open page's icon again to close it. Every other input is in [docs/INPUT.md](docs/INPUT.md).
 
-## Status Bar
+## Install
 
-The compact panel view can show:
+In a release's folder, run `./install-system.sh`, then add **Temperance** from **Add Widgets** ([details](packaging/README.md)).
 
-- Recent notification activity
-- Current weather
-- Battery state
-- Volume and brightness
-- Network and other System Tray entries
-- The time over the date, at the right end, in the system font or one you choose
+<details>
+<summary>Requirements, upgrading and removing</summary>
 
-Temperance fits the panel's free space, and slims for thin panels. Optional modules
-can be turned off, and the remaining sections share the available space.
+The release targets x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on a horizontal Wayland panel, and needs KCalendarCore. Its native plugin runs only on the Plasma and Qt it was built for, elsewhere saying it needs an update. It installs natively, not as a user-local `.plasmoid`.
 
-## Clock and calendar
+The package identity changed in 1.1.0: remove 1.0.0 and add Temperance as a new widget. `./uninstall-system.sh` removes it and puts Plasma's System Tray back.
+</details>
 
-The clock opens a month calendar as a small card in the corner, with holidays and
-your own events. Events come from calendars you link by pasting their private iCal
-address, which Google, iCloud and Outlook all give out. Linked calendars are
-read-only and are re-read every few minutes.
+## Details
 
-Today's next timed event appears in the Status Bar beside your notifications, and
-today's events head the history, titled Notifications & Events.
+<details>
+<summary>Status Bar and notifications</summary>
 
-## Notifications
+The bar shows recent notifications, weather, battery, tray entries, and the time over the optional date, in the system font or one you choose. If enabled, volume or brightness changes show briefly. Turned-off sections give their space to the rest.
 
-New notifications appear briefly in the Status Bar and remain available in recent
-history. Notifications from the same application can be grouped and expanded.
+An app's notifications group together, and keep its own actions, such as reply; Temperance invents none. Critical and selected system alerts show as larger banners, timed or kept until dismissed. The bell counts what waits, or shows itself alone.
+</details>
 
-When an application supplies actions such as reply, dismiss, or snooze, Temperance
-keeps those actions with the notification. It does not invent actions that the
-application did not provide.
+<details>
+<summary>Calendar, Control Center and tray</summary>
 
-Critical and selected system notifications can appear as larger banners. Ordinary
-notifications stay in the quieter ticker and history flow.
+The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only, re-read every few minutes. Today's next timed event shows in the bar.
 
-## Control Center
+In Control Center's header, Shut down always stands; Log out waits behind More; each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray stay with notifications or weather off.
+</details>
 
-Control Center holds volume, brightness, connectivity, and the performance
-profiles where the system supports them. Its header holds Sleep, Restart and Shut
-down; Lock and Log out wait behind More. Controls the machine cannot use are
-omitted.
+<details>
+<summary>Settings and privacy</summary>
 
-## System Tray
+**Configure Temperance**, in the widget's menu, opens Shuffle Settings where installed, otherwise:
 
-The organized System Tray keeps application and device entries in one place. Each
-entry can be shown in the panel, placed in the tray popup, or disabled through the
-widget settings.
+- **Tray Entries**: where each tray entry appears.
+- **Appearance**: session controls, highlight color, width, notification and weather sections, the bell, temperature unit, weather app, clock and font, important alerts, popup pin, Control Center entries.
+- **Calendar**: linked calendars and their colors.
 
-Control Center and System Tray remain available even when optional notification or
-weather sections are turned off.
+With the online weather fallback on, Temperance sends the configured station coordinates or location name to Open-Meteo hourly when Plasma's Weather widget has no temperature. Turn it off to keep weather local.
+</details>
 
-## Configure
+## For developers
 
-**Configure Temperance**, in the widget's menu, has three pages:
+<details>
+<summary>Building, checks and attribution</summary>
 
-- **Tray Entries** controls which native tray entries appear in the panel, in the
-  popup, or nowhere.
-- **Appearance** controls session controls, the highlight color, automatic or fixed
-  width, optional notification and weather sections, the bell's count,
-  temperature unit, weather application, the clock and its font, important-alert
-  behavior, popup pin, and Control Center entries.
-- **Calendar** links calendars by their private address and sets each one's color.
+Read `AGENTS.md` first; `docs/README.md` indexes the docs.
 
-Weather starts off. When online weather fallback is enabled, Temperance sends the
-configured station coordinates or location name to Open-Meteo hourly. Disable
-the fallback to keep weather data local to Plasma's installed Weather widget.
-
-## Compatibility
-
-The binary bundle targets x86_64 Plasma 6.7.4, Qt 6.11.2, and KDE Frameworks 6.29
-on a horizontal Wayland panel.
-
-Its native plugin runs only on the Plasma and Qt built for, elsewhere saying it
-needs an update. Building from source needs Qt 6.9 and KDE Frameworks 6.20 or
-newer.
-
-The package identity changed in 1.1.0. When upgrading from 1.0.0, remove the
-previous package and add Temperance to the panel as a new widget.
-
-## Build from source
-
-Install a C++20 compiler, CMake, Ninja, ECM, Plasma and PlasmaQuick development
-files, Qt 6 Core/DBus/Gui/Network/Quick/Widgets development files, KDE Frameworks 6
-development files including KCalendarCore, PulseAudioQt, libkscreen, and Plasma Workspace's
-NotificationManager and KWorkspace development files. The installed system also
-needs KCalendarCore.
+Building needs C++20, CMake, Ninja, ECM, Qt 6.9 and KDE Frameworks 6.20 or newer, with development files for Plasma, PlasmaQuick, Qt Concurrent/Core/DBus/Gui/Network/Quick/Widgets, KCalendarCore, PulseAudioQt, libkscreen, and Plasma Workspace's NotificationManager and KWorkspace; the tests add LayerShellQt.
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build build
-ctest --test-dir build --output-on-failure
+./verify.sh                    # the repository checks
+./packaging/build-release.sh   # the release archive
 ```
 
-Create the tested installable release archive with:
+The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma Workspace 6.7.4; `tools/upstream.sh` records it file by file.
+</details>
 
-```sh
-./packaging/build-release.sh
-```
+## Part of Shuffle
 
-Native Plasma plugins are installed through a compatible native package. They are
-not ordinary user-local `.plasmoid` archives.
+Temperance is one open-source piece of Shuffle, a touch-first desktop for KDE Plasma, where it is the Status Bar. The others are [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry) and [Split Rock](https://github.com/carlsonjm/split-rock). Get it all at [shuffleplasma.com](https://shuffleplasma.com).
 
-## Development
+## License
 
-Read `AGENTS.md` before working in this repository. The documentation index is in
-`docs/README.md`.
+Licensed GPL-2.0-or-later ([LICENSE](LICENSE)); see the SPDX headers, [LICENSES](LICENSES), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for per-file terms and attribution. The project names and marks are not covered by that licence; see [TRADEMARKS.md](TRADEMARKS.md).
 
-- `docs/ARCHITECTURE.md` describes how Temperance works and why.
-- `docs/ROADMAP.md` is what is planned.
-
-Run the repository checks before proposing a build:
-
-```bash
-./verify.sh
-```
-
-## Architecture and attribution
-
-The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma
-Workspace 6.7.4; `tools/upstream.sh` records it file by file.
-
-Licensed GPL-2.0-or-later ([LICENSE](LICENSE)); see the SPDX headers,
-[LICENSES](LICENSES), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for
-per-file terms and attribution.
-
-The project names and marks are not covered by that licence. See
-[TRADEMARKS.md](TRADEMARKS.md).
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/good-input-white.png"><img src="assets/readme/good-input-ink.png" alt="Good Input" width="140"></picture></p>
