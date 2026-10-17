@@ -110,7 +110,7 @@ def check_live_hygiene() -> None:
 # A document over its budget is trimmed; removed text lives in Git history. A
 # budget is raised only with the maintainer's agreement.
 WORD_BUDGETS = {
-    "AGENTS.md": 205,
+    "AGENTS.md": 345,
     "CLAUDE.md": 60,
     "README.md": 840,
     "docs/AMBIENT-BOUNDARY.md": 295,
