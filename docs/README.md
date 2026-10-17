@@ -1,10 +1,10 @@
 # Documentation
 
-Each document owns one subject and states what is true now; removed text lives in
-Git history. `tests/verify-docs.py` fails when a tracked document is missing from
-this table, so add a new one here in the same change.
+Each document covers one subject and describes Temperance as it is now; older text
+is in Git history. `tests/verify-docs.py` fails when a tracked document is missing
+from this table, so add any new one here in the same change.
 
-| Document | Owns |
+| Document | Covers |
 |---|---|
 | `AGENTS.md` | Startup set and working rules |
 | `CLAUDE.md` | Claude Code entry point into `AGENTS.md` |
