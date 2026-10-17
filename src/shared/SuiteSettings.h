@@ -3,10 +3,13 @@
     SPDX-License-Identifier: GPL-2.0-or-later
 */
 
+// Shared by Tettegouche and Temperance. This folder in Tettegouche is where
+// the shared code changes; Temperance carries a byte-for-byte copy, which its
+// tools/shared.sh records and checks, so one change reaches both.
+
 #pragma once
 
 #include <KIO/CommandLauncherJob>
-#include <KLocalizedString>
 #include <KService>
 #include <KShell>
 
@@ -15,8 +18,9 @@
 #include <QAction>
 #include <QDebug>
 #include <QMetaObject>
-#include <QStandardPaths>
 
+namespace suite
+{
 // Where Shuffle Settings is installed, the widget's Configure opens it at
 // the widget's own page; where it isn't, Configure opens the widget's own
 // settings as always. It is looked for at each press, so installing or
@@ -25,20 +29,17 @@
 // Plasma connects Configure to the widget's own settings by the slot's name.
 // That one connection is taken over; a Plasma that connects it some other way
 // keeps its own settings page, which is the safe way round, and the log says
-// so, since Configure then no longer opens Shuffle Settings.
-//
-// Search carries the same helper; a change here belongs in both until the
-// suite shares it from one place.
-inline void openConfigureInSuiteSettings(Plasma::Applet *applet, const QString &page)
+// so. False when Configure was not taken over.
+inline bool openConfigureInSuiteSettings(Plasma::Applet *applet, const QString &page)
 {
     QAction *configure = applet->internalAction(QStringLiteral("configure"));
     if (!configure) {
-        return;
+        return false;
     }
     if (!QObject::disconnect(configure, SIGNAL(triggered()), applet, SLOT(requestConfiguration()))) {
         qWarning().noquote() << applet->pluginMetaData().pluginId()
                              << "could not take over Configure; it opens the widget's own settings";
-        return;
+        return false;
     }
     QObject::connect(configure, &QAction::triggered, applet, [applet, page] {
         const KService::Ptr settings = KService::serviceByDesktopName(QStringLiteral("co.goodinput.Shuffle.Settings"));
@@ -51,21 +52,6 @@ inline void openConfigureInSuiteSettings(Plasma::Applet *applet, const QString &
         job->setDesktopName(settings->desktopEntryName());
         job->start();
     });
+    return true;
 }
-
-// Inside Shuffle the widget goes by Shuffle's name for it, in its title and
-// its Configure entry; elsewhere it keeps its own. Shuffle is installed where
-// its Bottom Surface is, the one part every Shuffle install has.
-inline void useShuffleName(Plasma::Applet *applet, const QString &name)
-{
-    if (QStandardPaths::locate(QStandardPaths::GenericDataLocation,
-                               QStringLiteral("plasma/plasmoids/co.goodinput.shuffle.bottomsurface"),
-                               QStandardPaths::LocateDirectory)
-            .isEmpty()) {
-        return;
-    }
-    applet->setTitle(name);
-    if (QAction *configure = applet->internalAction(QStringLiteral("configure"))) {
-        configure->setText(i18nc("@action:inmenu %1 is the widget's name", "Configure %1…", name));
-    }
 }
