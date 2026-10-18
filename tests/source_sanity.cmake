@@ -8,6 +8,7 @@
 # moving a value into a style object does not fail this.
 
 file(READ "${SOURCE_DIR}/qml/main.qml" main_qml)
+file(READ "${SOURCE_DIR}/qml/AlertBanners.qml" banners_qml)
 file(READ "${SOURCE_DIR}/qml/ControlCenterPage.qml" control_center_qml)
 file(READ "${SOURCE_DIR}/qml/OrganizedTrayPage.qml" organized_tray_qml)
 file(READ "${SOURCE_DIR}/qml/ExpandedRepresentation.qml" expanded_qml)
@@ -20,14 +21,14 @@ file(READ "${SOURCE_DIR}/src/performancecontroller.cpp" performance_cpp)
 
 # A banner window never has zero height, which Wayland rejects; the banner
 # host is a window of the live panel, which no automatic test opens.
-string(FIND "${main_qml}" "height: Math.max(1, stackHeight)" safe_banner_height)
-string(FIND "${main_qml}" "priorityNotifications.count > 0 && bannerStack.stackHeight > 0" safe_banner_visibility)
+string(FIND "${banners_qml}" "height: Math.max(1, stackHeight)" safe_banner_height)
+string(FIND "${banners_qml}" "priorityNotifications.count > 0 && bannerStack.stackHeight > 0" safe_banner_visibility)
 if(safe_banner_height LESS 0 OR safe_banner_visibility LESS 0)
     message(FATAL_ERROR "Banner windows must never expose zero-height Wayland geometry")
 endif()
 # Its actions keep a touch target of at least 44 px for the same reason.
-if(NOT main_qml MATCHES "component BannerActionButton: Item"
-   OR NOT main_qml MATCHES "Layout.minimumWidth: 44")
+if(NOT banners_qml MATCHES "component BannerActionButton: Item"
+   OR NOT banners_qml MATCHES "Layout.minimumWidth: 44")
     message(FATAL_ERROR "Important-alert actions must keep touch-safe targets")
 endif()
 if(NOT main_qml MATCHES "id: priorityNotifications"

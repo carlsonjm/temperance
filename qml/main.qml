@@ -132,7 +132,7 @@ ContainmentItem {
     // A new line has come in beside the bell and is resting there; until it
     // rests it is arriving, and does not scroll.
     property bool notificationResting: false
-    readonly property bool notificationArriving: notificationIntro.running && !notificationResting
+    readonly property bool notificationArriving: notificationRail.notificationIntro.running && !notificationResting
     property bool notificationSequenceActive: false
     property bool notificationReviewComplete: false
     // The arrow's run ends on the calendar's event, after any unread
@@ -214,7 +214,7 @@ ContainmentItem {
     // At rest the event holds the ticker whenever a notification is not
     // reading; while the controls are open it shows only as its own page.
     readonly property bool eventShown: tickerEvent !== null
-        && (notificationControls.revealed
+        && (notificationRail.notificationControls.revealed
             ? eventPage && !notificationReviewComplete
             : !notificationCopyActive)
 
@@ -265,322 +265,6 @@ ContainmentItem {
         minimizedPriorityNotifications = minimized;
         priorityNotifications.invalidateFilter();
         railNotifications.invalidateFilter();
-    }
-
-    component RailTicker: Item {
-        id: ticker
-        required property string text
-        // Styled text carries its own colours; what a reader hears is plain.
-        property bool styled: false
-        property string accessibleText: text
-        property bool scrollingEnabled: true
-        property bool alignRight: false
-        property bool exposeOverflow: false
-        implicitWidth: tickerLabel.implicitWidth
-        implicitHeight: tickerLabel.implicitHeight
-        Layout.preferredWidth: implicitWidth
-        Layout.minimumWidth: 0
-        clip: !exposeOverflow
-
-        readonly property real overflow: Math.max(0, tickerLabel.implicitWidth - width)
-        readonly property real contentWidth: tickerLabel.implicitWidth
-        readonly property real restingX: alignRight ? Math.max(0, width - tickerLabel.implicitWidth) : 0
-
-        function syncScroll() {
-            scrollDelay.stop();
-            tickerScroll.stop();
-            tickerLabel.x = restingX;
-            if (root.motionEnabled && scrollingEnabled && overflow > 2) scrollDelay.restart();
-        }
-
-        PlasmaComponents.Label {
-            id: tickerLabel
-            objectName: "temperance-ticker-label"
-            x: 0
-            anchors.verticalCenter: parent.verticalCenter
-            text: ticker.text
-            textFormat: ticker.styled ? Text.StyledText : Text.PlainText
-            maximumLineCount: 1
-            Accessible.name: ticker.accessibleText
-            // A line too long for the ticker ends in an ellipsis while it
-            // stands still, and is whole while it flies in or scrolls.
-            width: !ticker.exposeOverflow && !tickerScroll.running
-                ? Math.min(implicitWidth, ticker.width) : implicitWidth
-            elide: Text.ElideRight
-            Behavior on opacity {
-                enabled: root.motionEnabled
-                NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
-            }
-            // Elsewhere the label keeps the system font it starts with.
-            Binding { target: tickerLabel; property: "font"; value: root.slimFont; when: root.slim }
-        }
-
-        onTextChanged: {
-            tickerLabel.x = restingX;
-            tickerLabel.opacity = 0;
-            tickerReveal.restart();
-            Qt.callLater(ticker.syncScroll);
-        }
-        onScrollingEnabledChanged: syncScroll()
-        onOverflowChanged: resizeSettle.restart()
-        SequentialAnimation {
-            id: tickerReveal
-            PauseAnimation { duration: root.motionEnabled ? 30 : 0 }
-            NumberAnimation {
-                target: tickerLabel
-                property: "opacity"
-                to: 1
-                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        Timer {
-            id: scrollDelay
-            interval: 1800
-            repeat: false
-            onTriggered: {
-                if (root.motionEnabled && ticker.scrollingEnabled && ticker.overflow > 2)
-                    tickerScroll.restart();
-            }
-        }
-
-        Timer {
-            id: resizeSettle
-            interval: 230
-            repeat: false
-            onTriggered: ticker.syncScroll()
-        }
-
-        SequentialAnimation {
-            id: tickerScroll
-            NumberAnimation {
-                target: tickerLabel
-                property: "x"
-                from: ticker.restingX
-                to: -ticker.overflow
-                duration: Math.max(1450, ticker.overflow * 20)
-                easing.type: Easing.Linear
-            }
-            PauseAnimation { duration: 1400 }
-            NumberAnimation {
-                target: tickerLabel
-                property: "x"
-                from: -ticker.overflow
-                to: ticker.restingX
-                duration: 420
-                easing.type: Easing.OutCubic
-            }
-            // One deliberate read per reveal. Leaving and returning to the
-            // control is the explicit gesture that makes it readable again.
-        }
-    }
-
-    component RailControlButton: PlasmaComponents.ToolButton {
-        id: railControlButton
-        property color glyphColor: railControlButton.pressed ? Qt.lighter(root.accentColor, 1.18)
-            : railControlButton.hovered ? root.accentColor : tone.text
-        implicitWidth: root.statusPitch
-        implicitHeight: Math.min(32, root.rowHeight)
-        display: PlasmaComponents.AbstractButton.IconOnly
-        Behavior on glyphColor { ColorAnimation { duration: 120 } }
-        background: null
-        function activate() { clicked(); }
-        contentItem: StatusFace {
-            touched: railControlButton.pressed || root.reachedControl === railControlButton
-            BellGlyph {
-                objectName: "temperance-bell-glyph"
-                width: root.bellSize
-                height: root.bellSize
-                anchors.centerIn: parent
-                // Keep the same optical baseline when the clapper returns.
-                anchors.verticalCenterOffset: root.bellDrop
-                strokeWidth: root.bellStroke
-                glyphColor: railControlButton.glyphColor
-                clapperProgress: root.bellMarked && !root.slim ? 0 : 1
-                slashed: root.slim && root.doNotDisturb
-                opacity: root.bellShowsCount ? 0 : 1
-                visible: opacity > 0
-                Behavior on opacity {
-                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad }
-                }
-            }
-            // The slim row's count, in the bell's place: a chip one 16 px
-            // circle for a digit, longer for more.
-            Rectangle {
-                id: unreadChip
-                objectName: "temperance-unread-chip"
-                anchors.centerIn: parent
-                height: 16
-                width: Math.max(height, unreadLabel.implicitWidth + 8)
-                radius: height / 2
-                color: Kirigami.Theme.highlightColor
-                opacity: root.bellShowsCount ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity {
-                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.InOutQuad }
-                }
-                PlasmaComponents.Label {
-                    id: unreadLabel
-                    anchors.centerIn: parent
-                    text: root.unreadText
-                    textFormat: Text.PlainText
-                    font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    font.features: { "tnum": 1 }
-                    color: Kirigami.Theme.highlightedTextColor
-                }
-            }
-        }
-    }
-
-    component BannerActionButton: Item {
-        id: bannerActionButton
-        property bool closeGlyph: false
-        property string text: ""
-        signal clicked()
-        readonly property bool hovered: bannerActionHover.hovered
-        readonly property bool pressed: bannerActionTap.pressed
-        implicitWidth: 44
-        implicitHeight: 40
-        Layout.preferredWidth: 44
-        Layout.minimumWidth: 44
-        Layout.maximumWidth: 44
-        Layout.preferredHeight: 40
-        Layout.minimumHeight: 40
-        Layout.maximumHeight: 40
-        activeFocusOnTab: true
-        Accessible.role: Accessible.Button
-        Accessible.name: text
-
-        Rectangle {
-            id: bannerActionVisual
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: 28
-            height: 28
-            radius: height / 2
-            color: bannerActionButton.hovered || bannerActionButton.pressed
-                ? tone.wash(0.12) : "transparent"
-            border.width: bannerActionButton.activeFocus ? 1 : 0
-            border.color: tone.text
-            Behavior on color { ColorAnimation { duration: 120 } }
-
-            Canvas {
-                id: bannerActionGlyph
-                anchors.centerIn: parent
-                width: 18
-                height: 18
-                antialiasing: true
-                readonly property color ink: tone.text
-                onInkChanged: requestPaint()
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.beginPath();
-                    ctx.strokeStyle = ink;
-                    ctx.lineWidth = 2.2;
-                    ctx.lineCap = "round";
-                    if (bannerActionButton.closeGlyph) {
-                        ctx.moveTo(5, 5);
-                        ctx.lineTo(13, 13);
-                        ctx.moveTo(13, 5);
-                        ctx.lineTo(5, 13);
-                    } else {
-                        ctx.moveTo(5, 9);
-                        ctx.lineTo(13, 9);
-                    }
-                    ctx.stroke();
-                }
-            }
-        }
-
-        HoverHandler {
-            id: bannerActionHover
-        }
-        TapHandler {
-            id: bannerActionTap
-            onTapped: {
-                bannerActionButton.forceActiveFocus();
-                bannerActionButton.clicked();
-            }
-        }
-        Keys.onPressed: function(event) {
-            if (event.key === Qt.Key_Return
-                    || event.key === Qt.Key_Enter
-                    || event.key === Qt.Key_Space) {
-                bannerActionButton.clicked();
-                event.accepted = true;
-            }
-        }
-        Accessible.onPressAction: bannerActionButton.clicked()
-    }
-
-    component StatusIconButton: Item {
-        id: statusIconButton
-        required property var statusIcon
-        required property string accessibleName
-        property bool active: false
-        // A single-colour symbolic drawing fills its box, so it is asked for
-        // smaller than a theme's padded 24 px status icon to draw the same mark.
-        readonly property bool symbolic: String(statusIcon).endsWith("-symbolic")
-        // A wired connection draws Lucide's ethernet port, as the bell is drawn.
-        readonly property bool ethernet: statusIcon === "suite-ethernet"
-        signal triggered()
-        function activate() { triggered(); }
-        Layout.preferredWidth: root.statusPitch
-        Layout.minimumWidth: root.statusPitch
-        Layout.maximumWidth: root.statusPitch
-        Layout.fillHeight: true
-        Accessible.name: accessibleName
-        Accessible.role: Accessible.Button
-
-        StatusFace {
-            anchors.fill: parent
-            touched: statusIconButtonTap.pressed || root.reachedControl === statusIconButton
-            hovered: statusIconButtonHover.hovered
-            EthernetGlyph {
-                visible: statusIconButton.ethernet
-                anchors.centerIn: parent
-                width: root.wiredGlyphSize
-                height: root.wiredGlyphSize
-                strokeWidth: root.bellStroke
-            }
-            Kirigami.Icon {
-                visible: !statusIconButton.ethernet
-                anchors.centerIn: parent
-                source: statusIconButton.statusIcon
-                // 24 and 16 are sizes themes draw status icons at, so the
-                // theme's own drawing is used rather than one scaled from
-                // another size; Kirigami would otherwise round a size down.
-                implicitWidth: statusIconButton.symbolic ? root.symbolicIconSize : root.statusIconSize
-                implicitHeight: implicitWidth
-                roundToIconSize: false
-                // Some themes' symbolic drawings carry a fixed colour rather
-                // than the text colour Kirigami replaces.
-                isMask: statusIconButton.symbolic
-                color: tone.text
-            }
-        }
-        HoverHandler { id: statusIconButtonHover }
-        TapHandler { id: statusIconButtonTap; onTapped: statusIconButton.activate() }
-        PlasmaComponents.ToolTip { text: statusIconButton.accessibleName }
-    }
-
-    // What a status icon draws: lifted while a finger is on it, as a touched
-    // piece lifts elsewhere in the suite, and grown a little under a pointer.
-    component StatusFace: Item {
-        property bool touched: false
-        property bool hovered: false
-        scale: touched ? 1.12 : hovered ? 1.06 : 1
-        Behavior on scale {
-            id: statusFaceScale
-            enabled: root.motionEnabled
-            NumberAnimation {
-                duration: statusFaceScale.targetValue > 1.1 ? 180 : 140
-                easing.type: Easing.OutCubic
-            }
-        }
     }
 
     implicitWidth: needsUpdate ? needsUpdateWidth : adaptiveWidth ? responsiveMeasuredWidth : compactWidth
@@ -759,11 +443,11 @@ ContainmentItem {
         pendingNotificationCount = 0;
         notificationAutoBatchSize = 0;
         notificationReviewComplete = false;
-        notificationIntro.stop();
-        notificationReveal.stop();
-        notificationHide.stop();
+        notificationRail.notificationIntro.stop();
+        notificationRail.notificationReveal.stop();
+        notificationRail.notificationHide.stop();
         notificationCopyActive = false;
-        notificationMessageLayer.opacity = 0;
+        notificationRail.notificationMessageLayer.opacity = 0;
         // Clear is an explicit dismissal, including active/persistent alerts.
         // Use the ungrouped model and walk backward as removals shift rows.
         for (let row = notificationHistory.count - 1; row >= 0; --row) {
@@ -785,18 +469,18 @@ ContainmentItem {
         pendingNotificationCount = 0;
         notificationAutoBatchSize = 0;
         notificationReviewComplete = false;
-        notificationIntro.stop();
-        notificationReveal.stop();
-        notificationHide.stop();
+        notificationRail.notificationIntro.stop();
+        notificationRail.notificationReveal.stop();
+        notificationRail.notificationHide.stop();
         notificationCopyActive = false;
-        notificationMessageLayer.opacity = 0;
+        notificationRail.notificationMessageLayer.opacity = 0;
     }
 
     function playNotificationIntro() {
         if (!hasAttention) return;
-        notificationReveal.stop();
-        notificationHide.stop();
-        notificationIntro.restart();
+        notificationRail.notificationReveal.stop();
+        notificationRail.notificationHide.stop();
+        notificationRail.notificationIntro.restart();
     }
 
     function revealNotificationText() {
@@ -806,16 +490,16 @@ ContainmentItem {
         notificationBatchTimer.stop();
         nextNotificationIntro.stop();
         notificationSequenceActive = false;
-        notificationIntro.stop();
-        notificationHide.stop();
-        notificationReveal.restart();
+        notificationRail.notificationIntro.stop();
+        notificationRail.notificationHide.stop();
+        notificationRail.notificationReveal.restart();
     }
 
     function hideNotificationText() {
         if (!hasAttention) return;
-        notificationIntro.stop();
-        notificationReveal.stop();
-        notificationHide.restart();
+        notificationRail.notificationIntro.stop();
+        notificationRail.notificationReveal.stop();
+        notificationRail.notificationHide.restart();
     }
 
     // A finger has no pointer to rest on the bell, so the ticker answers a
@@ -830,8 +514,8 @@ ContainmentItem {
     property real tickerSampleX: 0
     property double tickerSampleAt: 0
     onTickerOffsetChanged: {
-        if (tickerCarry === "notification") notificationMessageLayer.x = 2 + tickerOffset;
-        else if (tickerCarry === "event") eventLayer.offset = tickerOffset;
+        if (tickerCarry === "notification") notificationRail.notificationMessageLayer.x = 2 + tickerOffset;
+        else if (tickerCarry === "event") notificationRail.eventLayer.offset = tickerOffset;
     }
     function beginTickerCarry() {
         tickerAway.stop();
@@ -841,16 +525,16 @@ ContainmentItem {
         tickerSampleX = 0;
         tickerSampleAt = Date.now();
         tickerCarry = notificationCopyActive && notificationPages > 0 && !eventPage ? "notification"
-            : eventLayer.opacity > 0 && tickerEvent !== null ? "event" : "";
+            : notificationRail.eventLayer.opacity > 0 && tickerEvent !== null ? "event" : "";
         if (tickerCarry === "notification") {
-            notificationIntro.stop();
-            notificationReveal.stop();
-            notificationHide.stop();
-            notificationMessageLayer.opacity = 1;
+            notificationRail.notificationIntro.stop();
+            notificationRail.notificationReveal.stop();
+            notificationRail.notificationHide.stop();
+            notificationRail.notificationMessageLayer.opacity = 1;
         } else if (tickerCarry === "event") {
-            eventFade.stop();
-            eventExit.stop();
-            eventLayer.opacity = 1;
+            notificationRail.eventFade.stop();
+            notificationRail.eventExit.stop();
+            notificationRail.eventLayer.opacity = 1;
         }
         tickerOffset = 0;
     }
@@ -867,8 +551,8 @@ ContainmentItem {
             return;
         }
         const flicked = Math.abs(tickerVelocity) > 0.6 && Math.sign(tickerVelocity) === Math.sign(tickerOffset);
-        if (tickerOffset !== 0 && (Math.abs(tickerOffset) > notificationContentArea.width * 0.35 || flicked)) {
-            tickerAway.to = Math.sign(tickerOffset) * notificationContentArea.width;
+        if (tickerOffset !== 0 && (Math.abs(tickerOffset) > notificationRail.notificationContentArea.width * 0.35 || flicked)) {
+            tickerAway.to = Math.sign(tickerOffset) * notificationRail.notificationContentArea.width;
             tickerAway.start();
         } else {
             tickerBack.start();
@@ -879,18 +563,18 @@ ContainmentItem {
         tickerCarry = "";
         tickerOffset = 0;
         if (carried === "event" && tickerEvent !== null) {
-            eventLayer.opacity = 0;
-            eventLayer.offset = 0;
+            notificationRail.eventLayer.opacity = 0;
+            notificationRail.eventLayer.offset = 0;
             markEventSeen(tickerEvent.key);
         } else if (carried === "notification") {
-            notificationMessageLayer.opacity = 0;
-            notificationMessageLayer.x = 2;
+            notificationRail.notificationMessageLayer.opacity = 0;
+            notificationRail.notificationMessageLayer.x = 2;
             if (railNotifications.count > 0) {
-                const row = Math.min(liveNotificationView.currentIndex, railNotifications.count - 1);
+                const row = Math.min(notificationRail.liveNotificationView.currentIndex, railNotifications.count - 1);
                 notificationHistory.expire(railNotifications.mapToSource(railNotifications.index(row, 0)));
                 railNotifications.invalidateFilter();
                 checkedNotifications.invalidateFilter();
-                liveNotificationView.currentIndex = Math.max(0, Math.min(row, railNotifications.count - 1));
+                notificationRail.liveNotificationView.currentIndex = Math.max(0, Math.min(row, railNotifications.count - 1));
             } else if (demoNotificationVisible) {
                 if (demoNotificationIndex < demoNotificationTexts.length - 1) demoNotificationIndex++;
                 else demoNotificationVisible = false;
@@ -900,7 +584,7 @@ ContainmentItem {
         revealNotificationText();
     }
     function holdTickerForTouch() {
-        notificationControls.revealed = true;
+        notificationRail.notificationControls.revealed = true;
         touchRevealRelease.restart();
     }
     NumberAnimation {
@@ -927,8 +611,8 @@ ContainmentItem {
         id: touchRevealRelease
         interval: 4000
         onTriggered: {
-            if (!notificationControls.pointerResting() && !tickerDrag.active)
-                notificationControls.revealed = false;
+            if (!notificationRail.notificationControls.pointerResting() && !notificationRail.tickerDrag.active)
+                notificationRail.notificationControls.revealed = false;
         }
     }
 
@@ -1017,7 +701,7 @@ ContainmentItem {
     // that lands above or below the controls' own boxes.
     function statusControlAt(sceneX) {
         if (vertical) return null;
-        const controls = [reviewNotificationsButton, weatherStatusButton, controlCenterButton,
+        const controls = [notificationRail.reviewNotificationsButton, weatherStatusButton, controlCenterButton,
             trayButton, batteryStatusButton, statusClock];
         for (const control of controls) {
             if (!control.visible) continue;
@@ -1031,7 +715,7 @@ ContainmentItem {
     // closer: the strip grows out with that one under the finger.
     function statusControlNearest(sceneX) {
         if (vertical) return null;
-        const controls = [reviewNotificationsButton, weatherStatusButton, controlCenterButton,
+        const controls = [notificationRail.reviewNotificationsButton, weatherStatusButton, controlCenterButton,
             trayButton, batteryStatusButton, statusClock];
         let nearest = null;
         let best = Infinity;
@@ -1079,7 +763,7 @@ ContainmentItem {
     // Where the slim row's status controls start, from the bell or the first
     // control shown after it.
     readonly property real statusControlsLeft: compactSurface.x + statusRow.x
-        + (notificationControls.visible ? notificationRail.x + notificationControls.x
+        + (notificationRail.notificationControls.visible ? notificationRail.x + notificationRail.notificationControls.x
             : weatherStatusButton.visible ? weatherStatusButton.x : controlCenterButton.x)
 
     // The part of the panel a finger uses for its controls, in the panel's
@@ -1197,8 +881,8 @@ ContainmentItem {
     // pressed grows out under it.
     function openMagnifier() {
         const shown = [
-            [notificationControls.visible, "notifications", reviewNotificationsButton,
-                reviewNotificationsButton.text],
+            [notificationRail.notificationControls.visible, "notifications", notificationRail.reviewNotificationsButton,
+                notificationRail.reviewNotificationsButton.text],
             [weatherStatusButton.visible, "weather", weatherStatusButton, i18n("Weather")],
             [controlCenterButton.visible, "control", controlCenterButton, i18n("Control Center")],
             [trayButton.visible, "tray", trayButton, i18n("System Tray")],
@@ -1343,8 +1027,8 @@ ContainmentItem {
             if (row < 0) return;
             root.notificationReviewComplete = false;
             root.pendingNotificationCount = 0;
-            liveNotificationView.currentIndex = row;
-            liveNotificationView.positionViewAtIndex(row, ListView.Contain);
+            notificationRail.liveNotificationView.currentIndex = row;
+            notificationRail.liveNotificationView.positionViewAtIndex(row, ListView.Contain);
             // Claim the identity before animation starts. Model resets or an
             // interrupted pass must not enqueue the same notification again.
             const presented = Object.assign({}, root.presentedNotificationKeys);
@@ -1380,14 +1064,14 @@ ContainmentItem {
                 notificationBatchTimer.stop();
                 nextNotificationIntro.stop();
                 root.notificationSequenceActive = false;
-                notificationIntro.stop();
-                notificationReveal.stop();
-                notificationHide.stop();
+                notificationRail.notificationIntro.stop();
+                notificationRail.notificationReveal.stop();
+                notificationRail.notificationHide.stop();
                 root.notificationCopyActive = false;
                 root.pendingNotificationCount = 0;
                 root.notificationAutoBatchSize = 0;
-                notificationMessageLayer.opacity = 0;
-                notificationMessageLayer.x = 2;
+                notificationRail.notificationMessageLayer.opacity = 0;
+                notificationRail.notificationMessageLayer.x = 2;
             }
             root.lastLiveNotificationCount = railNotifications.count;
         }
@@ -1752,517 +1436,13 @@ ContainmentItem {
             // one control's.
             spacing: 0
 
-            Rectangle {
+            NotificationRail {
                 id: notificationRail
-                objectName: "temperance-notification-rail"
-                Layout.fillWidth: true
-                // With notifications off the rail holds nothing, so it asks
-                // for no room: the width above leaves none for it, and a
-                // floor here would push the battery off the row's end.
-                Layout.minimumWidth: root.notificationsEnabled ? root.statusPitch + 8 : 0
-                Layout.fillHeight: true
-                radius: height / 2
-                color: "transparent"
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: 4
-                    layoutDirection: Qt.RightToLeft
-
-                    Rectangle {
-                        id: notificationControls
-                        objectName: "temperance-ticker-controls"
-                        visible: root.notificationsEnabled
-                        property bool layoutOpen: active || revealed
-                        // The notification control is a permanent live icon beside the
-                        // status group, one status pitch wide; the ticker has the rest.
-                        Layout.preferredWidth: root.statusPitch
-                        Layout.minimumWidth: Layout.preferredWidth
-                        Layout.maximumWidth: Layout.preferredWidth
-                        Layout.fillHeight: true
-                        property bool revealed: false
-                        readonly property bool active: systemTrayState.activeApplet === null
-                            && systemTrayState.page === "notifications"
-                            && systemTrayState.expanded
-                        color: "transparent"
-                        clip: true
-                        // A resting pointer, a pen held over it included, shows the
-                        // latest line. A finger does not rest: on the bell it
-                        // opens the history. Its press also arrives as a hover
-                        // from the touchscreen, which is not a pointer resting.
-                        HoverHandler {
-                            id: sharedControlsHover
-                            onHoveredChanged: notificationControls.syncSharedHover()
-                        }
-                        function pointerResting() {
-                            return sharedControlsHover.hovered
-                                && Date.now() - root.lastTouchAt > 600
-                                && !(sharedControlsHover.point.device
-                                    && sharedControlsHover.point.device.type === PointerDevice.TouchScreen);
-                        }
-                        function syncSharedHover() {
-                            const pointerInside = pointerResting();
-                            if (pointerInside) {
-                                sharedHoverRelease.stop();
-                                revealed = true;
-                            } else {
-                                sharedHoverRelease.restart();
-                            }
-                        }
-                        onRevealedChanged: {
-                            if (revealed) {
-                                controlsCollapseDelay.stop();
-                                layoutOpen = true;
-                                if (!root.notificationReviewComplete) root.revealNotificationText();
-                            } else {
-                                root.hideNotificationText();
-                                root.eventPage = false;
-                                if (!active) controlsCollapseDelay.restart();
-                            }
-                        }
-                        onActiveChanged: {
-                            if (active) {
-                                controlsCollapseDelay.stop();
-                                layoutOpen = true;
-                            } else if (!revealed) {
-                                controlsCollapseDelay.restart();
-                            }
-                        }
-                        Timer {
-                            id: sharedHoverRelease
-                            interval: 280
-                            repeat: false
-                            onTriggered: {
-                                const pointerInside = notificationControls.pointerResting();
-                                if (!pointerInside) notificationControls.revealed = false;
-                            }
-                        }
-                        Timer {
-                            id: controlsCollapseDelay
-                            interval: 130
-                            repeat: false
-                            onTriggered: {
-                                if (!notificationControls.revealed && !notificationControls.active)
-                                    notificationControls.layoutOpen = false;
-                            }
-                        }
-                        RailControlButton {
-                            id: reviewNotificationsButton
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            objectName: "temperance-review-notifications"
-                            z: 30
-                            // The slim row's bell, and a bell set to show no
-                            // count, says the count to a screen reader.
-                            text: !root.slim && root.bellCounts ? i18n("Review all notifications")
-                                : root.unreadCount > 0
-                                ? i18ncp("@info:tooltip", "Notifications, %1 unread", "Notifications, %1 unread", root.unreadCount)
-                                : i18nc("@info:tooltip", "Notifications")
-                            onClicked: root.openNotifications()
-                            // No tooltip in the slim row: the page it opens
-                            // names itself, and a name over the bar covers
-                            // the controls beside it.
-                        }
-
-                        Item {
-                            id: notificationCountBadge
-                            anchors.horizontalCenter: reviewNotificationsButton.horizontalCenter
-                            // Bell rim: centered canvas, its optical offset,
-                            // 0.708 normalized rim, half the stroke. Keep five
-                            // logical pixels below that painted rim, so the
-                            // count reads apart from the bell, and never past
-                            // the bottom of the control.
-                            y: Math.min(notificationControls.height - height,
-                                notificationControls.height / 2 - root.bellSize / 2
-                                + root.bellDrop + root.bellSize * 0.708
-                                + root.bellStroke / 2 + 5)
-                            visible: opacity > 0
-                            // The slim row shows its count in the bell's place.
-                            opacity: root.bellMarked && !root.slim ? 1 : 0
-                            scale: root.bellMarked ? 1 : 0.72
-                            width: Math.max(18, notificationCountLabel.implicitWidth + 6)
-                            height: countInk.tightBoundingRect.height
-                            z: 40
-                            Behavior on opacity {
-                                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-                            }
-                            Behavior on scale {
-                                NumberAnimation { duration: root.motionEnabled ? 180 : 0; easing.type: Easing.OutBack }
-                            }
-
-                            TextMetrics {
-                                id: countInk
-                                font: notificationCountLabel.font
-                                text: notificationCountLabel.text
-                            }
-                            PlasmaComponents.Label {
-                                id: notificationCountLabel
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: -baselineOffset - countInk.tightBoundingRect.y
-                                objectName: "temperance-notification-count"
-                                text: root.attentionPages > 0 ? root.attentionPages : "✓"
-                                // Larger than the clock's date, so the count
-                                // reads at arm's length under the smaller bell.
-                                font.pixelSize: 13
-                                font.weight: Font.Medium
-                                color: tone.text
-                            }
-                        }
-                    }
-
-                    Item {
-                        id: notificationContentArea
-                        objectName: "temperance-ticker-content"
-                        visible: root.tickerEnabled
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        // The slim row gives the ticker its whole height, for
-                        // the finger that flicks it.
-                        Layout.topMargin: root.slim ? 0 : 4
-                        Layout.bottomMargin: root.slim ? 0 : 4
-                        clip: true
-
-                        Item {
-                            id: notificationMessageLayer
-                            width: parent.width
-                            height: parent.height
-                            x: 2
-                            opacity: 0
-                            readonly property real flybyWidth: railNotifications.count > 0 && liveNotificationView.currentItem
-                                ? liveNotificationView.currentItem.flybyWidth
-                                : demoNotificationTicker.contentWidth
-
-                        ListView {
-                            id: liveNotificationView
-                            anchors.fill: parent
-                            anchors.rightMargin: Kirigami.Units.smallSpacing
-                            visible: railNotifications.count > 0 && !root.eventPage
-                            interactive: false
-                            // The outer content area owns the physical dock
-                            // boundary. This inner clip would cut off long text.
-                            clip: false
-                            orientation: ListView.Horizontal
-                            model: railNotifications
-                            delegate: RowLayout {
-                                id: notificationDelegate
-                                visible: ListView.isCurrentItem
-                                required property string summary
-                                required property string body
-                                required property string applicationName
-                                required property string applicationIconName
-                                required property var model
-                                // How long the application asked to be seen,
-                                // in ms: 0 for never expires, -1 for the
-                                // server's default.
-                                readonly property int timeout: model.timeout !== undefined ? model.timeout : -1
-                                width: liveNotificationView.width
-                                height: liveNotificationView.height
-                                readonly property real flybyWidth: notificationTicker.contentWidth
-                                spacing: 0
-                                RailTicker {
-                                    id: notificationTicker
-                                    objectName: "temperance-live-ticker"
-                                    Layout.fillWidth: true
-                                    alignRight: true
-                                    exposeOverflow: root.notificationArriving
-                                    styled: true
-                                    text: root.notificationTickerMarkup(notificationDelegate.applicationName,
-                                        notificationDelegate.summary, notificationDelegate.body)
-                                    accessibleText: root.notificationDisplayText(notificationDelegate.applicationName,
-                                        notificationDelegate.summary, notificationDelegate.body)
-                                    scrollingEnabled: notificationControls.revealed
-                                        && !root.notificationArriving && !notificationReveal.running
-                                        && !root.notificationReviewComplete
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.rightMargin: Kirigami.Units.smallSpacing
-                            visible: railNotifications.count === 0 && root.demoNotificationVisible
-                                && !root.eventPage
-                            spacing: 0
-                            RailTicker {
-                                id: demoNotificationTicker
-                                objectName: "temperance-demo-ticker"
-                                Layout.fillWidth: true
-                                alignRight: true
-                                exposeOverflow: root.notificationArriving
-                                text: root.demoNotificationTexts[root.demoNotificationIndex]
-                                scrollingEnabled: notificationControls.revealed
-                                    && !root.notificationArriving && !notificationReveal.running
-                                    && !root.notificationReviewComplete
-                            }
-                        }
-                        }
-
-                        // A new line comes out from beside the bell, as today's
-                        // event does, and rests against it rather than crossing
-                        // the gap to the dock. A line too long for the ticker
-                        // comes in until its start reaches the far edge and
-                        // stops there, cut off, as an event waits for review: it
-                        // scrolls only for a hover on the bell. Short or long, it
-                        // goes when the application's own popup time ends, so
-                        // today's event is not held behind it.
-                        SequentialAnimation {
-                            id: notificationIntro
-                            readonly property real arrival: root.motionEnabled
-                                ? Math.min(notificationMessageLayer.flybyWidth, notificationContentArea.width) : 0
-                            readonly property int arrivalDuration: root.motionEnabled
-                                ? Math.max(900, arrival * 20) : 0
-                            readonly property bool longLine:
-                                notificationMessageLayer.flybyWidth > notificationContentArea.width + 2
-                            // The application's popup time; the server's
-                            // default where it gives none, and half a minute
-                            // for one that never expires.
-                            readonly property int popupTime: {
-                                const item = liveNotificationView.currentItem;
-                                const timeout = railNotifications.count > 0 && item ? item.timeout : -1;
-                                return timeout > 0 ? timeout : timeout === 0 ? 30000 : 5000;
-                            }
-                            readonly property int restDuration:
-                                Math.max(1500, popupTime - arrivalDuration)
-                            onRunningChanged: if (!running) root.notificationResting = false
-                            ScriptAction {
-                                script: {
-                                    root.notificationCopyActive = true;
-                                    notificationMessageLayer.x = 2 + notificationIntro.arrival;
-                                    notificationMessageLayer.opacity = 0;
-                                }
-                            }
-                            PauseAnimation { duration: root.motionEnabled ? 210 : 0 }
-                            ScriptAction {
-                                script: {
-                                    // Off the ticker's edge until it moves, so
-                                    // only a line that does not move fades in.
-                                    if (notificationIntro.arrival > 0)
-                                        notificationMessageLayer.opacity = 1;
-                                }
-                            }
-                            ParallelAnimation {
-                                NumberAnimation {
-                                    target: notificationMessageLayer
-                                    property: "opacity"
-                                    to: 1
-                                    duration: Kirigami.Units.longDuration
-                                    easing.type: Easing.OutCubic
-                                }
-                                NumberAnimation {
-                                    target: notificationMessageLayer
-                                    property: "x"
-                                    to: 2
-                                    duration: notificationIntro.arrivalDuration
-                                    easing.type: Easing.OutQuad
-                                }
-                            }
-                            ScriptAction { script: root.notificationResting = true }
-                            PauseAnimation { duration: notificationIntro.restDuration }
-                            NumberAnimation {
-                                target: notificationMessageLayer
-                                property: "opacity"
-                                to: 0
-                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
-                                easing.type: Easing.InCubic
-                            }
-                            ScriptAction {
-                                script: {
-                                    root.notificationResting = false;
-                                    notificationMessageLayer.opacity = 0;
-                                    notificationMessageLayer.x = 2;
-                                    // Keep weather suppressed between items while a
-                                    // collected batch is still reading itself out.
-                                    if (!root.notificationSequenceActive) {
-                                        root.notificationCopyActive = false;
-                                    }
-                                }
-                            }
-                            onFinished: {
-                                if (!root.notificationSequenceActive
-                                        || notificationControls.revealed
-                                        || railNotifications.count === 0) {
-                                    root.notificationSequenceActive = false;
-                                    root.notificationCopyActive = false;
-                                    return;
-                                }
-                                liveNotificationView.currentIndex = 0;
-                                liveNotificationView.positionViewAtIndex(0, ListView.Beginning);
-                                root.notificationSequenceActive = false;
-                                root.notificationCopyActive = false;
-                                root.notificationAutoBatchSize = 0;
-                                notificationBatchTimer.restart();
-                            }
-                        }
-
-                        SequentialAnimation {
-                            id: notificationReveal
-                            ScriptAction {
-                                script: {
-                                    root.notificationCopyActive = true;
-                                    notificationMessageLayer.x = 2;
-                                    notificationMessageLayer.opacity = 0;
-                                }
-                            }
-                            PauseAnimation { duration: root.motionEnabled ? 60 : 0 }
-                            NumberAnimation {
-                                target: notificationMessageLayer
-                                property: "opacity"
-                                to: 1
-                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        SequentialAnimation {
-                            id: notificationHide
-                            NumberAnimation {
-                                target: notificationMessageLayer
-                                property: "opacity"
-                                to: 0
-                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
-                                easing.type: Easing.InCubic
-                            }
-                            ScriptAction {
-                                script: {
-                                    notificationMessageLayer.x = 2;
-                                    root.notificationCopyActive = false;
-                                }
-                            }
-                        }
-
-                        TapHandler {
-                            enabled: root.notificationCopyActive
-                            onTapped: root.openNotifications()
-                        }
-
-                        DragHandler {
-                            id: tickerDrag
-                            target: null
-                            yAxis.enabled: false
-                            enabled: root.hasAttention && !tickerAway.running
-                            onActiveChanged: active ? root.beginTickerCarry() : root.endTickerCarry()
-                            onActiveTranslationChanged: if (active) root.carryTicker(activeTranslation.x)
-                        }
-
-                        // The calendar's next event. It fades in where a
-                        // notification rests, and holds until it is read, it
-                        // ends, or a notification needs the ticker.
-                        Item {
-                            id: eventLayer
-                            objectName: "temperance-ticker-event"
-                            anchors.fill: parent
-                            anchors.leftMargin: 2
-                            anchors.rightMargin: Kirigami.Units.smallSpacing
-                            opacity: 0
-                            visible: opacity > 0
-                            property real offset: 0
-                            readonly property string eventKey: root.tickerEvent ? root.tickerEvent.key : ""
-                            readonly property real restingX: Math.max(0, width - eventLine.width)
-
-                            Accessible.role: Accessible.StaticText
-                            Accessible.name: root.tickerEvent
-                                ? root.eventTimeText(root.tickerEvent) + ", " + root.tickerEvent.title : ""
-
-                            // Faded in where it rests: a line sliding in
-                            // past the bell's edge shows a letter cut in half.
-                            function enter() {
-                                eventExit.stop();
-                                offset = 0;
-                                eventFade.restart();
-                            }
-
-                            function leave() {
-                                eventFade.stop();
-                                eventExit.restart();
-                            }
-
-                            readonly property bool shown: root.eventShown
-                            onShownChanged: shown ? enter() : leave()
-                            onEventKeyChanged: if (shown) enter()
-                            Component.onCompleted: if (shown) enter()
-
-                            RowLayout {
-                                id: eventLine
-                                x: eventLayer.restingX + eventLayer.offset
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: Math.min(implicitWidth, eventLayer.width)
-                                spacing: 6
-
-                                PlasmaComponents.Label {
-                                    id: eventTimeLabel
-                                    readonly property string lead: root.eventTimeText(root.tickerEvent)
-                                    readonly property string period: root.eventTimePeriod(lead)
-                                    Layout.alignment: Qt.AlignBaseline
-                                    text: period ? lead.slice(0, lead.length - period.length - 1) : lead
-                                    textFormat: Text.PlainText
-                                    color: tone.secondaryText
-                                    Binding { target: eventTimeLabel; property: "font"; value: root.slimFont; when: root.slim }
-                                }
-                                PlasmaComponents.Label {
-                                    id: eventPeriodLabel
-                                    visible: eventTimeLabel.period.length > 0
-                                    Layout.alignment: Qt.AlignBaseline
-                                    Layout.leftMargin: -eventLine.spacing / 2
-                                    text: eventTimeLabel.period
-                                    textFormat: Text.PlainText
-                                    font: root.slim ? root.slimSmallFont : Kirigami.Theme.smallFont
-                                    color: tone.secondaryText
-                                }
-                                PlasmaComponents.Label {
-                                    id: eventTitleLabel
-                                    Layout.fillWidth: true
-                                    Layout.alignment: Qt.AlignBaseline
-                                    Layout.maximumWidth: Math.max(0, eventLayer.width
-                                        - eventTimeLabel.implicitWidth - eventDot.width - eventLine.spacing * 2
-                                        - (eventPeriodLabel.visible ? eventPeriodLabel.implicitWidth
-                                            + eventLine.spacing / 2 : 0))
-                                    text: root.tickerEvent ? root.tickerEvent.title : ""
-                                    textFormat: Text.PlainText
-                                    color: tone.text
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
-                                    Binding { target: eventTitleLabel; property: "font"; value: root.slimFont; when: root.slim }
-                                }
-                                // A notification passes; the dot says this one
-                                // stays. It takes the calendar's colour where the
-                                // feed gives one.
-                                Rectangle {
-                                    id: eventDot
-                                    objectName: "temperance-ticker-event-dot"
-                                    Layout.preferredWidth: 6
-                                    Layout.preferredHeight: 6
-                                    Layout.alignment: Qt.AlignVCenter
-                                    radius: 3
-                                    color: root.tickerEvent && root.tickerEvent.color
-                                        ? root.tickerEvent.color : tone.secondaryText
-                                }
-                            }
-
-                            NumberAnimation {
-                                id: eventFade
-                                target: eventLayer
-                                property: "opacity"
-                                to: 1
-                                duration: root.motionEnabled ? Kirigami.Units.longDuration : 0
-                                easing.type: Easing.OutCubic
-                            }
-                            NumberAnimation {
-                                id: eventExit
-                                target: eventLayer
-                                property: "opacity"
-                                to: 0
-                                duration: root.motionEnabled ? Kirigami.Units.shortDuration : 0
-                                easing.type: Easing.InCubic
-                            }
-
-                            TapHandler {
-                                enabled: eventLayer.opacity > 0
-                                onTapped: root.openNotifications()
-                            }
-                        }
-                    }
-                }
-
+                bar: root
+                tone: tone
+                notificationBatchTimer: notificationBatchTimer
+                railNotifications: railNotifications
+                tickerAway: tickerAway
             }
 
             Item {
@@ -2348,6 +1528,8 @@ ContainmentItem {
 
             StatusIconButton {
                 id: controlCenterButton
+                bar: root
+                tone: tone
                 objectName: "temperance-control-center"
                 statusIcon: root.networkIcon()
                 accessibleName: i18n("Control Center")
@@ -2534,231 +1716,13 @@ ContainmentItem {
             }
         }
 
-        PlasmaCore.Dialog {
+        AlertBanners {
             id: criticalAlertPopup
-            visualParent: criticalPopupAnchor
-            location: Plasmoid.location
-            type: PlasmaCore.Dialog.CriticalNotification
-            floating: 10
-            flags: Qt.WindowStaysOnTopHint
-            hideOnWindowDeactivate: false
-            backgroundHints: PlasmaCore.Dialog.NoBackground
-            visible: priorityNotifications.count > 0 && bannerStack.stackHeight > 0
-
-            mainItem: Item {
-                id: bannerStack
-                width: 360
-                // Wayland rejects zero-size window geometry, even briefly
-                // during a show/hide transition. Animate cards, not this host.
-                height: Math.max(1, stackHeight)
-                property real stackHeight: 0
-
-                // The alert's own window takes the look's colours, whatever
-                // ground the bar it comes from sits on.
-                StatusColors {
-                    id: bannerTone
-                    theme: bannerStack.Kirigami.Theme
-                }
-                readonly property real heightLimit: root.notificationPopupHeightLimit
-                clip: true
-
-                function reflow() {
-                    let used = 0;
-                    let full = false;
-                    for (let row = 0; row < bannerRepeater.count; ++row) {
-                        const card = bannerRepeater.itemAt(row);
-                        if (!card) continue;
-                        const gap = used > 0 ? 4 : 0;
-                        const cardHeight = Math.min(card.implicitHeight, heightLimit);
-                        if (full || used + gap + cardHeight > heightLimit) {
-                            card.visible = false;
-                            full = true;
-                            continue;
-                        }
-                        card.y = used + gap;
-                        card.height = cardHeight;
-                        card.visible = true;
-                        used += gap + cardHeight;
-                    }
-                    stackHeight = used;
-                }
-                onHeightLimitChanged: Qt.callLater(reflow)
-
-                Repeater {
-                    id: bannerRepeater
-                    model: priorityNotifications
-                    onItemAdded: Qt.callLater(bannerStack.reflow)
-                    onItemRemoved: Qt.callLater(bannerStack.reflow)
-
-                delegate: Rectangle {
-                    id: criticalCard
-                    required property int index
-                    required property string summary
-                    required property string body
-                    required property string applicationName
-                    required property string applicationIconName
-                    required property bool hasDefaultAction
-                    readonly property bool hasApplicationIcon:
-                        applicationIconName.length > 0
-                    width: bannerStack.width
-                    // Keep the banner bounded by its message instead of by a
-                    // permanently wide action row. The 44 px action rail stays
-                    // comfortable to target while one uninterrupted text column
-                    // owns the remaining width beside it.
-                    implicitHeight: Math.max(68, criticalContent.implicitHeight + 24)
-                    visible: false
-                    clip: true
-                    property real entranceProgress: 0
-                    opacity: entranceProgress
-                    // In from the panel's side, as the pages come.
-                    transform: Translate {
-                        y: (1 - criticalCard.entranceProgress)
-                            * (Plasmoid.location === PlasmaCore.Types.TopEdge ? -12 : 12)
-                    }
-                    onVisibleChanged: {
-                        if (visible) {
-                            bannerEntrance.restart();
-                        } else {
-                            bannerEntrance.stop();
-                            entranceProgress = 0;
-                        }
-                    }
-                    NumberAnimation {
-                        id: bannerEntrance
-                        target: criticalCard
-                        property: "entranceProgress"
-                        from: 0
-                        to: 1
-                        duration: root.motionEnabled ? 180 : 0
-                        easing.type: Easing.OutCubic
-                    }
-                    onImplicitHeightChanged: Qt.callLater(bannerStack.reflow)
-                    Behavior on y {
-                        enabled: criticalCard.visible
-                        NumberAnimation { duration: root.motionEnabled ? 220 : 0; easing.type: Easing.OutCubic }
-                    }
-                    color: bannerTone.surface
-                    radius: 12
-                    border.width: 1
-                    border.color: bannerTone.line
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            const modelIndex = priorityNotifications.mapToSource(
-                                priorityNotifications.index(criticalCard.index, 0));
-                            if (criticalCard.hasDefaultAction) {
-                                notificationHistory.invokeDefaultAction(modelIndex);
-                            } else {
-                                root.minimizePriorityNotification(modelIndex);
-                                root.openSurface("notifications");
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        id: criticalContent
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 12
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignTop
-                            spacing: 12
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                PlasmaComponents.Label {
-                                    Layout.fillWidth: true
-                                    text: criticalCard.applicationName || i18n("System alert")
-                                    opacity: 0.62
-                                    elide: Text.ElideRight
-                                }
-                                PlasmaComponents.Label {
-                                    id: criticalSummary
-                                    Layout.fillWidth: true
-                                    text: criticalCard.summary
-                                    textFormat: Text.PlainText
-                                    font.weight: Font.DemiBold
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: 4
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            PlasmaComponents.Label {
-                                id: criticalBody
-                                Layout.fillWidth: true
-                                visible: text.length > 0
-                                text: criticalCard.body
-                                textFormat: Text.StyledText
-                                opacity: 0.78
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 8
-                                elide: Text.ElideRight
-                            }
-                            PlasmaComponents.ToolButton {
-                                text: i18n("Show more")
-                                visible: criticalSummary.truncated || criticalBody.truncated
-                                Layout.minimumHeight: 44
-                                onClicked: {
-                                    root.minimizePriorityNotification(priorityNotifications.mapToSource(
-                                        priorityNotifications.index(criticalCard.index, 0)));
-                                    root.openNotifications();
-                                }
-                            }
-                        }
-
-                        Item {
-                            id: actionRail
-                            Layout.preferredWidth: 44
-                            Layout.minimumWidth: 44
-                            Layout.maximumWidth: 44
-                            Layout.fillHeight: true
-                            Layout.minimumHeight: actionButtons.implicitHeight
-                                + (criticalCard.hasApplicationIcon
-                                    ? 8 + Kirigami.Units.iconSizes.small : 0)
-
-                            ColumnLayout {
-                                id: actionButtons
-                                anchors.top: parent.top
-                                anchors.right: parent.right
-                                spacing: 0
-
-                                BannerActionButton {
-                                    closeGlyph: true
-                                    text: i18n("Dismiss")
-                                    onClicked: notificationHistory.close(
-                                        priorityNotifications.mapToSource(
-                                            priorityNotifications.index(criticalCard.index, 0)))
-                                }
-
-                                BannerActionButton {
-                                    text: i18n("Keep for review")
-                                    onClicked: root.minimizePriorityNotification(
-                                        priorityNotifications.mapToSource(
-                                            priorityNotifications.index(criticalCard.index, 0)))
-                                }
-                            }
-
-                            Kirigami.Icon {
-                                visible: criticalCard.hasApplicationIcon
-                                anchors.right: parent.right
-                                anchors.rightMargin: 6
-                                anchors.bottom: parent.bottom
-                                width: Kirigami.Units.iconSizes.small
-                                height: width
-                                source: criticalCard.applicationIconName
-                            }
-                        }
-                    }
-
-                }
-                }
-            }
+            bar: root
+            tone: tone
+            criticalPopupAnchor: criticalPopupAnchor
+            notificationHistory: notificationHistory
+            priorityNotifications: priorityNotifications
         }
     }
 }
