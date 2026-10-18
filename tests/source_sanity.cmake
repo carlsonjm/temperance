@@ -44,6 +44,12 @@ if(clear_all_position LESS 0
     message(FATAL_ERROR "Clear history must dismiss active alerts, not only expired notifications")
 endif()
 
+# The highlight follows the color scheme unless the person gave it its own.
+if(NOT config_xml MATCHES "<entry name=\"accentFromTheme\" type=\"Bool\">[^<]*<label>[^<]*</label>[^<]*<default>true</default>"
+   OR NOT main_qml MATCHES "accentFromTheme\n        \\? Kirigami.Theme.highlightColor")
+    message(FATAL_ERROR "The highlight must follow the color scheme by default")
+endif()
+
 if(NOT main_qml MATCHES "motionEnabled: Kirigami.Units.longDuration > 0")
     message(FATAL_ERROR "Motion must follow the platform animation setting")
 endif()
