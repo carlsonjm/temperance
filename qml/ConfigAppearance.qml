@@ -13,6 +13,7 @@ import org.kde.plasma.plasmoid
 KCMUtils.ScrollViewKCM {
     id: page
 
+    property bool cfg_accentFromTheme
     property color cfg_accentColor
     property list<string> cfg_controlCenterItems: []
     property bool cfg_showLock
@@ -105,8 +106,14 @@ KCMUtils.ScrollViewKCM {
                 onActivated: index => page.setSessionPlacement(modelData.id, index)
             }
         }
-        KQC.ColorButton {
+        QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Highlight color:")
+            text: i18n("Same as the color scheme")
+            checked: page.cfg_accentFromTheme
+            onToggled: page.cfg_accentFromTheme = checked
+        }
+        KQC.ColorButton {
+            enabled: !page.cfg_accentFromTheme
             color: page.cfg_accentColor
             showAlphaChannel: false
             dialogTitle: i18n("Choose highlight color")

@@ -49,6 +49,10 @@
       <label>Whether the Keep Open pin is shown in popup headers</label>
       <default>false</default>
     </entry>
+    <entry name="accentFromTheme" type="Bool">
+      <label>Take the highlight from the color scheme rather than accentColor</label>
+      <default>true</default>
+    </entry>
     <entry name="accentColor" type="Color">
       <label>Accent color used for active controls and sliders</label>
       <default>#00F2BA</default>

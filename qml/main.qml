@@ -110,7 +110,11 @@ ContainmentItem {
     readonly property alias notificationHistoryModel: groupedNotificationHistory
     property var appletsById: ({})
     readonly property bool previewMode: Qt.application.name === "plasmawindowed"
-    readonly property color accentColor: Plasmoid.configuration.accentColor || "#00F2BA"
+    // The color scheme's highlight, so Control Center, the bell and today in
+    // the calendar match the rest of the desktop; a color of its own only
+    // when the person turned that off.
+    readonly property color accentColor: Plasmoid.configuration.accentFromTheme
+        ? Kirigami.Theme.highlightColor : (Plasmoid.configuration.accentColor || "#00F2BA")
     readonly property bool motionEnabled: Kirigami.Units.longDuration > 0
     property bool demoNotificationVisible: false
     property int demoNotificationIndex: 0
