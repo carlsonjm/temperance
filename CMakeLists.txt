@@ -153,6 +153,10 @@ plasma_add_applet(co.goodinput.temperance
         qml/WeatherReading.qml
         qml/config.qml
         qml/main.qml
+        qml/NotificationRail.qml
+        qml/AlertBanners.qml
+        qml/StatusIconButton.qml
+        qml/StatusFace.qml
     RESOURCES
         main.xml
         assets/icons/lucide/ellipsis-vertical.svg
