@@ -50,6 +50,14 @@ if(NOT config_xml MATCHES "<entry name=\"accentFromTheme\" type=\"Bool\">[^<]*<l
     message(FATAL_ERROR "The highlight must follow the color scheme by default")
 endif()
 
+# Control Center's header row stands at most three session actions, and the
+# menu keeps the order the person chose.
+if(NOT config_xml MATCHES "<entry name=\"sessionRowCap\" type=\"Int\">[^<]*<label>[^<]*</label>[^<]*<default>3</default>"
+   OR NOT expanded_qml MATCHES "placed.length > cap"
+   OR expanded_qml MATCHES "menu = sessionOrder.filter\\(id => menu.indexOf")
+    message(FATAL_ERROR "The session row must stop at sessionRowCap and keep the chosen order in the menu")
+endif()
+
 if(NOT main_qml MATCHES "motionEnabled: Kirigami.Units.longDuration > 0")
     message(FATAL_ERROR "Motion must follow the platform animation setting")
 endif()
