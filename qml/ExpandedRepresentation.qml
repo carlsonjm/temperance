@@ -79,9 +79,10 @@ Item {
     readonly property real sessionRoom: heading.width - titleMetrics.advanceWidth
         - Kirigami.Units.largeSpacing - heading.spacing
     // The row and the menu, as ids: the row in the order chosen, Shut down
-    // last when it was not placed; the menu in the fixed order. Whatever
-    // the row has no room for moves to the front of the menu, from the
-    // row's end, never Shut down.
+    // last when it was not placed, and never more than sessionRowCap.
+    // Whatever the row has no room for moves to the front of the menu, from
+    // the row's end, never Shut down, so the menu keeps the chosen order;
+    // shown actions never placed follow in the fixed order.
     readonly property var sessionLayout: {
         const placed = (Plasmoid.configuration.sessionRow || []).filter(
             (id, index, list) => sessionActionInfo[id] && list.indexOf(id) === index && sessionShown(id));
@@ -89,12 +90,12 @@ Item {
         let menu = sessionOrder.filter(id => sessionShown(id) && placed.indexOf(id) < 0);
         const fits = (count, withMore) => count * sessionPillWidth + (count - 1) * sessionSpacing
             + (withMore ? sessionSpacing + sessionMoreWidth : 0) <= sessionRoom;
-        while (placed.length > 1 && !fits(placed.length, menu.length > 0)) {
+        const cap = Math.max(1, Plasmoid.configuration.sessionRowCap);
+        while (placed.length > 1 && (placed.length > cap || !fits(placed.length, menu.length > 0))) {
             let last = placed.length - 1;
             if (placed[last] === "shutdown") --last;
             menu.unshift(placed.splice(last, 1)[0]);
         }
-        menu = sessionOrder.filter(id => menu.indexOf(id) >= 0);
         return { "row": placed.map(id => sessionActionInfo[id]), "menu": menu };
     }
     function inSessionMenu(id) {
