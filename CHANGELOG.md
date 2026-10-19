@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Status draws its network, volume, Bluetooth, battery and other status icons
+  from drawings it carries, Colloid's bold panel set, so they look the same
+  whatever icon theme is installed. Wi-Fi without the internet now shows its
+  own mark instead of the theme's.
 - Turning notifications off no longer takes the battery off the bar with it.
 - The bell can show itself alone while notifications wait, without the count,
   the ✓ or the slim row's chip (`waitingShows`: `count`, the default, or

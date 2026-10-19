@@ -16,12 +16,10 @@ Item {
     // The Status Bar whose measures this follows.
     required property Item bar
     required property StatusColors tone
-    required property var statusIcon
+    // A drawing Temperance carries (StatusGlyphs.js), or suite-ethernet.
+    required property string statusIcon
     required property string accessibleName
     property bool active: false
-    // A single-colour symbolic drawing fills its box, so it is asked for
-    // smaller than a theme's padded 24 px status icon to draw the same mark.
-    readonly property bool symbolic: String(statusIcon).endsWith("-symbolic")
     // A wired connection draws Lucide's ethernet port, as the bell is drawn.
     readonly property bool ethernet: statusIcon === "suite-ethernet"
     signal triggered()
@@ -44,20 +42,15 @@ Item {
             height: bar.wiredGlyphSize
             strokeWidth: bar.bellStroke
         }
-        Kirigami.Icon {
+        // Drawn by Temperance, so no icon theme changes it. A symbolic
+        // drawing fills its box, so it is drawn smaller than a theme's padded
+        // 24 px status icon to make the same mark.
+        SuiteIcon {
             visible: !statusIconButton.ethernet
             anchors.centerIn: parent
-            source: statusIconButton.statusIcon
-            // 24 and 16 are sizes themes draw status icons at, so the
-            // theme's own drawing is used rather than one scaled from
-            // another size; Kirigami would otherwise round a size down.
-            implicitWidth: statusIconButton.symbolic ? bar.symbolicIconSize : bar.statusIconSize
-            implicitHeight: implicitWidth
-            roundToIconSize: false
-            // Some themes' symbolic drawings carry a fixed colour rather
-            // than the text colour Kirigami replaces.
-            isMask: statusIconButton.symbolic
-            color: tone.text
+            glyph: statusIconButton.ethernet ? "nm-signal-100-symbolic" : statusIconButton.statusIcon
+            width: bar.symbolicIconSize
+            height: width
         }
     }
     HoverHandler { id: statusIconButtonHover }

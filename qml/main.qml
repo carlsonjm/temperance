@@ -18,6 +18,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.workspace.dbus as DBus
+import "StatusGlyphs.js" as StatusGlyphs
 
 ContainmentItem {
     id: root
@@ -646,40 +647,13 @@ ContainmentItem {
         return "—";
     }
 
+    // The network mark, drawn by Temperance whatever the icon theme
+    // (StatusGlyphs.js): Plasma's network widget names the state, and the name
+    // picks the drawing.
     function networkIcon() {
         const network = appletsById["org.kde.plasma.networkmanagement"];
         return network && network.Plasmoid && network.Plasmoid.icon
-            ? symbolicNetworkIcon(network.Plasmoid.icon) : "network-wireless-signal-excellent-symbolic";
-    }
-
-    // Plasma's network widget names its icons its own way, such as
-    // network-wireless-60-locked, and adds -symbolic to the name in a panel.
-    // The freedesktop symbolic names carry the same states, and themes draw
-    // them as bold single-colour marks that sit with the other status icons.
-    // A wired connection draws Lucide's ethernet port in the bell's line, rather
-    // than a theme's network diagram; a cable pulled keeps the theme's own
-    // disconnected mark. A name with no counterpart is kept.
-    function symbolicNetworkIcon(icon) {
-        const name = String(icon).replace(/-symbolic$/, "");
-        const strength = { "100": "excellent", "80": "excellent", "60": "good",
-            "40": "ok", "20": "weak", "0": "none", "00": "none" };
-        if (/^network-wired(?:-activated)?(?:-limited|-locked)?$/.test(name))
-            return "suite-ethernet";
-        const wireless = /^network-wireless-(?:connected-)?([0-9]+)(-locked)?$/.exec(name);
-        if (wireless && strength[wireless[1]] !== undefined)
-            return "network-wireless-signal-" + strength[wireless[1]]
-                + (wireless[2] ? "-secure" : "") + "-symbolic";
-        const named = {
-            "network-wireless": "network-wireless-symbolic",
-            "network-wireless-disconnected": "network-wireless-disconnected-symbolic",
-            "network-wireless-off": "network-wireless-disabled-symbolic",
-            "network-wireless-hotspot": "network-wireless-hotspot-symbolic",
-            "network-wired-disconnected": "network-wired-disconnected-symbolic",
-            "network-vpn": "network-vpn-symbolic",
-            "network-flightmode-on": "airplane-mode-symbolic",
-            "network-unavailable": "network-offline-symbolic"
-        };
-        return named[name] || icon;
+            ? StatusGlyphs.network(network.Plasmoid.icon) : "nm-signal-100-symbolic";
     }
 
     function appletIcon(itemId, fallback) {

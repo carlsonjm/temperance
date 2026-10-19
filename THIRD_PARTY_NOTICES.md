@@ -7,6 +7,16 @@ The compact notification bell is adapted from Lucide's `bell` icon.
 Copyright (c) 2026 Lucide Icons and Contributors.
 Licensed under the ISC License: https://github.com/lucide-icons/lucide/blob/main/LICENSE
 
+## Colloid status icons
+
+The status icons in `assets/icons/colloid/` are copied from the Colloid icon
+theme (https://github.com/vinceliuice/Colloid-icon-theme), recoloured with
+their geometry unchanged.
+
+Copyright the Colloid icon theme authors (vinceliuice).
+Licensed under the GNU General Public License version 3: see
+`LICENSES/GPL-3.0-only.txt`.
+
 ## Open-Meteo
 
 When the optional online weather fallback is enabled, current temperature and

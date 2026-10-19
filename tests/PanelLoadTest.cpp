@@ -231,8 +231,98 @@ int main(int argc, char **argv)
         QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
         QStringLiteral("rotate-cw"), QStringLiteral("moon"), QStringLiteral("users"),
         QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"), QStringLiteral("cloud-sun"),
-        QStringLiteral("gauge")
+        QStringLiteral("gauge"), QStringLiteral("nm-signal-100-symbolic"),
+        QStringLiteral("nm-signal-50-secure-symbolic"), QStringLiteral("audio-volume-high-symbolic"),
+        QStringLiteral("bluetooth-active-symbolic")
     };
+    // Every state Plasma's network widget reports, and the icons Plasma's own
+    // status widgets give, is drawn by a drawing Temperance ships: none falls
+    // back to the icon theme, which made Status look different on every
+    // computer with a different theme or variant installed.
+    QQmlComponent glyphMap(&engine);
+    glyphMap.setData(QByteArrayLiteral(
+        "import QtQuick\n"
+        "import \"qrc:/qt/qml/plasma/applet/co/goodinput/temperance/StatusGlyphs.js\" as G\n"
+        "QtObject {\n"
+        "  function check(names, network) {\n"
+        "    const out = [];\n"
+        "    for (const name of names) out.push(network ? G.network(name) : G.applet(name));\n"
+        "    return out;\n"
+        "  }\n"
+        "}\n"), QUrl(QStringLiteral("qrc:/temperance-glyph-map-test.qml")));
+    std::unique_ptr<QObject> glyphMapper(glyphMap.create());
+    if (!glyphMapper) {
+        qCritical() << glyphMap.errors();
+        return 23;
+    }
+    QStringList networkStates;
+    for (const QString &strength : {QStringLiteral("0"), QStringLiteral("20"), QStringLiteral("40"),
+             QStringLiteral("60"), QStringLiteral("80"), QStringLiteral("100")}) {
+        for (const QString &badge : {QString(), QStringLiteral("-locked"), QStringLiteral("-limited")}) {
+            networkStates << QStringLiteral("network-wireless-") + strength + badge + QStringLiteral("-symbolic")
+                          << QStringLiteral("network-mobile-") + strength + QStringLiteral("-lte") + badge
+                          << QStringLiteral("network-mobile-") + strength + badge;
+        }
+    }
+    networkStates << QStringLiteral("network-wireless-connected-00") << QStringLiteral("network-wired-activated")
+                  << QStringLiteral("network-wired-activated-locked-symbolic")
+                  << QStringLiteral("network-wired-activated-limited") << QStringLiteral("network-wired")
+                  << QStringLiteral("network-wired-disconnected") << QStringLiteral("network-wireless-disconnected")
+                  << QStringLiteral("network-wireless-off") << QStringLiteral("network-wireless-hotspot")
+                  << QStringLiteral("network-wireless-bluetooth-symbolic") << QStringLiteral("network-mobile-available")
+                  << QStringLiteral("network-modem") << QStringLiteral("network-vpn")
+                  << QStringLiteral("network-flightmode-on-symbolic") << QStringLiteral("network-unavailable")
+                  << QStringLiteral("network-something-new");
+    const QStringList appletStates{
+        QStringLiteral("network-bluetooth-activated-symbolic"), QStringLiteral("network-bluetooth-inactive-symbolic"),
+        QStringLiteral("network-bluetooth-symbolic"), QStringLiteral("audio-volume-muted-symbolic"),
+        QStringLiteral("audio-volume-low-symbolic"), QStringLiteral("audio-volume-medium-symbolic"),
+        QStringLiteral("audio-volume-high-symbolic"), QStringLiteral("audio-volume-high-danger-symbolic-rtl"),
+        QStringLiteral("microphone-sensitivity-muted-symbolic"), QStringLiteral("audio-input-microphone-symbolic"),
+        QStringLiteral("battery-full-symbolic"), QStringLiteral("battery-040-charging"), QStringLiteral("battery-010"),
+        QStringLiteral("battery-100-charging-symbolic"), QStringLiteral("battery-060"), QStringLiteral("battery-missing"),
+        QStringLiteral("speedometer"), QStringLiteral("redshift-status-on"), QStringLiteral("klipper-symbolic"),
+        QStringLiteral("device-notifier-symbolic"), QStringLiteral("drive-removable-media-usb-pendrive"),
+        QStringLiteral("printer-symbolic"), QStringLiteral("notification-active"), QStringLiteral("network-wireless-60")
+    };
+    const auto everyGlyphShipped = [&](const QStringList &names, bool network) {
+        QVariant result;
+        QMetaObject::invokeMethod(glyphMapper.get(), "check", Q_RETURN_ARG(QVariant, result),
+            Q_ARG(QVariant, QVariant(names)), Q_ARG(QVariant, network));
+        const QStringList glyphNames = result.toStringList();
+        for (qsizetype i = 0; i < names.size(); ++i) {
+            const QString glyph = i < glyphNames.size() ? glyphNames.at(i) : QString();
+            if (network && glyph == QStringLiteral("suite-ethernet")) continue;
+            if (glyph.isEmpty() || !QFile::exists(QStringLiteral(":/qt/qml/plasma/applet/co/goodinput/temperance/")
+                    + glyph + QStringLiteral(".svg"))) {
+                qCritical() << "No shipped glyph for" << names.at(i) << glyph;
+                return false;
+            }
+        }
+        return true;
+    };
+    if (!everyGlyphShipped(networkStates, true) || !everyGlyphShipped(appletStates, false))
+        return 23;
+    QVariant appGlyph;
+    QMetaObject::invokeMethod(glyphMapper.get(), "check", Q_RETURN_ARG(QVariant, appGlyph),
+        Q_ARG(QVariant, QVariant(QStringList{QStringLiteral("steam"), QStringLiteral("discord-tray")})),
+        Q_ARG(QVariant, false));
+    if (appGlyph.toStringList() != QStringList{QString(), QString()}) {
+        qCritical() << "An application's own tray icon must keep its own picture" << appGlyph;
+        return 23;
+    }
+    QVariant lockGlyph;
+    QMetaObject::invokeMethod(glyphMapper.get(), "check", Q_RETURN_ARG(QVariant, lockGlyph),
+        Q_ARG(QVariant, QVariant(QStringList{QStringLiteral("network-wireless-100-symbolic"),
+            QStringLiteral("network-wireless-100-locked-symbolic"),
+            QStringLiteral("network-wireless-20-limited")})),
+        Q_ARG(QVariant, true));
+    // Plasma's lock means a VPN is up, never a passworded network.
+    if (lockGlyph.toStringList() != QStringList{QStringLiteral("nm-signal-100-symbolic"),
+            QStringLiteral("nm-signal-100-secure-symbolic"), QStringLiteral("network-wireless-no-route-symbolic")}) {
+        qCritical() << "Network badges do not follow Plasma's VPN and limited states" << lockGlyph;
+        return 23;
+    }
     // Stand-ins for a dark and a light Plasma style. The software renderer
     // the test runs on draws no layer effects, so the light glyph's recolour
     // is checked by its settings and the drawing by the dark one.

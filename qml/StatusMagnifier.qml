@@ -195,15 +195,20 @@ Item {
 
             Kirigami.Icon {
                 visible: face.key === "weather"
-                    || (face.key === "control" && !face.control.ethernet)
                 anchors.centerIn: parent
                 width: strip.iconSize
                 height: strip.iconSize
                 roundToIconSize: false
-                source: face.key === "weather" ? strip.status.weatherIcon()
-                    : face.key === "control" ? face.control.statusIcon : ""
-                isMask: face.key === "control" && face.control.symbolic
+                source: face.key === "weather" ? strip.status.weatherIcon() : ""
                 color: tone.text
+            }
+            SuiteIcon {
+                visible: face.key === "control" && !face.control.ethernet
+                anchors.centerIn: parent
+                width: strip.iconSize
+                height: strip.iconSize
+                glyph: face.key === "control" && !face.control.ethernet
+                    ? face.control.statusIcon : "nm-signal-100-symbolic"
             }
             EthernetGlyph {
                 visible: face.key === "control" && face.control.ethernet
