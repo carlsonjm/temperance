@@ -137,16 +137,16 @@ and all-day events stay in the calendar card.
 
 ## Control Center and tray
 
-Session controls live in the Control Center header: Shut Down always, then the
-`sessionRow` actions in listed order (Lock, Sleep, Restart) as room allows, the
-rest (Log Out) behind More. Sleep needs a machine that can sleep;
+Session controls live in Control Center's header: Shut Down always, then
+`sessionRow`'s actions in its order (Sleep, Restart) as room allows, the rest
+(Lock, Log Out) behind More. Sleep needs a machine that can sleep;
 Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Down
 go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control except the
 calendar's is a grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these track a mouse, trackpad or pen
 themselves, but not a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
-Promoted tray entries become Control Center pills in listed order and leave the
+Loaded promoted tray entries become Control Center pills in listed order and leave the
 organized tray, which keeps the Apps, Devices, System order and drops empty
 sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by

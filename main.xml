@@ -59,7 +59,7 @@
     </entry>
     <entry name="controlCenterItems" type="StringList">
       <label>System tray entries promoted to Control Center pills, in their order; temperance.performance places the Performance pill</label>
-      <default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth</default>
+      <default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth,org.kde.kdeconnect</default>
     </entry>
     <entry name="showLock" type="Bool">
       <label>Show Lock in Control Center</label>
@@ -87,7 +87,7 @@
     </entry>
     <entry name="sessionRow" type="StringList">
       <label>Session actions that stand in Control Center's header row, in order; any other shown action waits in the More menu. Shut Down always stands in the row, and actions the row has no room for move to the menu</label>
-      <default>lock,sleep,restart,shutdown</default>
+      <default>sleep,restart,shutdown</default>
     </entry>
     <entry name="sessionRowCap" type="Int">
       <label>The most session actions that stand in Control Center's header row; the rest wait in the More menu in sessionRow's order</label>

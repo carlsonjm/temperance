@@ -25,7 +25,7 @@
 <table>
 <tr>
 <td width="33%" valign="top"><b>Notifications &amp; Events</b><br>Notifications pass through the bar, then wait in a history under today's events.</td>
-<td width="33%" valign="top"><b>Control Center</b><br>Volume, brightness, connections and, where supported, performance profiles. Lock, Sleep, Restart and Shut down sit in its header.</td>
+<td width="33%" valign="top"><b>Control Center</b><br>Volume, brightness, connections and, where supported, performance profiles. Sleep, Restart and Shut down sit in its header.</td>
 <td width="33%" valign="top"><b>System Tray</b><br>App and device icons, each shown in the bar, the popup, or nowhere.</td>
 </tr>
 <tr>
@@ -76,7 +76,7 @@ An app's notifications group together and keep the app's own actions, such as re
 
 The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only and refresh every few minutes. Today's next timed event shows in the bar.
 
-Control Center's header always shows Shut down and keeps Log out behind More. Each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray work with notifications or weather off.
+Control Center's header always shows Shut down and keeps Lock and Log out behind More. Each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray work with notifications or weather off.
 </details>
 
 <details>

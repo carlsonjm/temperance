@@ -96,6 +96,16 @@ endforeach()
 if(NOT config_xml MATCHES "<entry name=\"showSwitchUser\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>false</default>")
     message(FATAL_ERROR "Switch User must remain opt-in")
 endif()
+# Sleep, Restart and Shut down stand in the row; Lock and Log out wait in More.
+if(NOT config_xml MATCHES "<entry name=\"sessionRow\" type=\"StringList\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>sleep,restart,shutdown</default>")
+    message(FATAL_ERROR "The session row must default to Sleep, Restart and Shut down")
+endif()
+# KDE Connect follows network and Bluetooth, and an entry whose applet is
+# missing or not loaded draws no pill.
+if(NOT config_xml MATCHES "<default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth,org.kde.kdeconnect</default>"
+   OR NOT main_qml MATCHES "id: controlCenterModel[^}]*sourceModel.data\\(idx, Qt.UserRole \\+ 3\\) === true")
+    message(FATAL_ERROR "Control Center must list KDE Connect after network and Bluetooth, and only entries that can render")
+endif()
 if(NOT config_xml MATCHES "<entry name=\"adaptiveWidth\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
     message(FATAL_ERROR "Responsive panel sizing must remain enabled by default")
 endif()
