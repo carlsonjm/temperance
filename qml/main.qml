@@ -1324,7 +1324,10 @@ ContainmentItem {
         filterRowCallback: (sourceRow, sourceParent) => {
             const idx = sourceModel.index(sourceRow, 0, sourceParent);
             const itemId = sourceModel.data(idx, filterRole);
-            return (Plasmoid.configuration.controlCenterItems || []).indexOf(itemId) !== -1;
+            // An entry whose applet is not loaded, such as KDE Connect while
+            // its service is stopped, leaves no empty pill.
+            return sourceModel.data(idx, Qt.UserRole + 3) === true
+                && (Plasmoid.configuration.controlCenterItems || []).indexOf(itemId) !== -1;
         }
         Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
     }

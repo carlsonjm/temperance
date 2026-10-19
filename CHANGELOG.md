@@ -13,9 +13,11 @@ This file records user-visible changes.
   seconds, from 5.
 - Control Center's More menu closes as soon as one of its actions is chosen,
   and whenever Control Center closes, instead of staying on screen.
-- Lock stands in Control Center's header by default, first in the row,
-  before Sleep. The header keeps the buttons in the order `sessionRow` lists
+- Control Center's header keeps the buttons in the order `sessionRow` lists
   them, Shut Down included.
+- Control Center shows a KDE Connect pill after network and Bluetooth where
+  KDE Connect is installed. A promoted entry whose applet is missing or not
+  running leaves no empty pill.
 - Notifications and the other pages stop above a dock or panel along the
   bottom of the screen, and scroll inside, instead of running down behind it.
 - On a horizontal panel too thin for its row, such as a 24 px bar along the top
@@ -161,7 +163,7 @@ This file records user-visible changes.
   the history without crossing the ticker: Ambient has already shown each for
   a minute.
 - Corners follow the suite's three tiers: Control Center and alerts at 12 px,
-  the cards inside them at 8 px, and every control a pill.
+  the cards inside them at 10 px, and every control a pill.
 - Sized the status icons for touch: a third larger, set as one group, each
   answering a touch across the panel's height, and lifting under the finger.
 - Drew the network icon as a bold symbolic mark, the bell's count larger, and
