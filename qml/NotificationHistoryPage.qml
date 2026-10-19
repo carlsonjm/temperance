@@ -125,7 +125,7 @@ Item {
                     objectName: "notificationEventCard"
                     Layout.fillWidth: true
                     implicitHeight: eventCardContent.implicitHeight + page.cardPaddingV * 2
-                    radius: 8
+                    radius: 10
                     color: tone.wash(0.07)
                     border.width: 0
                     Accessible.role: Accessible.StaticText
@@ -227,7 +227,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: demoContent.implicitHeight + Kirigami.Units.largeSpacing * 2
             visible: page.demoNotificationVisible
-            radius: 8
+            radius: 10
             color: tone.wash(0.07)
 
             RowLayout {
@@ -445,7 +445,7 @@ Item {
                     anchors.top: parent.top
                     height: notificationCardContent.implicitHeight
                         + page.cardPaddingV * 2
-                    radius: 8
+                    radius: 10
                     color: tone.wash(0.07)
                     border.width: 0
 

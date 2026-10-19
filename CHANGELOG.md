@@ -161,7 +161,7 @@ This file records user-visible changes.
   the history without crossing the ticker: Ambient has already shown each for
   a minute.
 - Corners follow the suite's three tiers: Control Center and alerts at 12 px,
-  the cards inside them at 8 px, and every control a pill.
+  the cards inside them at 10 px, and every control a pill.
 - Sized the status icons for touch: a third larger, set as one group, each
   answering a touch across the panel's height, and lifting under the finger.
 - Drew the network icon as a bold symbolic mark, the bell's count larger, and
