@@ -126,7 +126,7 @@
       <default>false</default>
     </entry>
     <entry name="showLevels" type="Bool">
-      <label>Whether a change of volume or screen brightness is shown for a moment in the status area, for a desktop that turns Plasma's own popups for them off</label>
+      <label>Whether a change of volume, screen or keyboard brightness, or the microphone's mute is shown for a moment in the status area, for a desktop that turns Plasma's own popups off</label>
       <default>false</default>
     </entry>
     <entry name="calendarLinks" type="StringList">

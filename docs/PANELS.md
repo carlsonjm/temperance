@@ -67,12 +67,13 @@ as `fingerControlsArea`, in its own coordinates, so a bar holding it along the
 top of the screen keeps only the controls from a pull meant for the
 workspaces and leaves the ticker's room to it.
 
-A desktop that turns off Plasma's own popups for the volume and the screen's
-brightness can ask the row to show them instead (`showLevels`, off by default).
-As either changes, by a key or another application, the speaker or the sun
-comes into the row before Control Center's button with a short track showing
-how full, for a second and a half after the last change, opening and closing
-at Plasma's animation speed. It stays hidden for the first reading, while
+A desktop that turns off Plasma's own popups can ask the row to show the
+volume, the screen's brightness, the keyboard's light and the microphone's
+mute instead (`showLevels`, off by default). As one changes, by a key or
+another application, the speaker, the sun or the keyboard comes into the row
+before Control Center's button with a short track showing how full, or the
+microphone alone, struck through while muted, for a second and a half after
+the last change, opening and closing at Plasma's animation speed. It stays hidden for the first reading, while
 Control Center is open (its sliders already show the level), and when the
 setting is off.
 
