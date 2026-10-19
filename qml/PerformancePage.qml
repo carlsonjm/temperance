@@ -567,10 +567,10 @@ Item {
                             text: i18n("Edit a profile")
                             font.weight: Font.Medium
                         }
-                        Kirigami.Icon {
+                        SuiteIcon {
                             implicitWidth: Kirigami.Units.iconSizes.small
                             implicitHeight: Kirigami.Units.iconSizes.small
-                            source: page.editorOpen ? "arrow-up-symbolic" : "arrow-down-symbolic"
+                            glyph: page.editorOpen ? "chevron-up" : "chevron-down"
                         }
                     }
                     background: null

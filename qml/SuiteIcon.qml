@@ -28,6 +28,9 @@ Item {
         anchors.margins: suiteIcon.glyphInset
         source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/"
             + suiteIcon.glyph + ".svg"
+        // Drawn at the size shown, not scaled from the file's 24 px.
+        sourceSize.width: Math.max(1, Math.ceil(width))
+        sourceSize.height: Math.max(1, Math.ceil(height))
         fillMode: Image.PreserveAspectFit
         smooth: true
         layer.enabled: !tone.dark

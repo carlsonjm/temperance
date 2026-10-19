@@ -157,6 +157,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/AlertBanners.qml
         qml/StatusIconButton.qml
         qml/StatusFace.qml
+        qml/StatusGlyphs.js
     RESOURCES
         main.xml
         assets/icons/lucide/ellipsis-vertical.svg
@@ -181,6 +182,65 @@ plasma_add_applet(co.goodinput.temperance
         assets/icons/lucide/mic-off.svg
         assets/icons/lucide/cloud-sun.svg
         assets/icons/lucide/gauge.svg
+        # Status icons from Colloid, copied by tools/status-glyphs.py.
+        assets/icons/colloid/nm-signal-0-symbolic.svg
+        assets/icons/colloid/nm-signal-0-secure-symbolic.svg
+        assets/icons/colloid/nm-signal-25-symbolic.svg
+        assets/icons/colloid/nm-signal-25-secure-symbolic.svg
+        assets/icons/colloid/nm-signal-50-symbolic.svg
+        assets/icons/colloid/nm-signal-50-secure-symbolic.svg
+        assets/icons/colloid/nm-signal-75-symbolic.svg
+        assets/icons/colloid/nm-signal-75-secure-symbolic.svg
+        assets/icons/colloid/nm-signal-100-symbolic.svg
+        assets/icons/colloid/nm-signal-100-secure-symbolic.svg
+        assets/icons/colloid/network-wireless-acquiring-symbolic.svg
+        assets/icons/colloid/network-wireless-offline-symbolic.svg
+        assets/icons/colloid/network-wireless-disabled-symbolic.svg
+        assets/icons/colloid/network-wireless-no-route-symbolic.svg
+        assets/icons/colloid/network-wireless-hotspot-symbolic.svg
+        assets/icons/colloid/network-wired-offline-symbolic.svg
+        assets/icons/colloid/network-wired-no-route-symbolic.svg
+        assets/icons/colloid/network-vpn-symbolic.svg
+        assets/icons/colloid/airplane-mode-symbolic.svg
+        assets/icons/colloid/network-cellular-signal-none-symbolic.svg
+        assets/icons/colloid/network-cellular-signal-low-symbolic.svg
+        assets/icons/colloid/network-cellular-signal-ok-symbolic.svg
+        assets/icons/colloid/network-cellular-signal-good-symbolic.svg
+        assets/icons/colloid/network-cellular-signal-excellent-symbolic.svg
+        assets/icons/colloid/network-cellular-offline-symbolic.svg
+        assets/icons/colloid/network-cellular-no-route-symbolic.svg
+        assets/icons/colloid/audio-volume-muted-symbolic.svg
+        assets/icons/colloid/audio-volume-low-symbolic.svg
+        assets/icons/colloid/audio-volume-medium-symbolic.svg
+        assets/icons/colloid/audio-volume-high-symbolic.svg
+        assets/icons/colloid/audio-volume-overamplified-symbolic.svg
+        assets/icons/colloid/audio-input-microphone-low-symbolic.svg
+        assets/icons/colloid/audio-input-microphone-medium-symbolic.svg
+        assets/icons/colloid/audio-input-microphone-high-symbolic.svg
+        assets/icons/colloid/microphone-sensitivity-muted-symbolic.svg
+        assets/icons/colloid/bluetooth-active-symbolic.svg
+        assets/icons/colloid/bluetooth-disabled-symbolic.svg
+        assets/icons/colloid/battery-level-10-symbolic.svg
+        assets/icons/colloid/battery-level-20-symbolic.svg
+        assets/icons/colloid/battery-level-30-symbolic.svg
+        assets/icons/colloid/battery-level-50-symbolic.svg
+        assets/icons/colloid/battery-level-70-symbolic.svg
+        assets/icons/colloid/battery-level-90-symbolic.svg
+        assets/icons/colloid/battery-level-10-charging-symbolic.svg
+        assets/icons/colloid/battery-level-30-charging-symbolic.svg
+        assets/icons/colloid/battery-level-70-charging-symbolic.svg
+        assets/icons/colloid/battery-level-90-charging-symbolic.svg
+        assets/icons/colloid/battery-full-symbolic.svg
+        assets/icons/colloid/battery-full-charging-symbolic.svg
+        assets/icons/colloid/battery-missing-symbolic.svg
+        assets/icons/colloid/power-profile-balanced-symbolic.svg
+        assets/icons/colloid/night-light-symbolic.svg
+        assets/icons/colloid/edit-paste-symbolic.svg
+        assets/icons/colloid/notification-symbolic.svg
+        assets/icons/colloid/notification-disabled-symbolic.svg
+        assets/icons/colloid/printer-symbolic.svg
+        assets/icons/colloid/drive-harddisk-symbolic.svg
+        assets/icons/colloid/drive-removable-media-usb-symbolic.svg
 )
 
 # Translations, as po/<language>/plasma_applet_co.goodinput.temperance.po;

@@ -15,6 +15,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
+import "StatusGlyphs.js" as StatusGlyphs
 
 PlasmaCore.ToolTipArea {
     id: abstractItem
@@ -84,6 +85,7 @@ PlasmaCore.ToolTipArea {
     property string presentationText: ""
     property bool inlinePresentation: false
     property var inlineIcon: presentationIcon
+    readonly property string suiteGlyph: typeof inlineIcon === "string" ? StatusGlyphs.applet(inlineIcon) : ""
 
     function suiteSentenceCaseLabel(value) {
         if (value === "Disks & Devices") return i18n("Disks & devices");
@@ -251,8 +253,17 @@ PlasmaCore.ToolTipArea {
         width: Math.min(implicitWidth, abstractItem.width - Kirigami.Units.largeSpacing * 2)
         spacing: 8
 
+        // Plasma's own status widgets draw from Temperance's glyphs, whatever
+        // the icon theme; an application keeps its own icon.
         Kirigami.Icon {
+            visible: abstractItem.suiteGlyph === ""
             source: abstractItem.inlineIcon
+            implicitWidth: Kirigami.Units.iconSizes.smallMedium
+            implicitHeight: implicitWidth
+        }
+        SuiteIcon {
+            visible: abstractItem.suiteGlyph !== ""
+            glyph: abstractItem.suiteGlyph || "nm-signal-100-symbolic"
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: implicitWidth
         }

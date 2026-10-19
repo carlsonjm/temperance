@@ -30,5 +30,14 @@
   "exceptions": {
     "notification-animated": "qml/BellGlyph.qml (Lucide-derived segmented geometry for clapper and slash animation)",
     "network-wired": "qml/EthernetGlyph.qml (Lucide ethernet-port geometry drawn in the bell's line)"
+  },
+  "status": {
+    "family": "Colloid (bold panel set, regular where bold has none)",
+    "source": "https://github.com/vinceliuice/Colloid-icon-theme",
+    "commit": "ceac6608ecd0e40025cbc2ebbd32bf0e0f4ebc6a",
+    "license": "GPL-3.0-only",
+    "directory": "colloid",
+    "copied_by": "tools/status-glyphs.py",
+    "mapping": "qml/StatusGlyphs.js"
   }
 }

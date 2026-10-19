@@ -122,6 +122,12 @@ if(NOT EXISTS "${SOURCE_DIR}/assets/icons/manifest.json"
    OR NOT EXISTS "${SOURCE_DIR}/assets/icons/lucide/LICENSE")
     message(FATAL_ERROR "Pinned Lucide suite action assets are incomplete")
 endif()
+# Status draws its status icons from its own copies, never the icon theme's.
+if(NOT EXISTS "${SOURCE_DIR}/assets/icons/colloid/nm-signal-100-symbolic.svg"
+   OR NOT EXISTS "${SOURCE_DIR}/LICENSES/GPL-3.0-only.txt"
+   OR NOT main_qml MATCHES "StatusGlyphs.network\\(network.Plasmoid.icon\\)")
+    message(FATAL_ERROR "Status icons must come from the Colloid copies Temperance carries")
+endif()
 
 # The performance helper is run on demand, never on a repeating timer.
 if(performance_cpp MATCHES "setInterval\\(" OR performance_cpp MATCHES "QTimer m_")

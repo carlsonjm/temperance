@@ -50,10 +50,10 @@ The bell and the wired port are outlines Temperance draws, kept to the size of
 the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
 reads larger than a filled mark. The count sits 5 px under the rim, in 13 px.
 
-The protected bell and tray are scaled, not redrawn. The network icon is the
-theme's bold symbolic mark: Plasma's network widget adds `-symbolic` to its own
-state names in a panel, so Temperance drops that ending and maps the name to the
-freedesktop symbolic one.
+The protected bell and tray are scaled, not redrawn. Every other status icon is
+a drawing Temperance carries, Colloid's bold set (`tools/status-glyphs.py`),
+never the theme's; `qml/StatusGlyphs.js` maps Plasma's state names to them.
+`-locked` means a VPN; apps keep their own icons.
 
 ## Notifications
 
@@ -185,8 +185,8 @@ Temperance applies the suite's visual language:
 - Ghost White (`#F8F8FF`) leads on a dark style;
   `StatusColors.qml` follows a light one.
 - Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
-  vendored here. Application, provider, weather and tray icons stay with their
-  sources.
+  vendored here; status icons are Colloid's. Application, provider and weather
+  icons stay with their sources.
 - The animated bell (Lucide's Bell redrawn for its clapper and slash), the weather
   treatment and the custom tray work are protected from icon migrations.
 - Controls keep distinct resting, hover, pressed, focus and selected states.
@@ -202,7 +202,7 @@ it. The Open-Meteo fallback the README describes is the only other provider.
 ## Licensing, packaging and checks
 
 Inherited KDE and libdbusmenu code keeps its SPDX identity and licence texts, and
-vendored Lucide/Feather assets keep their ISC/MIT notice. `src/shared` is
+vendored Lucide, Feather and Colloid assets keep their notices. `src/shared` is
 Tettegouche's code, copied as `tools/shared.sh` records. Product metadata,
 third-party notices, the icon manifest and installed assets stay in sync.
 
