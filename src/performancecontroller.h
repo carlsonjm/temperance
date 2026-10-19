@@ -13,22 +13,26 @@
 #include <QVariantMap>
 #include <functional>
 
-class QProcess;
+class QJsonObject;
 class ScreenRefresh;
 
 // Performance profiles on machines with the z13ctl-plus helper, such as the
-// ROG Flow Z13. A capability-gated extension: without the helper every
-// property stays empty and Control Center leaves the entry out. The list is
-// read when start() finds the helper, again whenever Control Center opens,
-// and after a preset is applied; the helper is never run on a timer.
+// ROG Flow Z13. A capability-gated extension: while the helper's daemon does
+// not answer on its socket every property stays empty and Control Center
+// leaves the entry out. Everything is read from the daemon, never by running
+// a copy of the helper, so the page and the daemon cannot disagree. The list
+// is read at start, again whenever Control Center opens, after a preset is
+// applied and when the power cable comes or goes; the daemon is never asked
+// on a timer.
 class PerformanceController : public QObject
 {
     Q_OBJECT
     Q_MOC_INCLUDE("screenrefresh.h")
     Q_PROPERTY(QStringList presets READ presets NOTIFY presetsChanged)
     Q_PROPERTY(QString activePreset READ activePreset NOTIFY activePresetChanged)
-    // What each preset holds (profile, energy use, power limits, fan curve),
-    // the AC/battery assignment and the charge limit, read from the
+    // What each preset holds (profile, energy use, power limits, fan curve,
+    // and the charge limit Temperance keeps for it), the AC/battery
+    // assignment and the live charge limit, read from the
     // z13ctl-plus daemon so the Performance page edits a preset from what it
     // saved rather than from whatever happens to be live.
     Q_PROPERTY(QVariantMap presetSettings READ presetSettings NOTIFY settingsChanged)
@@ -44,7 +48,7 @@ class PerformanceController : public QObject
 public:
     explicit PerformanceController(QObject *parent = nullptr);
 
-    // Looks for the helper and, when it is there, reads the presets.
+    // Asks the helper's daemon for the presets.
     void start();
 
     QStringList presets() const;
@@ -60,6 +64,8 @@ public:
     Q_INVOKABLE void applyPreset(const QString &name);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void savePreset(const QString &name, const QVariantMap &settings);
+    Q_INVOKABLE void createPreset(const QString &name, const QString &source, const QVariantMap &settings);
+    // Sets the live charge limit and keeps it as the preset in use's own.
     Q_INVOKABLE void setBatteryLimit(int percent);
     Q_INVOKABLE void setPowerPolicy(bool enabled, const QString &acPreset, const QString &batteryPreset);
 
@@ -72,14 +78,20 @@ Q_SIGNALS:
     // A preset save has ended; detail is the helper's reason when it gave one.
     void presetSaved(const QString &name, bool ok, const QString &detail);
 
+private Q_SLOTS:
+    void powerSourceChanged();
+
 private:
-    void runHelper(const QStringList &arguments, std::function<void(QProcess *process, bool ok)> finished);
+    int presetChargeLimit(const QString &name) const;
+    void storeChargeLimit(const QString &name, int percent);
+    void followChargeLimit();
     void readPresets(std::function<void()> done);
-    void refreshState();
+    void readSettings(const QJsonObject &state);
     void setBusy(bool busy);
+    void writePreset(const QString &source, const QString &name, const QVariantMap &settings);
     void sendRequests(QList<QJsonObject> requests, std::function<void(bool ok, const QJsonObject &reply)> done);
 
-    QString m_helper;
+    bool m_available = false;
     QStringList m_presets;
     QString m_activePreset;
     QVariantMap m_presetSettings;
@@ -87,6 +99,9 @@ private:
     QString m_acPreset;
     QString m_batteryPreset;
     int m_batteryLimit = 0;
+    // The limit last sent to follow the preset in use, so a refused one is
+    // not sent again until the live limit changes.
+    int m_chargeLimitSent = 0;
     bool m_busy = false;
     ScreenRefresh *m_screenRefresh = nullptr;
 };

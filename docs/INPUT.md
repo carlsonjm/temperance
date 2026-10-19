@@ -78,16 +78,17 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Choose a profile under Profile | Applies it at once. |
-| Drag the charge limit | Sets where the battery stops charging, 40 to 100% in steps of 5, once you let go. |
-| Turn the refresh-rate switch on or off | Sets the built-in screen to its fastest or slowest rate. Away from the profile's rate it reads Manual and holds until the profile changes. |
-| Turn Switch when plugged in or unplugged on or off | Starts or stops changing profile when the power source changes. |
-| Choose the Plugged in or On battery profile | Sets the profile used on that power source; only while switching is on. |
-| Tap or click Edit a profile | Opens or folds the editor, on the profile in use. |
+| Drag the charge limit | Sets where charging stops, 40 to 100% in fives, on release; the profile in use keeps it. |
+| Turn the refresh-rate switch on or off | Sets the built-in screen to its fastest or slowest rate; away from the profile's rate it reads Manual until the profile changes. |
+| Turn Switch when plugged in or unplugged on or off | Starts or stops changing profile with the power source. |
+| Choose the Plugged in or On battery profile | Sets that power source's profile, while switching is on. |
+| Tap or click Edit a profile | Opens or folds the editor. |
 | Choose the profile to edit | Loads its settings into the editor. |
+| New, a name, then Create | Saves the edited profile, with its changes, as a new one. |
 | Tap or click a Performance profile or Energy use pill | Stages that choice for the profile being edited. |
 | Drag a power-limit slider | Stages that limit, in watts. |
 | Tap or click Reset beside Power limits or Fan curve | Stages the profile's own limits, or fans run by the firmware. |
-| Drag a point on the fan curve | Moves it, its neighbours making way, and shows its temperature and fan speed. A touch away from the points scrolls the page. |
+| Drag a point on the fan curve | Moves it, neighbours making way, showing its temperature and fan speed. A touch elsewhere scrolls. |
 | Tap or click Save to, or Enter or Space on it | Saves everything staged to that profile; dimmed until something changes. |
 
 ### Session actions

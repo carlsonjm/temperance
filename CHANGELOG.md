@@ -8,6 +8,15 @@ This file records user-visible changes.
   from drawings it carries, Colloid's bold panel set, so they look the same
   whatever icon theme is installed. Wi-Fi without the internet now shows its
   own mark instead of the theme's.
+- The Performance page reads and applies profiles through the z13ctl-plus
+  daemon itself, so it always agrees with the daemon even when an older copy of
+  the helper is installed elsewhere.
+- The Performance page can add a profile: New, beside the profile being
+  edited, names a copy of it, and Create saves it with the changes made. The
+  charge limit belongs to the profile in use, and each profile sets its own
+  when it comes on, by hand or when the power cable comes or goes.
+- The Performance page's pills and profile choosers, and Control Center's pills,
+  no longer show a line across their middle under the pointer.
 - Turning notifications off no longer takes the battery off the bar with it.
 - The bell can show itself alone while notifications wait, without the count,
   the ✓ or the slim row's chip (`waitingShows`: `count`, the default, or
