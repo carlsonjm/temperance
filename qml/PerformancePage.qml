@@ -99,6 +99,12 @@ Item {
     readonly property bool dirty: profileDirty || eppDirty || tdpDirty || fanDirty
     property bool saving: false
     property string saveError: ""
+    // While a new profile is named, the editor holds a copy of editName.
+    property bool creating: false
+    property string newName: ""
+    readonly property string newNameTrimmed: newName.trim()
+    readonly property bool newNameTaken: presets.some(name => name.toLowerCase() === newNameTrimmed.toLowerCase())
+    readonly property bool newNameReady: newNameTrimmed !== "" && newNameTrimmed.length <= 32 && !newNameTaken
     // The charge limit while it is dragged, until the helper reports it.
     property int chargeDraft: 0
 
@@ -139,10 +145,22 @@ Item {
     // Opens on the profile in use, unless an unsaved edit is waiting, which
     // also keeps the editor unfolded.
     function open() {
-        if (!dirty || presets.indexOf(editName) < 0) {
+        if (!creating && (!dirty || presets.indexOf(editName) < 0)) {
             loadEditor(presets.indexOf(activePreset) >= 0 ? activePreset : (presets.length > 0 ? presets[0] : ""));
         }
-        editorOpen = dirty;
+        editorOpen = dirty || creating;
+    }
+
+    function startCreating() {
+        newName = "";
+        saveError = "";
+        creating = true;
+    }
+
+    // Back to the profile the copy came from, as it was saved.
+    function cancelCreating() {
+        creating = false;
+        loadEditor(editName);
     }
 
     function limitAt(index) {
@@ -203,7 +221,8 @@ Item {
     }
 
     function save() {
-        if (!dirty || busy || saving || editName === "") return;
+        if (busy || saving || editName === "") return;
+        if (creating ? !newNameReady : !dirty) return;
         const settings = {};
         if (profileDirty) settings.profile = stagedProfile;
         if (eppDirty) settings.epp = stagedEpp;
@@ -222,7 +241,8 @@ Item {
         }
         saveError = "";
         saving = true;
-        Plasmoid.performance.savePreset(editName, settings);
+        if (creating) Plasmoid.performance.createPreset(newNameTrimmed, editName, settings);
+        else Plasmoid.performance.savePreset(editName, settings);
     }
 
     Connections {
@@ -230,7 +250,18 @@ Item {
         function onPresetSaved(name, ok, detail) {
             if (!page.saving) return;
             page.saving = false;
-            if (ok) {
+            if (ok && page.creating) {
+                // The new profile is the one being edited from now on; the
+                // helper's report follows and loads it.
+                page.creating = false;
+                page.editName = name;
+                page.tdpDirty = false;
+                page.fanDirty = false;
+                page.savedProfile = page.stagedProfile;
+                page.savedEpp = page.stagedEpp;
+                page.limitsSavedDefault = page.limitsDefault;
+                page.fanSavedAuto = page.fanAuto;
+            } else if (ok) {
                 // What was staged is now the profile; the helper's report
                 // follows and loads it.
                 page.savedProfile = page.stagedProfile;
@@ -240,14 +271,15 @@ Item {
                 page.tdpDirty = false;
                 page.fanDirty = false;
             } else {
-                page.saveError = detail
-                    ? i18n("Couldn't save to %1, which is unchanged: %2", name, detail)
+                page.saveError = page.creating
+                    ? (detail ? i18n("Couldn't create %1: %2", name, detail) : i18n("Couldn't create %1.", name))
+                    : detail ? i18n("Couldn't save to %1, which is unchanged: %2", name, detail)
                     : i18n("Couldn't save to %1, which is unchanged.", name);
             }
         }
         function onSettingsChanged() {
             page.chargeDraft = 0;
-            if (!page.dirty && !page.saving) page.loadEditor(page.editName);
+            if (!page.dirty && !page.saving && !page.creating) page.loadEditor(page.editName);
         }
         function onPresetsChanged() {
             if (page.presets.indexOf(page.editName) < 0) page.open();
@@ -262,6 +294,8 @@ Item {
     }
 
     // A choice among a few, lit in the accent while it is the one chosen.
+    // Its greys are solid: a see-through wash on a fully rounded pill can
+    // draw a line along its middle on some GPUs and scales.
     component ChoicePill: Rectangle {
         id: choice
         required property string label
@@ -274,8 +308,8 @@ Item {
         radius: height / 2
         opacity: enabled ? 1 : 0.5
         color: selected ? page.accentColor
-            : choiceTap.pressed ? tone.wash(0.18)
-            : choiceHover.hovered ? tone.wash(0.12) : tone.wash(0.07)
+            : choiceTap.pressed ? tone.controlPressed
+            : choiceHover.hovered ? tone.controlHover : tone.control
         border.width: activeFocus ? 1 : 0
         border.color: tone.text
         Behavior on color { ColorAnimation { duration: 120 } }
@@ -298,6 +332,87 @@ Item {
         Keys.onSpacePressed: triggered()
         HoverHandler { id: choiceHover }
         TapHandler { id: choiceTap; onTapped: choice.triggered() }
+    }
+
+    // A profile chooser drawn as a grey pill. Plasma's own frame drew a line
+    // across its middle under the pointer on the Z13.
+    component ProfileCombo: PlasmaComponents.ComboBox {
+        id: profileCombo
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+        Layout.preferredHeight: 36
+        // Its own words and arrow too: Plasma's place them by its frame's
+        // margins, which a plain background does not have.
+        topPadding: 0
+        bottomPadding: 0
+        leftPadding: 16
+        rightPadding: 16 + Kirigami.Units.iconSizes.small + 6
+        contentItem: PlasmaComponents.Label {
+            text: profileCombo.displayText
+            color: tone.text
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+        indicator: SuiteIcon {
+            x: profileCombo.width - width - 14
+            y: (profileCombo.height - height) / 2
+            implicitWidth: Kirigami.Units.iconSizes.small
+            implicitHeight: Kirigami.Units.iconSizes.small
+            glyph: "chevron-down"
+        }
+        // One list on the page's own surface, as Control Center's profile
+        // list is, rather than Plasma's framed menu.
+        delegate: QQC2.ItemDelegate {
+            id: profileOption
+            required property int index
+            required property string modelData
+            readonly property bool current: index === profileCombo.currentIndex
+            width: ListView.view ? ListView.view.width : implicitWidth
+            implicitHeight: 36
+            leftPadding: 10
+            rightPadding: 10
+            text: modelData
+            highlighted: profileCombo.highlightedIndex === index
+            contentItem: PlasmaComponents.Label {
+                text: profileOption.text
+                color: profileOption.current ? page.accentTextColor : tone.text
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                radius: height / 2
+                color: profileOption.current ? page.accentColor
+                    : profileOption.highlighted || profileOption.hovered ? tone.controlHover : "transparent"
+            }
+        }
+        popup: QQC2.Popup {
+            y: profileCombo.height + 4
+            width: profileCombo.width
+            implicitHeight: Math.min(contentItem.implicitHeight + topPadding + bottomPadding, page.height / 2)
+            padding: 6
+            popupType: QQC2.Popup.Item
+            contentItem: ListView {
+                clip: true
+                implicitHeight: contentHeight
+                model: profileCombo.popup.visible ? profileCombo.delegateModel : null
+                currentIndex: profileCombo.highlightedIndex
+                spacing: 2
+                boundsBehavior: Flickable.StopAtBounds
+            }
+            background: Rectangle {
+                color: tone.surface
+                radius: 18
+                border.width: 1
+                border.color: tone.divider
+            }
+        }
+        background: Rectangle {
+            radius: height / 2
+            color: profileCombo.pressed ? tone.controlPressed
+                : profileCombo.hovered ? tone.controlHover : tone.control
+            border.width: profileCombo.visualFocus ? 1 : 0
+            border.color: tone.text
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
     }
 
     // A small grey pill for an action beside a section's name.
@@ -405,9 +520,8 @@ Item {
                     text: i18n("Profile")
                     font.weight: Font.Medium
                 }
-                PlasmaComponents.ComboBox {
+                ProfileCombo {
                     id: presetPicker
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 9
                     model: page.presets
                     currentIndex: page.presets.indexOf(page.activePreset)
                     enabled: !page.busy
@@ -425,8 +539,9 @@ Item {
                 }
             }
 
-            // 2. Charge limit: the battery stops charging here. It belongs to
-            // the machine, not to a profile.
+            // 2. Charge limit: the battery stops charging here. Set here, it
+            // becomes the profile in use's own, set again whenever that
+            // profile comes on.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.topMargin: page.surfaceSpacing - page.compactSpacing
@@ -471,7 +586,9 @@ Item {
                 when: !chargeSlider.pressed
             }
             DetailLabel {
-                text: i18n("The battery stops charging here. A lower limit keeps it healthy longer.")
+                text: page.activePreset !== ""
+                    ? i18n("The battery stops charging here while %1 is in use. A lower limit keeps it healthy longer.", page.activePreset)
+                    : i18n("The battery stops charging here. A lower limit keeps it healthy longer.")
             }
 
             // 3. Refresh rate: one switch between the screen's slowest and
@@ -534,8 +651,7 @@ Item {
                         Layout.fillWidth: true
                         text: sourceRow.modelData.label
                     }
-                    PlasmaComponents.ComboBox {
-                        Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                    ProfileCombo {
                         model: page.presets
                         currentIndex: page.presets.indexOf(sourceRow.modelData.battery
                             ? Plasmoid.performance.batteryPreset : Plasmoid.performance.acPreset)
@@ -564,7 +680,7 @@ Item {
                         spacing: page.compactSpacing
                         PlasmaComponents.Label {
                             Layout.fillWidth: true
-                            text: i18n("Edit a profile")
+                            text: page.creating ? i18n("New profile") : i18n("Edit a profile")
                             font.weight: Font.Medium
                         }
                         SuiteIcon {
@@ -579,14 +695,64 @@ Item {
                     Accessible.description: page.editorOpen ? i18n("Folds the profile editor away") : i18n("Shows the profile editor")
                     onClicked: page.editorOpen = !page.editorOpen
                 }
-                PlasmaComponents.ComboBox {
-                    visible: page.editorOpen
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 9
+                ProfileCombo {
+                    visible: page.editorOpen && !page.creating
                     model: page.presets
                     currentIndex: page.presets.indexOf(page.editName)
                     enabled: !page.saving
                     Accessible.name: i18n("Profile to edit")
                     onActivated: index => page.loadEditor(page.presets[index])
+                }
+                TextPill {
+                    visible: page.editorOpen && !page.creating && page.editName !== ""
+                    enabled: !page.saving && !page.busy
+                    text: i18n("New")
+                    Accessible.description: i18n("Make a new profile from a copy of %1", page.editName)
+                    onClicked: page.startCreating()
+                }
+                TextPill {
+                    visible: page.editorOpen && page.creating
+                    enabled: !page.saving
+                    text: i18n("Cancel")
+                    Accessible.description: i18n("Go back to editing %1", page.editName)
+                    onClicked: page.cancelCreating()
+                }
+            }
+
+            // The new profile's name, starting as a copy of the one edited.
+            ColumnLayout {
+                visible: page.editorOpen && page.creating
+                Layout.fillWidth: true
+                spacing: 6
+                PlasmaComponents.TextField {
+                    id: newNameField
+                    objectName: "temperance-performance-new-name"
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 36
+                    leftPadding: 16
+                    rightPadding: 16
+                    text: page.newName
+                    placeholderText: i18n("Name")
+                    maximumLength: 32
+                    enabled: !page.saving
+                    color: tone.text
+                    placeholderTextColor: tone.faintText
+                    background: Rectangle {
+                        radius: height / 2
+                        color: tone.control
+                        border.width: newNameField.activeFocus ? 1 : 0
+                        border.color: tone.text
+                    }
+                    Accessible.name: i18n("New profile name")
+                    onTextEdited: page.newName = text
+                    onAccepted: page.save()
+                    onVisibleChanged: if (visible) forceActiveFocus()
+                }
+                DetailLabel {
+                    color: page.newNameTaken ? tone.errorText : tone.text
+                    opacity: page.newNameTaken ? 1 : 0.65
+                    text: page.newNameTaken ? i18n("%1 is already a profile", page.newNameTrimmed)
+                        : i18n("Starts as a copy of %1.", page.editName)
                 }
             }
 
@@ -861,13 +1027,17 @@ Item {
 
                 Rectangle {
                     id: saveButton
-                    readonly property bool ready: page.dirty && !page.busy && !page.saving
+                    readonly property bool ready: (page.creating ? page.newNameReady : page.dirty) && !page.busy && !page.saving
+                    readonly property string words: page.creating
+                        ? (page.saving ? i18n("Creating %1…", page.newNameTrimmed)
+                            : page.newNameTrimmed !== "" ? i18n("Create %1", page.newNameTrimmed) : i18n("Create"))
+                        : page.saving ? i18n("Saving to %1…", page.editName) : i18n("Save to %1", page.editName)
                     Layout.fillWidth: true
                     Layout.topMargin: page.compactSpacing
                     Layout.preferredHeight: 44
                     radius: height / 2
                     opacity: ready || page.saving ? 1 : 0.45
-                    color: !ready ? tone.wash(0.07)
+                    color: !ready ? tone.control
                         : saveTap.pressed ? Qt.darker(page.accentColor, 1.08) : page.accentColor
                     border.width: activeFocus ? 1 : 0
                     border.color: tone.text
@@ -876,7 +1046,7 @@ Item {
                         anchors.fill: parent
                         anchors.leftMargin: 18
                         anchors.rightMargin: 18
-                        text: page.saving ? i18n("Saving to %1…", page.editName) : i18n("Save to %1", page.editName)
+                        text: saveButton.words
                         color: saveButton.ready ? page.accentTextColor : tone.text
                         font.weight: Font.Medium
                         horizontalAlignment: Text.AlignHCenter
@@ -885,7 +1055,7 @@ Item {
                     }
                     activeFocusOnTab: ready
                     Accessible.role: Accessible.Button
-                    Accessible.name: i18n("Save to %1", page.editName)
+                    Accessible.name: saveButton.words
                     Accessible.onPressAction: page.save()
                     Keys.onReturnPressed: page.save()
                     Keys.onSpacePressed: page.save()

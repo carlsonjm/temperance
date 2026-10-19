@@ -150,11 +150,10 @@ Loaded promoted tray entries become Control Center pills in listed order and lea
 organized tray, which keeps the Apps, Devices, System order and drops empty
 sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by
-`temperance.performance`, needs the local helper; a right-click lists its profiles.
-The Performance page's refresh-rate switch sets the built-in screen's rate through
-libkscreen. A rate other than the profile's holds until the profile changes, and
-is put back once the screen unlocks when the helper re-applies the profile on
-waking.
+`temperance.performance`, needs the helper's daemon; a right-click lists its profiles.
+Each profile's charge limit lives in `temperancerc`. The refresh-rate switch
+uses libkscreen; a rate other than the profile's holds until the profile
+changes, and returns after unlock when the helper re-applies it.
 
 ## Settings
 

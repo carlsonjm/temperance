@@ -105,7 +105,7 @@ Item {
         Layout.preferredHeight: Kirigami.Units.gridUnit * 2.75
         clip: true
         radius: height / 2
-        color: actionHover.hovered ? tone.wash(0.12) : tone.wash(0.07)
+        color: actionHover.hovered ? tone.controlHover : tone.control
         RowLayout {
             anchors.centerIn: parent
             spacing: Kirigami.Units.smallSpacing
@@ -338,8 +338,8 @@ Item {
                 Layout.preferredWidth: 0
                 Layout.preferredHeight: controlGrid.tileHeight
                 radius: height / 2
-                color: performanceTap.pressed || performanceHover.hovered
-                    ? tone.wash(0.12) : tone.wash(0.07)
+                color: performanceTap.pressed ? tone.controlPressed
+                    : performanceHover.hovered ? tone.controlHover : tone.control
                 RowLayout {
                     anchors.centerIn: parent
                     width: Math.min(implicitWidth, performanceEntry.width - Kirigami.Units.largeSpacing * 2)
@@ -408,7 +408,7 @@ Item {
                             background: Rectangle {
                                 radius: height / 2
                                 color: profileOption.current ? page.accentColor
-                                    : profileOption.highlighted ? tone.wash(0.12) : "transparent"
+                                    : profileOption.highlighted ? tone.controlHover : "transparent"
                             }
                             onTriggered: if (!current) Plasmoid.performance.applyPreset(modelData)
                         }
