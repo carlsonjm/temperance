@@ -8,6 +8,7 @@
 #include <PulseAudioQt/Context>
 #include <PulseAudioQt/Server>
 #include <PulseAudioQt/Sink>
+#include <PulseAudioQt/Source>
 
 #include <algorithm>
 
@@ -22,6 +23,8 @@ void AudioStatus::start()
     if (server) {
         connect(server, &PulseAudioQt::Server::defaultSinkChanged, this, &AudioStatus::setSink);
         setSink(server->defaultSink());
+        connect(server, &PulseAudioQt::Server::defaultSourceChanged, this, &AudioStatus::setSource);
+        setSource(server->defaultSource());
     }
 }
 
@@ -41,6 +44,21 @@ void AudioStatus::setSink(PulseAudioQt::Sink *sink)
     Q_EMIT volumeChanged();
 }
 
+void AudioStatus::setSource(PulseAudioQt::Source *source)
+{
+    if (m_source == source) {
+        return;
+    }
+    if (m_source) {
+        disconnect(m_source, nullptr, this, nullptr);
+    }
+    m_source = source;
+    if (m_source) {
+        connect(m_source, &PulseAudioQt::Source::mutedChanged, this, &AudioStatus::microphoneChanged);
+    }
+    Q_EMIT microphoneChanged();
+}
+
 int AudioStatus::percent() const
 {
     if (!m_sink) {
@@ -57,6 +75,16 @@ bool AudioStatus::muted() const
 bool AudioStatus::available() const
 {
     return m_sink && m_sink->isVolumeWritable();
+}
+
+bool AudioStatus::microphoneMuted() const
+{
+    return m_source && m_source->isMuted();
+}
+
+bool AudioStatus::microphoneAvailable() const
+{
+    return !m_source.isNull();
 }
 
 void AudioStatus::setPercent(int percent)

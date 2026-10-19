@@ -341,7 +341,9 @@ int main(int argc, char **argv)
     {
         QQmlComponent audioComponent(&engine);
         audioComponent.setData(QByteArrayLiteral("import QtQuick\nQtObject { property int percent: 40; "
-            "property bool muted: false; property bool available: true; signal volumeChanged() }"), QUrl());
+            "property bool muted: false; property bool available: true; signal volumeChanged(); "
+            "property bool microphoneMuted: false; property bool microphoneAvailable: true; "
+            "signal microphoneChanged() }"), QUrl());
         std::unique_ptr<QObject> audio(audioComponent.create());
         QQmlComponent readingComponent(&engine,
             QUrl(QStringLiteral("qrc:/qt/qml/plasma/applet/co/goodinput/temperance/LevelReading.qml")),
@@ -378,6 +380,22 @@ int main(int argc, char **argv)
             return 22;
         }
         reading->setProperty("quiet", false);
+        const auto mute = [&](bool muted) {
+            audio->setProperty("microphoneMuted", muted);
+            QMetaObject::invokeMethod(audio.get(), "microphoneChanged");
+            app.processEvents();
+        };
+        mute(false);
+        if (!kind().isEmpty()) {
+            qCritical() << "The level reading shows a microphone read again";
+            return 22;
+        }
+        mute(true);
+        if (kind() != QLatin1String("microphone") || reading->property("room").toReal() <= 0) {
+            qCritical() << "The level reading does not show the microphone muted" << kind();
+            return 22;
+        }
+        reading->setProperty("kind", QString());
         reading->setProperty("watching", false);
         change(70);
         if (!kind().isEmpty()) {

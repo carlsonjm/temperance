@@ -7,15 +7,18 @@ import org.kde.kirigami as Kirigami
 import org.kde.kitemmodels as KItemModels
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
 
-// The volume or the screen's brightness, shown in the row for a moment as it
-// changes, for a desktop that turns Plasma's own popups for them off
-// (`showLevels`). The speaker or the sun, then how full: nothing more. It
-// says nothing at start, nothing for a level that is only read again, and
-// nothing while Control Center is open, whose sliders already say it.
+// The volume, the screen's brightness, the keyboard's light or the
+// microphone's mute, shown in the row for a moment as it changes, for a
+// desktop that turns Plasma's own popups off (`showLevels`). The speaker, the
+// sun or the keyboard, then how full; the microphone, struck through while
+// muted: nothing more. It says nothing at start, nothing for a level that is
+// only read again, and nothing while Control Center is open, whose sliders
+// already say it.
 Item {
     id: reading
 
-    // The volume, as Status reads it: `percent`, `muted` and `available`.
+    // The volume, as Status reads it: `percent`, `muted` and `available`,
+    // with `microphoneMuted` and `microphoneAvailable` for the input.
     property QtObject audio: null
     // Whether to watch at all; off, nothing is read or shown.
     property bool watching: false
@@ -27,14 +30,19 @@ Item {
     property int iconSize: 16
     property bool motionEnabled: true
 
-    // What it shows now: "volume", "brightness" or nothing.
+    // What it shows now: "volume", "brightness", "keyboard", "microphone" or
+    // nothing.
     property string kind: ""
     readonly property bool showing: kind !== ""
+    readonly property bool microphoneMuted: audio ? audio.microphoneMuted === true : false
     readonly property real level: kind === "volume"
         ? (audio && !audio.muted ? Math.max(0, Math.min(1, audio.percent / 100)) : 0)
+        : kind === "keyboard"
+        ? Math.max(0, Math.min(1, keyboardMax > 0 ? keyboard / keyboardMax : 0))
         : Math.max(0, Math.min(1, brightnessMax > 0 ? brightness / brightnessMax : 0))
 
-    implicitWidth: pitch + 34 + 8
+    // The microphone has no level, so it takes its mark alone.
+    implicitWidth: kind === "microphone" ? pitch : pitch + 34 + 8
     // The room it takes in the row, opening and closing with it so its
     // neighbours slide rather than jump.
     property real room: showing ? implicitWidth : 0
@@ -50,7 +58,10 @@ Item {
 
     Accessible.role: Accessible.Indicator
     Accessible.name: kind === "volume" ? i18n("Volume %1%", Math.round(level * 100))
-        : kind === "brightness" ? i18n("Brightness %1%", Math.round(level * 100)) : ""
+        : kind === "brightness" ? i18n("Brightness %1%", Math.round(level * 100))
+        : kind === "keyboard" ? i18n("Keyboard light %1%", Math.round(level * 100))
+        : kind === "microphone" ? (microphoneMuted ? i18n("Microphone muted") : i18n("Microphone on"))
+        : ""
 
     function show(what) {
         if (!watching || quiet) {
@@ -86,15 +97,34 @@ Item {
             }
         }
     }
+    // The microphone: muting or unmuting it after the first reading is shown.
+    property bool lastMicrophoneMuted: false
+    Connections {
+        target: reading.audio
+        enabled: reading.watching
+        function onMicrophoneChanged() {
+            const audio = reading.audio;
+            if (!audio || !audio.microphoneAvailable) {
+                return;
+            }
+            const changed = audio.microphoneMuted !== reading.lastMicrophoneMuted;
+            reading.lastMicrophoneMuted = audio.microphoneMuted;
+            if (changed) {
+                reading.show("microphone");
+            }
+        }
+    }
+    function readFirst() {
+        lastPercent = audio && audio.available ? audio.percent : -1;
+        lastMuted = audio ? audio.muted : false;
+        lastMicrophoneMuted = microphoneMuted;
+    }
     onWatchingChanged: {
-        lastPercent = audio && audio.available ? audio.percent : -1;
-        lastMuted = audio ? audio.muted : false;
+        readFirst();
         lastBrightness = -1;
+        lastKeyboard = -1;
     }
-    Component.onCompleted: {
-        lastPercent = audio && audio.available ? audio.percent : -1;
-        lastMuted = audio ? audio.muted : false;
-    }
+    Component.onCompleted: readFirst()
 
     // The first display's brightness, as Control Center's slider reads it.
     property real brightness: 0
@@ -131,6 +161,35 @@ Item {
         }
     }
 
+    // The keyboard's light, where the computer has one.
+    property real keyboard: 0
+    property real keyboardMax: 100
+    property real lastKeyboard: -1
+    Loader {
+        active: reading.watching
+        sourceComponent: Brightness.KeyboardBrightnessControl {
+            id: keys
+            isSilent: true
+            function read() {
+                if (!keys.isBrightnessAvailable) {
+                    return;
+                }
+                const value = keys.brightness;
+                const changed = reading.lastKeyboard >= 0 && value !== reading.lastKeyboard;
+                reading.keyboard = value;
+                reading.keyboardMax = keys.brightnessMax || 100;
+                reading.lastKeyboard = value;
+                if (changed) {
+                    reading.show("keyboard");
+                }
+            }
+            onBrightnessChanged: read()
+            onBrightnessMaxChanged: read()
+            onIsBrightnessAvailableChanged: read()
+            Component.onCompleted: Qt.callLater(read)
+        }
+    }
+
     Item {
         id: mark
         width: reading.pitch
@@ -151,6 +210,20 @@ Item {
             height: reading.iconSize
             visible: reading.kind === "brightness"
         }
+        SuiteIcon {
+            anchors.centerIn: parent
+            glyph: "keyboard"
+            width: reading.iconSize
+            height: reading.iconSize
+            visible: reading.kind === "keyboard"
+        }
+        SuiteIcon {
+            anchors.centerIn: parent
+            glyph: reading.microphoneMuted ? "mic-off" : "mic"
+            width: reading.iconSize
+            height: reading.iconSize
+            visible: reading.kind === "microphone"
+        }
     }
 
     // How full, on a track as long as two of the row's marks.
@@ -160,6 +233,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: 34
         height: 4
+        visible: reading.kind !== "microphone"
         radius: 2
         color: reading.track
 
