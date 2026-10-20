@@ -107,9 +107,9 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Tap or click the tray icon | Opens the System Tray. |
-| Tap or click an entry | Opens its page, or acts as its application says and closes the popup for the window in use. |
+| Tap or click an entry | Opens its page, or acts as its application says, closing the popup for the window in use; Cards stays open. |
 | Right-click or press and hold an entry | Opens the entry's own menu. |
-| Middle-click an entry | Runs the entry's secondary action, as in Plasma's tray. |
+| Middle-click an entry | Runs its secondary action, as in Plasma's tray. |
 | Wheel over an entry | Passes the scroll to the entry, such as changing the volume. |
 | Enter or Space on a focused entry | Same as tapping it. |
 | Menu key on a focused entry | Opens the entry's own menu. |
