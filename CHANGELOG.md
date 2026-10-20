@@ -10,6 +10,11 @@ This file records user-visible changes.
 - Control Center's KDE Connect pill shows on a fresh Status: an applet listed
   as a pill is loaded even where the tray would leave it off. Kadunce's Cards
   switch joins the pills by default, after KDE Connect, where Kadunce runs.
+- Switching profile on the Performance page no longer leaves only the chosen
+  profile in its lists: each list shows every profile each time it opens.
+- The profile list held open from Control Center's Performance pill spills
+  past Control Center's edge instead of being cut off by it, and closes with
+  Control Center.
 - The Performance page shows no scroll bars: it is sized to what it holds,
   and an unfolded editor taller than the screen scrolls by touch or wheel.
   A profile list opens under its chooser from the first click, or over it

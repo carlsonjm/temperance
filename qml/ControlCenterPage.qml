@@ -51,6 +51,13 @@ Item {
     property int displayBrightnessMax: 100
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
 
+    // Closes the profile list, which stands in a window of its own, whenever
+    // Control Center closes or changes page.
+    function closeMenus() {
+        profileList.close();
+    }
+    onVisibleChanged: if (!visible) closeMenus()
+
     // The Performance pill takes its place in Control Center's order from
     // the same list as the tray entries; unlisted, it comes last.
     readonly property string performanceItemId: "temperance.performance"
@@ -380,8 +387,10 @@ Item {
                     width: performanceEntry.width
                     padding: 6
                     closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
-                    // Inside Control Center's window, so it goes with it.
-                    popupType: QQC2.Popup.Item
+                    // A window of its own, so a long list spills past
+                    // Control Center's edge instead of being cut off by it;
+                    // closeMenus() closes it with Control Center.
+                    popupType: QQC2.Popup.Window
                     background: Rectangle {
                         color: tone.surface
                         radius: 18

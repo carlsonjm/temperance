@@ -360,35 +360,16 @@ Item {
             glyph: "chevron-down"
         }
         // One list on the page's own surface, as Control Center's profile
-        // list is, rather than Plasma's framed menu.
-        delegate: QQC2.ItemDelegate {
-            id: profileOption
-            required property int index
-            required property string modelData
-            readonly property bool current: index === profileCombo.currentIndex
-            width: ListView.view ? ListView.view.width : implicitWidth
-            implicitHeight: 36
-            leftPadding: 10
-            rightPadding: 10
-            text: modelData
-            highlighted: profileCombo.highlightedIndex === index
-            contentItem: PlasmaComponents.Label {
-                text: profileOption.text
-                color: profileOption.current ? page.accentTextColor : tone.text
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-            background: Rectangle {
-                radius: height / 2
-                color: profileOption.current ? page.accentColor
-                    : profileOption.highlighted || profileOption.hovered ? tone.controlHover : "transparent"
-            }
-        }
+        // list is, rather than Plasma's framed menu. The list builds its own
+        // rows from the profile names each time it opens and is always tall
+        // enough for all of them: on the Z13, rows shared with the combo box
+        // left only the chosen profile showing after a switch.
         popup: QQC2.Popup {
             id: profileList
             // Under its chooser, or over it where the page has no room below.
-            // The list is built before it opens, so its height is known
-            // from the first click.
+            // Its height comes from the number of profiles, so it is known
+            // from the first click, before the rows are built.
+            readonly property real rowsHeight: profileCombo.count * 36 + Math.max(0, profileCombo.count - 1) * 2
             property bool above: false
             y: above ? -height - 4 : profileCombo.height + 4
             width: profileCombo.width
@@ -396,16 +377,43 @@ Item {
                 const bottom = profileCombo.mapToItem(page, 0, profileCombo.height).y;
                 above = bottom + 4 + implicitHeight > page.height && bottom - profileCombo.height > page.height - bottom;
             }
-            implicitHeight: Math.min(contentItem.implicitHeight + topPadding + bottomPadding, page.height / 2)
+            implicitHeight: Math.min(rowsHeight + topPadding + bottomPadding, page.height / 2)
             padding: 6
             popupType: QQC2.Popup.Item
             contentItem: ListView {
                 clip: true
-                implicitHeight: contentHeight
-                model: profileCombo.delegateModel
-                currentIndex: profileCombo.highlightedIndex
+                model: profileList.visible ? profileCombo.model : null
                 spacing: 2
+                interactive: contentHeight > height
                 boundsBehavior: Flickable.StopAtBounds
+                delegate: QQC2.ItemDelegate {
+                    id: profileOption
+                    required property int index
+                    required property string modelData
+                    readonly property bool current: index === profileCombo.currentIndex
+                    width: ListView.view.width
+                    implicitHeight: 36
+                    leftPadding: 10
+                    rightPadding: 10
+                    text: modelData
+                    contentItem: PlasmaComponents.Label {
+                        text: profileOption.text
+                        color: profileOption.current ? page.accentTextColor : tone.text
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                    background: Rectangle {
+                        radius: height / 2
+                        color: profileOption.current ? page.accentColor
+                            : profileOption.hovered || profileOption.down ? tone.controlHover : "transparent"
+                    }
+                    // Each chooser says what is chosen itself. Closing empties
+                    // the list and this row with it, so last.
+                    onClicked: {
+                        profileCombo.activated(index);
+                        profileList.close();
+                    }
+                }
             }
             background: Rectangle {
                 color: tone.surface
@@ -543,6 +551,7 @@ Item {
                     Accessible.name: i18n("Profile")
                     onActivated: index => {
                         const name = page.presets[index];
+                        currentIndex = index;
                         if (name !== page.activePreset) Plasmoid.performance.applyPreset(name);
                     }
                     // A refused apply leaves the profile in use showing.
