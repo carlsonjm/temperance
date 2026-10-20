@@ -1676,7 +1676,7 @@ ContainmentItem {
             type: PlasmaCore.Dialog.AppletPopup
             floating: 10
             hideOnWindowDeactivate: !(Plasmoid.configuration.showPinButton
-                && Plasmoid.configuration.pin)
+                && Plasmoid.configuration.pin) && !systemTrayState.holdingOpen
             visible: systemTrayState.expanded
             appletInterface: root
             // Unlike AppletPopup, Dialog genuinely supports a frameless host.
@@ -1694,6 +1694,15 @@ ContainmentItem {
                 id: expandedRepresentation
                 Keys.onEscapePressed: systemTrayState.expanded = false
                 Item { id: preloadedStorage; visible: false }
+            }
+        }
+
+        // Held open through a switch, the popup takes the keys back once the
+        // hold ends, so a tap elsewhere closes it again.
+        Connections {
+            target: systemTrayState
+            function onHoldingOpenChanged() {
+                if (!systemTrayState.holdingOpen && dialog.visible) dialog.requestActivate();
             }
         }
 

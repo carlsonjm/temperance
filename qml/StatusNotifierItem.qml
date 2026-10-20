@@ -52,7 +52,9 @@ AbstractItem {
         // keys' entry then types into the window that was in use. A switch
         // shows its new state where it was tapped, as Wi-Fi's does, so the
         // popup stays open for it.
-        if (!taskIcon.isSwitch)
+        if (taskIcon.isSwitch)
+            systemTrayState.holdOpen()
+        else
             systemTrayState.expanded = false
     }
 
