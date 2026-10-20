@@ -110,10 +110,10 @@ documents cite this one.
 | Tap or click an entry | Opens its page, or acts as its application says, closing the popup for the window in use; Cards stays open. |
 | Right-click or press and hold an entry | Opens the entry's own menu. |
 | Middle-click an entry | Runs its secondary action, as in Plasma's tray. |
-| Wheel over an entry | Passes the scroll to the entry, such as changing the volume. |
+| Wheel over an entry | Passes the scroll to the entry, such as the volume. |
 | Enter or Space on a focused entry | Same as tapping it. |
 | Menu key on a focused entry | Opens the entry's own menu. |
-| Tap or click Open system settings | Opens Plasma's System Settings. |
+| Tap or click Open system settings | Opens System Settings. |
 | Tap or click Configure system tray icons | Opens Temperance's settings. |
 
 ## Calendar
@@ -121,18 +121,18 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Tap or click the clock | Opens the calendar on the current month; again closes it. |
-| Tap or click a day | Shows that day's holidays and events beneath the month. |
+| Tap or click a day | Shows that day's holidays and events. |
 | Swipe sideways across the days | Turns the month; swiping left shows the next. |
 | Wheel or touchpad scroll over the days | Turns one month per notch or gesture; down shows a later month. |
 | Tap or click the arrows beside the calendar's title | Shows the previous or next month. |
-| Tap or click Today | Returns to today; shown only away from it. |
+| Tap or click Today | Returns to today; shown away from it. |
 
 ## Weather
 
 | Input | What happens |
 | --- | --- |
 | Tap or click the weather icon | Opens the weather page. |
-| Tap or click Open weather on the weather page | Opens the weather application chosen in settings. |
+| Tap or click Open weather | Opens the chosen weather application. |
 
 ## Settings
 
@@ -142,5 +142,6 @@ documents cite this one.
 | Paste a private calendar address, then Add | Links that calendar; its events appear within minutes. |
 | Choose a linked calendar's color | Its events' dot in the ticker takes that color. |
 | Remove a linked calendar | Unlinks it and forgets its color. |
+| Notifications off in Appearance | Plasma's own notifications show them. |
 | Setting "Scroll notifications in the ticker", off | The bell counts what waits; nothing scrolls. |
 | Choose a clock font | Sets the clock's typeface from a searchable list. |

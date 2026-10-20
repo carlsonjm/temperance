@@ -154,6 +154,13 @@ KCMUtils.ScrollViewKCM {
             onToggled: page.cfg_showNotifications = checked
         }
 
+        QQC2.Label {
+            visible: !page.cfg_showNotifications
+            text: i18n("Plasma's own notifications show them instead.")
+            wrapMode: Text.Wrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 22
+        }
+
         QQC2.CheckBox {
             text: i18n("Scroll notifications in the ticker")
             checked: page.cfg_showTicker

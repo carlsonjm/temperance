@@ -59,13 +59,13 @@ never the theme's; `qml/StatusGlyphs.js` maps Plasma's state names to them.
 
 ### One store, one presenter
 
-Temperance initializes `NotificationManager::Server::self()` and suppresses the
-stock Notifications applet while it is loaded. The server holds the shared storage
-and the D-Bus name. Do not start a second notification daemon, move the D-Bus
-name, clear history during a presenter change, or let two presenters race. A
-stock-presenter option needs a readiness handshake: keep Temperance active until
-the stock applet is complete, destroy and forget the stock applet before restoring
-Temperance, and fall back to Temperance if stock loading fails.
+Temperance initializes `NotificationManager::Server::self()`, the shared storage
+and D-Bus name in `plasmashell`. Never start a second daemon, move the name, clear
+history or let two presenters race. With `showNotifications` off, Plasma's stock
+Notifications applet presents instead: Temperance loads it on
+`plasmaNotificationsWanted` and presents until `plasmaNotificationsShown`;
+turned back on, it destroys the applet first. If the applet fails or goes, Temperance
+presents.
 
 ### Routes follow meaning
 
