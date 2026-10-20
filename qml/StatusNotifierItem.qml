@@ -16,6 +16,8 @@ AbstractItem {
     id: taskIcon
 
     itemId: model?.Id ?? ""
+    // Kadunce's Cards entry turns Cards on and off; it opens nothing.
+    readonly property bool isSwitch: itemId === "kadunce-control_kadunce-control"
     text: presentationText || model?.Title || model?.ToolTipTitle || ""
     mainText: inVisibleLayout || (model?.ToolTipTitle !== "" && model?.ToolTipTitle !== text) ? model?.ToolTipTitle ?? "" : ""
     subText: model?.ToolTipSubTitle ?? ""
@@ -47,8 +49,11 @@ AbstractItem {
         Plasmoid.activate(model.DataEngineSource, pos, taskIcon)
         // An application's own entry acts on the window behind the popup, or
         // brings a window of its own, so the popup gets out of the way. The
-        // keys' entry then types into the window that was in use.
-        systemTrayState.expanded = false
+        // keys' entry then types into the window that was in use. A switch
+        // shows its new state where it was tapped, as Wi-Fi's does, so the
+        // popup stays open for it.
+        if (!taskIcon.isSwitch)
+            systemTrayState.expanded = false
     }
 
     onContextMenu: mouse => {
