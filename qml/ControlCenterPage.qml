@@ -49,6 +49,8 @@ Item {
     }
     property int displayBrightness: 0
     property int displayBrightnessMax: 100
+    readonly property int displayBrightnessPercent: displayBrightnessMax
+        ? Math.round(displayBrightness / displayBrightnessMax * 100) : 0
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
 
     // Closes the profile list, which stands in a window of its own, whenever
@@ -271,20 +273,25 @@ Item {
                 onClicked: page.activateAppletById("org.kde.plasma.brightness")
                 PlasmaComponents.ToolTip { text: parent.text }
             }
+            // The slider works in percent, as its reading does. Bound to the
+            // display's own scale, a level that arrives before its maximum is
+            // clamped to the old maximum and stays there, so the handle can
+            // sit at the far left while the reading says 100%.
             AccentSlider {
                 id: brightnessSlider
                 Layout.fillWidth: true
                 from: 0
-                to: page.displayBrightnessMax
-                stepSize: Math.max(1, page.displayBrightnessMax / 100)
+                to: 100
+                stepSize: 1
                 enabled: screenBrightness.isBrightnessAvailable && page.displayName !== ""
-                onMoved: screenBrightness.setBrightness(page.displayName, Math.round(value))
+                onMoved: screenBrightness.setBrightness(page.displayName,
+                    Math.round(value / 100 * page.displayBrightnessMax))
             }
-            Binding { target: brightnessSlider; property: "value"; value: page.displayBrightness; when: !brightnessSlider.pressed }
+            Binding { target: brightnessSlider; property: "value"; value: page.displayBrightnessPercent; when: !brightnessSlider.pressed }
             PlasmaComponents.Label {
                 Layout.minimumWidth: Kirigami.Units.gridUnit * 2.4
                 horizontalAlignment: Text.AlignRight
-                text: page.displayBrightnessMax ? Math.round(page.displayBrightness / page.displayBrightnessMax * 100) + "%" : "—"
+                text: page.displayBrightnessMax ? page.displayBrightnessPercent + "%" : "—"
                 font.features: { "tnum": 1 }
             }
         }
