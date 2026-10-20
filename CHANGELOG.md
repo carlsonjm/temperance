@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The Performance page shows no scroll bars: it is sized to what it holds,
+  and an unfolded editor taller than the screen scrolls by touch or wheel.
+  A profile list opens under its chooser from the first click, or over it
+  where there is no room below.
 - Status draws its network, volume, Bluetooth, battery and other status icons
   from drawings it carries, Colloid's bold panel set, so they look the same
   whatever icon theme is installed. Wi-Fi without the internet now shows its
