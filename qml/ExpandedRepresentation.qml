@@ -171,13 +171,17 @@ Item {
     Connections {
         target: systemTrayState
         function onExpandedChanged() {
-            if (!systemTrayState.expanded) sessionMenu.close();
+            if (!systemTrayState.expanded) {
+                sessionMenu.close();
+                controlPage.closeMenus();
+            }
             if (systemTrayState.expanded) Qt.callLater(popup.playEntrance);
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
             popup.refreshControlCenter();
         }
         function onPageChanged() {
             sessionMenu.close();
+            controlPage.closeMenus();
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
             popup.refreshControlCenter();
         }
