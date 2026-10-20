@@ -30,6 +30,20 @@ QtObject {
     property int oldVisualIndex: -1
     property int newVisualIndex: -1
 
+    // A switch tapped in the popup can bring another window forward as it
+    // acts, as turning Cards on does while Cards take up the windows. The
+    // popup holds open through that, rather than closing as the window in
+    // front changes.
+    property bool holdingOpen: false
+    readonly property Timer holdTimer: Timer {
+        interval: 4000
+        onTriggered: systemTrayState.holdingOpen = false
+    }
+    function holdOpen() {
+        holdingOpen = true;
+        holdTimer.restart();
+    }
+
     function setActiveApplet(applet, visualIndex) {
 
         // Applets which prefer to always show their full
