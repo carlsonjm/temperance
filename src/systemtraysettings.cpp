@@ -53,9 +53,12 @@ void SystemTraySettings::removeKnownPlugin(const QString &pluginId)
     writeConfigValue(KNOWN_ITEMS_KEY, m_knownItems);
 }
 
+// A plasmoid promoted to a Control Center pill is loaded too: the pill draws
+// only a loaded applet, and an applet off by default, such as KDE Connect's,
+// is otherwise never loaded on a fresh Status.
 bool SystemTraySettings::isEnabledPlugin(const QString &pluginId) const
 {
-    return m_extraItems.contains(pluginId);
+    return m_extraItems.contains(pluginId) || m_controlCenterItems.contains(pluginId);
 }
 
 const QStringList SystemTraySettings::enabledPlugins() const
@@ -65,16 +68,21 @@ const QStringList SystemTraySettings::enabledPlugins() const
 
 void SystemTraySettings::addEnabledPlugin(const QString &pluginId)
 {
+    const bool was = isEnabledPlugin(pluginId);
     m_extraItems << pluginId;
     writeConfigValue(EXTRA_ITEMS_KEY, m_extraItems);
-    Q_EMIT enabledPluginsChanged({pluginId}, {});
+    if (!was) {
+        Q_EMIT enabledPluginsChanged({pluginId}, {});
+    }
 }
 
 void SystemTraySettings::removeEnabledPlugin(const QString &pluginId)
 {
     m_extraItems.removeAll(pluginId);
     writeConfigValue(EXTRA_ITEMS_KEY, m_extraItems);
-    Q_EMIT enabledPluginsChanged({}, {pluginId});
+    if (!isEnabledPlugin(pluginId)) {
+        Q_EMIT enabledPluginsChanged({}, {pluginId});
+    }
 }
 
 bool SystemTraySettings::isDisabledStatusNotifier(const QString &pluginId)
@@ -125,11 +133,13 @@ void SystemTraySettings::loadConfig()
 
     m_knownItems = config->property(KNOWN_ITEMS_KEY).toStringList();
 
-    QStringList extraItems = config->property(EXTRA_ITEMS_KEY).toStringList();
-    if (extraItems != m_extraItems) {
-        QStringList extraItemsOld = m_extraItems;
+    const QStringList extraItems = config->property(EXTRA_ITEMS_KEY).toStringList();
+    const QStringList controlCenter = config->property(CONTROL_CENTER_ITEMS_KEY).toStringList();
+    if (extraItems != m_extraItems || controlCenter != m_controlCenterItems) {
+        const QStringList enabledOld = m_extraItems + m_controlCenterItems;
         m_extraItems = extraItems;
-        notifyAboutChangedEnabledPlugins(extraItemsOld, m_extraItems);
+        m_controlCenterItems = controlCenter;
+        notifyAboutChangedEnabledPlugins(enabledOld, m_extraItems + m_controlCenterItems);
     }
     m_disabledStatusNotifiers = config->property(DISABLED_SNIS_KEY).toStringList();
 
