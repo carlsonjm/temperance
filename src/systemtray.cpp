@@ -21,6 +21,7 @@
 #include "calendarfeeds.h"
 #include "clockextent.h"
 #include "performancecontroller.h"
+#include "corefocus.h"
 #include "sessionactions.h"
 
 #include <QScreen>
@@ -326,6 +327,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_performance = new PerformanceController(this);
     m_audio = new AudioStatus(this);
     m_session = new SessionActions(this);
+    m_coreFocus = new CoreFocus(this);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
     if (m_needsUpdate) {
         qCWarning(SYSTEM_TRAY) << "Temperance was built for Plasma" << TEMPERANCE_BUILT_PLASMA << "and Qt" << TEMPERANCE_BUILT_QT
@@ -334,6 +336,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
         return;
     }
     m_session->start();
+    m_coreFocus->start();
     setHasConfigurationInterface(true);
 }
 
@@ -964,6 +967,11 @@ AudioStatus *SystemTray::audio() const
 SessionActions *SystemTray::session() const
 {
     return m_session;
+}
+
+CoreFocus *SystemTray::coreFocus() const
+{
+    return m_coreFocus;
 }
 
 K_PLUGIN_CLASS_WITH_JSON(SystemTray, "metadata.json")

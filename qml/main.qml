@@ -1214,6 +1214,35 @@ ContainmentItem {
     onDoNotDisturbChanged: {
         railNotifications.invalidateFilter();
         checkedNotifications.invalidateFilter();
+        if (doNotDisturb) {
+            doNotDisturbSince = new Date();
+        } else if (doNotDisturbSince && Plasmoid.coreFocus) {
+            Plasmoid.coreFocus.ended(addedSince(doNotDisturbSince));
+            doNotDisturbSince = null;
+        }
+    }
+
+    // When Do Not Disturb went on, to count what arrived while it lasted.
+    property var doNotDisturbSince: doNotDisturb ? new Date() : null
+
+    // Notifications the server marked as added during Do Not Disturb since
+    // that moment.
+    function addedSince(since) {
+        let added = 0;
+        for (let row = 0; row < notificationHistory.rowCount(); ++row) {
+            const modelIndex = notificationHistory.index(row, 0);
+            if (!addedDuringDoNotDisturb(notificationHistory, modelIndex)) continue;
+            const created = notificationHistory.data(modelIndex, NotificationManager.Notifications.CreatedRole);
+            if (created && created.getTime && created.getTime() >= since.getTime()) ++added;
+        }
+        return added;
+    }
+
+    // Split Rock's Core asked to see what came in during Do Not Disturb.
+    Connections {
+        target: Plasmoid.coreFocus
+        enabled: !root.needsUpdate
+        function onOpenRequested() { root.showStatusPage("notifications"); }
     }
 
     // The server marks what arrives while do not disturb is on.
