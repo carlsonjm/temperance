@@ -17,6 +17,7 @@ file(READ "${SOURCE_DIR}/main.xml" config_xml)
 file(READ "${SOURCE_DIR}/metadata.json" root_metadata)
 file(READ "${SOURCE_DIR}/src/metadata.json" plugin_metadata)
 file(READ "${SOURCE_DIR}/src/systemtray.cpp" systemtray_cpp)
+file(READ "${SOURCE_DIR}/src/systemtraysettings.cpp" tray_settings_cpp)
 file(READ "${SOURCE_DIR}/src/performancecontroller.cpp" performance_cpp)
 
 # A banner window never has zero height, which Wayland rejects; the banner
@@ -100,11 +101,17 @@ endif()
 if(NOT config_xml MATCHES "<entry name=\"sessionRow\" type=\"StringList\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>sleep,restart,shutdown</default>")
     message(FATAL_ERROR "The session row must default to Sleep, Restart and Shut down")
 endif()
-# KDE Connect follows network and Bluetooth, and an entry whose applet is
-# missing or not loaded draws no pill.
-if(NOT config_xml MATCHES "<default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth,org.kde.kdeconnect</default>"
+# KDE Connect and Kadunce's Cards follow network and Bluetooth, and an entry
+# whose applet is missing or not loaded draws no pill.
+if(NOT config_xml MATCHES "<default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth,org.kde.kdeconnect,kadunce-control_kadunce-control</default>"
    OR NOT main_qml MATCHES "id: controlCenterModel[^}]*sourceModel.data\\(idx, Qt.UserRole \\+ 3\\) === true")
-    message(FATAL_ERROR "Control Center must list KDE Connect after network and Bluetooth, and only entries that can render")
+    message(FATAL_ERROR "Control Center must list KDE Connect and Cards after network and Bluetooth, and only entries that can render")
+endif()
+# An applet listed as a pill is loaded, and Control Center keeps room for the
+# More menu under the power row.
+if(NOT tray_settings_cpp MATCHES "m_extraItems.contains\\(pluginId\\) \\|\\| m_controlCenterItems.contains\\(pluginId\\)"
+   OR NOT expanded_qml MATCHES "Math.max\\(controlPage.implicitHeight, sessionMenuRoom\\)")
+    message(FATAL_ERROR "Control Center must load the applets it lists and keep room for the More menu")
 endif()
 if(NOT config_xml MATCHES "<entry name=\"adaptiveWidth\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
     message(FATAL_ERROR "Responsive panel sizing must remain enabled by default")

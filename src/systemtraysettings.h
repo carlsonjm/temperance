@@ -53,6 +53,7 @@ private:
 
     bool updatingConfigValue = false;
     QStringList m_extraItems;
+    QStringList m_controlCenterItems;
     QStringList m_knownItems;
     QStringList m_disabledStatusNotifiers;
 };
