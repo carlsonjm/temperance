@@ -385,15 +385,24 @@ Item {
             }
         }
         popup: QQC2.Popup {
-            y: profileCombo.height + 4
+            id: profileList
+            // Under its chooser, or over it where the page has no room below.
+            // The list is built before it opens, so its height is known
+            // from the first click.
+            property bool above: false
+            y: above ? -height - 4 : profileCombo.height + 4
             width: profileCombo.width
+            onAboutToShow: {
+                const bottom = profileCombo.mapToItem(page, 0, profileCombo.height).y;
+                above = bottom + 4 + implicitHeight > page.height && bottom - profileCombo.height > page.height - bottom;
+            }
             implicitHeight: Math.min(contentItem.implicitHeight + topPadding + bottomPadding, page.height / 2)
             padding: 6
             popupType: QQC2.Popup.Item
             contentItem: ListView {
                 clip: true
                 implicitHeight: contentHeight
-                model: profileCombo.popup.visible ? profileCombo.delegateModel : null
+                model: profileCombo.delegateModel
                 currentIndex: profileCombo.highlightedIndex
                 spacing: 2
                 boundsBehavior: Flickable.StopAtBounds
@@ -497,19 +506,25 @@ Item {
         }
     }
 
-    PlasmaComponents.ScrollView {
+    // Scrolls without scroll bars, as the notification history does: the
+    // page is sized to its content, and only an unfolded editor taller than
+    // the screen allows needs to scroll.
+    Flickable {
         id: scrollView
         anchors.fill: parent
-        background: null
-        contentWidth: availableWidth
+        clip: true
+        contentWidth: width
         contentHeight: pageContent.implicitHeight + page.standardSpacing + page.surfaceSpacing
+        flickableDirection: Flickable.VerticalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        Kirigami.WheelHandler { target: scrollView; verticalStepSize: Qt.styleHints.wheelScrollLines * 80 / 3 }
 
         ColumnLayout {
             id: pageContent
             // On the popup's margin line, 12 px into the page.
             x: 12
             y: page.standardSpacing
-            width: scrollView.availableWidth - 24
+            width: scrollView.width - 24
             spacing: page.compactSpacing
 
             // 1. Profiles: choosing one applies it.
