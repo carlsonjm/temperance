@@ -378,6 +378,16 @@ private Q_SLOTS:
         tone->setProperty("theme", QVariant::fromValue(darkTheme.data()));
         QCOMPARE(accept->property("visualOutline").value<QColor>(), QColor(QStringLiteral("#F8F8FF")));
         QCOMPARE(accept->property("visualFill").value<QColor>().alpha(), 0);
+        // A plain dark style draws the suite's greys exactly; a tinted one
+        // leans them toward its colour, as far as its ground leans.
+        QCOMPARE(tone->property("surface").value<QColor>(), QColor(QStringLiteral("#141414")));
+        QScopedPointer<QObject> tintedTheme(makeTheme(QStringLiteral("#10151A"), QStringLiteral("#E0E0E0")));
+        QVERIFY(tintedTheme);
+        tone->setProperty("theme", QVariant::fromValue(tintedTheme.data()));
+        const auto tintedSurface = tone->property("surface").value<QColor>();
+        QCOMPARE(tintedSurface, QColor(QStringLiteral("#0F1419")));
+        QVERIFY(tone->property("control").value<QColor>().blue() > tone->property("control").value<QColor>().red());
+        tone->setProperty("theme", QVariant::fromValue(darkTheme.data()));
         QCOMPARE(accept->property("leftPadding").toReal(), 14.0);
         QCOMPARE(accept->property("rightPadding").toReal(), 14.0);
         QTRY_COMPARE(actionBackground->width(), accept->width());
