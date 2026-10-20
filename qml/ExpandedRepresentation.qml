@@ -107,12 +107,18 @@ Item {
         : Kirigami.Units.gridUnit * 24
             + (systemTrayState.activeApplet ? nativePagePadding * 2 : 0)
             + contentSafety * 2
+    // Room under the header for the More menu, so it always opens straight
+    // under the power row: a short Control Center, on a computer with no
+    // battery or brightness, would otherwise push it up over the row. The
+    // items, the padding, the gap above and 8 px of window below.
+    readonly property real sessionMenuRoom: sessionLayout.menu.length > 0
+        ? sessionLayout.menu.length * 36 + 2 * 6 + 4 + 8 : 0
     readonly property real desiredHeight: {
         if (systemTrayState.activeApplet) {
             return Kirigami.Units.gridUnit * 22 + nativePagePadding * 2
                 + contentSafety * 2 + headerSafety;
         }
-        const pageHeight = systemTrayState.page === "control" ? controlPage.implicitHeight
+        const pageHeight = systemTrayState.page === "control" ? Math.max(controlPage.implicitHeight, sessionMenuRoom)
             : systemTrayState.page === "notifications" ? notificationPage.implicitHeight
             : systemTrayState.page === "calendar" ? calendarPage.implicitHeight
             : systemTrayState.page === "performance" ? performancePage.implicitHeight

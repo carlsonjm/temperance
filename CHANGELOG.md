@@ -9,6 +9,12 @@ This file records user-visible changes.
 - The profile list held open from Control Center's Performance pill spills
   past Control Center's edge instead of being cut off by it, and closes with
   Control Center.
+- Control Center's More menu always opens straight under the power row. A
+  short Control Center, on a computer with no battery or brightness, used to
+  push it up over the row; Control Center now keeps room for it.
+- Control Center's KDE Connect pill shows on a fresh Status: an applet listed
+  as a pill is loaded even where the tray would leave it off. Kadunce's Cards
+  switch joins the pills by default, after KDE Connect, where Kadunce runs.
 - The Performance page shows no scroll bars: it is sized to what it holds,
   and an unfolded editor taller than the screen scrolls by touch or wheel.
   A profile list opens under its chooser from the first click, or over it
