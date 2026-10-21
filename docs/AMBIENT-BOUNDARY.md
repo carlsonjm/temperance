@@ -1,12 +1,12 @@
-# Temperance boundary with Ambient Tette
+# Temperance boundary with Tettegouche's Ambient
 
-Which status Temperance shows, and which Ambient Tette shows.
+Which status Temperance shows, and which Tettegouche's Ambient shows.
 
 Temperance shows **what changed**. It receives and presents notifications:
 the ticker, priority banners, grouped history, dismissal, and the sender's own
 actions. It does not turn continuous status into made-up events.
 
-Ambient Tette shows **what matters now**. It shows ongoing context on its own
+Ambient shows **what matters now**. It shows ongoing context on its own
 side of the dock, including media sessions, transfers, their progress, and their
 live actions.
 
@@ -23,13 +23,13 @@ Both sides follow these rules:
   in (`device.added`) go to the history, not the ticker or a banner: Ambient
   already showed each for a minute.
 - Temperance changes for Ambient are limited to a proven handoff, hiding
-  duplicates, or shared geometry. Ambient itself is built in Tette.
+  duplicates, or shared geometry. Ambient itself is built in Tettegouche.
 
 ## Panel geometry
 
 The application dock stays centered on the panel. Temperance measures and
 resizes only within its own share of the panel, on whichever side the panel
-gives it; Tette has its launcher and Ambient strip on the other. Each side
+gives it; Tettegouche has its launcher and Ambient strip on the other. Each side
 responds to panel geometry without moving, sizing or configuring the other.
 
 Temperance updates its geometry on events. It does not poll the panel, write

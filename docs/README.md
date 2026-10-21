@@ -12,7 +12,7 @@ from this table, so add any new one here in the same change.
 | `docs/ARCHITECTURE.md` | How Temperance works and why |
 | `docs/INPUT.md` | Every touch, click and key it answers |
 | `docs/PANELS.md` | Panel thickness, edges and host interfaces |
-| `docs/AMBIENT-BOUNDARY.md` | The split with Ambient Tettegouche |
+| `docs/AMBIENT-BOUNDARY.md` | The split with Tettegouche's Ambient |
 | `docs/README.md` | This table |
 | `CHANGELOG.md` | User-visible changes by release |
 | `packaging/README.md` | Installing and removing a release |

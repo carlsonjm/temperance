@@ -1,7 +1,7 @@
 # Temperance
 
 Native Plasma widget build for x86_64 systems using Plasma 6.7.4, Qt 6.11.2,
-and Kirigami 6.29.
+and KDE Frameworks 6.29.
 
 ## Install
 
@@ -30,7 +30,7 @@ package and add Temperance to the panel as a new widget.
 Run `./uninstall-system.sh`. It puts Plasma's System Tray back on Temperance's
 panel, so notifications show again, and restarts the panel.
 
-This plugin runs only on the architecture, Plasma and Qt it was built for; the
-installer warns if yours differ.
+This plugin runs only on the Plasma and Qt it was built for; the installer
+warns if yours differ.
 
 The included PNG is Temperance's icon in Add Widgets.

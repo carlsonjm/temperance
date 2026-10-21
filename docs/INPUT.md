@@ -17,7 +17,7 @@ documents cite this one.
 | --- | --- |
 | Tap or click the icon of the page already open | Closes the page. |
 | Tap or click above or below an icon | Counts as that icon. |
-| Your finger on an icon | The icon lifts until you let go. |
+| Your finger on an icon | It lifts until you let go. |
 | Pointer over the weather, network, tray or battery icon | It grows a little and shows its name. |
 | On a thin bar, tap the icons, or pull down from them | A tap opens or closes the nearest icon's page. Pulled, they grow finger-sized below it: slide to one, which is marked and named, and let go to open it, or in the bar or past an end to cancel. |
 | Escape, with a page open | Closes the page. |
@@ -107,7 +107,7 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Tap or click the tray icon | Opens the System Tray. |
-| Tap or click an entry | Opens its page, or acts as its application says, closing the popup for the window in use; Cards stays open. |
+| Tap or click an entry | Opens its page, or acts as its application says and closes the popup, except Kadunce's Cards switch, which keeps it open. |
 | Right-click or press and hold an entry | Opens the entry's own menu. |
 | Middle-click an entry | Runs its secondary action, as in Plasma's tray. |
 | Wheel over an entry | Passes the scroll to the entry, such as the volume. |
