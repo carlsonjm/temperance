@@ -8,11 +8,11 @@ How Temperance works and why. Inputs are in `INPUT.md`, the Ambient split in
 Temperance is a Status Bar for Plasma 6: notifications, weather, battery, Control
 Center, an organized System Tray, and the time and date. It is one native
 containment plugin that replaces the stock System Tray's presentation, not a
-user-local QML-only plasmoid. Its root and native-plugin metadata match, it
-keeps the custom containment type, and it runs only on the Plasma and Qt it was
-built for; elsewhere it says it needs an update.
+user-local QML-only plasmoid. Its package and native-plugin metadata match, it
+keeps Plasma's `CustomEmbedded` containment type, and it runs only on the
+Plasma and Qt it was built for; elsewhere it says it needs an update.
 
-The launcher, task manager, stock panel spacers and Ambient Tettegouche are
+The launcher, task manager, stock panel spacers and Tettegouche's Ambient are
 separate applets, which Temperance may measure but does not configure.
 It reports what changed through notifications; Ambient shows what is ongoing.
 
@@ -29,17 +29,17 @@ minimum widths, and the ticker clips, scrolls or drops optional content inside t
 allocation. Temperance does not write spacer configuration or recenter the task
 dock.
 
-A container that paints furniture of its own, as Shuffle's band paints its dock,
-is not in the applet list, so the measurement runs past it. Such a container holds
-each component to its own side, and its clamp decides the width. A host painting
-a clock publishes the width (`PANELS.md`).
+A dock the panel paints itself, as Shuffle's bottom panel does, is not in the
+applet list, so the measurement runs past it. Such a panel keeps each widget to
+its own side and caps its width. A host painting a clock publishes the width
+(`PANELS.md`).
 
 ## Status icons
 
 The bell, weather, Control Center, tray and battery are drawn a third larger than
 the panel's small icons and set one 34 px step apart with no gaps, so they read as
 one group. Height makes up the width: each icon's touch area runs the panel's
-full height, about 7 by 13 mm on the Z13's band.
+full height, about 7 by 13 mm on an ASUS ROG Flow Z13.
 
 The row stays a 42 px surface, slim on thinner panels (`PANELS.md`), because the
 popups are placed from it. A separate handler takes presses above and below the
@@ -50,40 +50,40 @@ The bell and the wired port are outlines Temperance draws, kept to the size of
 the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
 reads larger than a filled mark. The count sits 5 px under the rim, in 13 px.
 
-The protected bell and tray are scaled, not redrawn. Every other status icon is
-a drawing Temperance carries, Colloid's bold set (`tools/status-glyphs.py`),
-never the theme's; `qml/StatusGlyphs.js` maps Plasma's state names to them.
+The bell and tray are Temperance's own marks, scaled rather than redrawn. Every
+other status icon is a drawing Temperance carries, Colloid's bold set
+(`tools/status-glyphs.py`), never the theme's; `qml/StatusGlyphs.js` maps Plasma's state names to them.
 `-locked` means a VPN; apps keep their own icons.
 
 ## Notifications
 
 ### One store, one presenter
 
-Temperance initializes `NotificationManager::Server::self()` and suppresses the
-stock Notifications applet while it is loaded. The server holds the shared storage
-and the D-Bus name. Do not start a second notification daemon, move the D-Bus
-name, clear history during a presenter change, or let two presenters race. A
-stock-presenter option needs a readiness handshake: keep Temperance active until
-the stock applet is complete, destroy and forget the stock applet before restoring
-Temperance, and fall back to Temperance if stock loading fails.
+Temperance initializes `NotificationManager::Server::self()`, the shared storage
+and D-Bus name in `plasmashell`. Never start a second daemon, move the name, clear
+history or let two presenters race. With `showNotifications` off, Plasma's stock
+Notifications applet presents instead: Temperance loads it on
+`plasmaNotificationsWanted` and presents until `plasmaNotificationsShown`;
+turned back on, it destroys the applet first. If the applet fails or goes, Temperance
+presents.
 
 ### Routes follow meaning
 
 Normal notifications, including actionable ones, use the ticker and history; a
 transfer's end uses the history alone (`AMBIENT-BOUNDARY.md`).
-Critical notifications and the bounded system-alert policy may use priority
+Critical notifications and a short list of system alerts may use priority
 banners, and a notification held for a banner does not also enter the ticker.
 Keeping a banner for review moves it to history without replaying the ticker.
-Stable notification identity stops playback restarting after model resets or
-unrelated arrivals. Priority windows never expose zero-height Wayland geometry,
-and banners keep touch-safe actions, bounded text, direct dismissal and
+Each notification keeps its identity, so a model reset or an unrelated
+arrival does not restart playback. Priority windows never expose zero-height
+Wayland geometry, and banners keep touch-safe actions, bounded text, direct dismissal and
 reduced-motion behavior.
 
-Temperance shows only the urgency, completion and actions producers supply.
-It adds no Snooze; a private NotificationManager check proves a producer's own
-`snooze` action is kept and dispatched.
+Temperance shows only the urgency, completion and actions applications supply.
+It adds no Snooze; a test against NotificationManager proves an application's
+own `snooze` action is kept and dispatched.
 
-### History keeps the producer's meaning
+### History keeps the sender's meaning
 
 Named actions come from paired `ActionNamesRole` and `ActionLabelsRole`; empty,
 unpaired and reserved default entries are not drawn as pills. The default action
@@ -96,16 +96,16 @@ rows contribute their real height so controls stay inside the card.
 ## Clock and calendar
 
 Temperance draws the time over an optional date at the Status Bar's right end, so
-Shuffle needs no separate clock applet. It uses the system UI font
+the panel needs no separate clock applet. It uses the system UI font
 or one you pick, in fixed cells sized for the widest time and date the locale
 produces, so the layout never shifts. The day period is lowercase, light
 and smaller, on the time's baseline.
 
 Each new minute is dealt onto the old like a card dropping in from above. The
 deal keeps its own pace whatever Plasma's animation speed, since nobody waits on
-the clock; only Instant, which counts as reduced motion, makes it a fade. Shuffle
-Lock shows the same clock as a block at a size the caller gives, a bold time over
-the long date set to the time's width, so lock and bar share one clock and
+the clock; only Instant, which counts as reduced motion, makes it a fade. Shuffle's
+lock screen shows the same clock as a block at a size the caller gives, a bold
+time over the long date set to the time's width, so lock and bar share one clock and
 animation.
 
 The calendar is a small card in the corner, built on Plasma's month grid
@@ -150,7 +150,7 @@ Promoted tray entries, loaded even where the tray leaves them off,
 become Control Center pills in listed order and leave the organized tray, which
 keeps the Apps, Devices, System order and drops empty sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by
-`temperance.performance`, needs the helper's daemon; a right-click lists its profiles.
+`temperance.performance`, needs the z13ctl-plus helper's daemon; a right-click lists its profiles.
 Each profile's charge limit lives in `temperancerc`. The refresh-rate switch
 uses libkscreen; a rate other than the profile's holds until the profile
 changes, and returns after unlock when the helper re-applies it.
@@ -179,15 +179,15 @@ capped by the screen.
 
 ## Visual rules
 
-Temperance applies the suite's visual language:
+Temperance follows these visual rules:
 
 - Ghost White (`#F8F8FF`) leads on a dark style;
   `StatusColors.qml` follows a light one.
-- Temperance's own action chrome comes from a pinned Lucide Static 1.46.0 subset
+- Temperance's own button icons come from a pinned Lucide Static 1.46.0 subset
   vendored here; status icons are Colloid's. Application, provider and weather
   icons stay with their sources.
 - The animated bell (Lucide's Bell redrawn for its clapper and slash), the weather
-  treatment and the custom tray work are protected from icon migrations.
+  icon and the tray's own marks stay as they are when other icons change.
 - Controls keep distinct resting, hover, pressed, focus and selected states.
 - Motion is interruptible and follows the platform animation setting, except the
   clock's minute.
@@ -202,18 +202,18 @@ it. The Open-Meteo fallback the README describes is the only other provider.
 
 Inherited KDE and libdbusmenu code keeps its SPDX identity and licence texts, and
 vendored Lucide, Feather and Colloid assets keep their notices. `src/shared` is
-Tettegouche's code, copied as `tools/shared.sh` records. Product metadata,
+Tettegouche's code, copied as `tools/shared.sh` records. Plugin metadata,
 third-party notices, the icon manifest and installed assets stay in sync.
 
 `packaging/build-release.sh` is the supported release path. A release holds the
 native plugin and required artwork and matches the intended build output.
 KCalendarCore is a build and install dependency; the installer checks for it and
 restarts the panel, so an update needs no sign-out. A package identity change
-makes people remove and re-add the widget, so identity changes only in the suite's
-coordinated identity work.
+makes people remove and re-add the widget, so it changes only in step with every
+project that names it.
 
 Automated checks cover source, notification, session, popup, clock, calendar and
 real-panel geometry contracts. The real-panel fixture pairs Temperance with a
 separately built Tettegouche plugin, so it is not part of the automatic run.
-Compositor placement, real producers, touch and optical alignment still need
+Compositor placement, real applications, touch and optical alignment still need
 physical tests; each control is tested by click and by touch.

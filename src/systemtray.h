@@ -19,9 +19,11 @@
 #include "shared/PanelRoom.h"
 
 class QQuickItem;
+class QQmlEngine;
 
 namespace Plasma
 {
+class Applet;
 }
 class PlasmoidRegistry;
 class PlasmoidModel;
@@ -64,6 +66,12 @@ class SystemTray : public Plasma::Containment
     // pixels from the clock's edge to the output's far edge; 0 where no
     // host says (clockextent.h).
     Q_PROPERTY(int hostAvailableWidth READ hostAvailableWidth NOTIFY hostAvailableWidthChanged)
+    // With Status's notifications off, Plasma's own Notifications widget is
+    // asked for and shows them instead (ARCHITECTURE.md § Notifications).
+    // Status keeps showing them until that widget is up, so none is missed.
+    Q_PROPERTY(bool plasmaNotificationsWanted READ plasmaNotificationsWanted WRITE setPlasmaNotificationsWanted
+                   NOTIFY plasmaNotificationsWantedChanged)
+    Q_PROPERTY(bool plasmaNotificationsShown READ plasmaNotificationsShown NOTIFY plasmaNotificationsShownChanged)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -101,6 +109,10 @@ public:
     Q_INVOKABLE void watchHostClock(const QString &outputName);
     int hostAvailableWidth() const;
 
+    bool plasmaNotificationsWanted() const;
+    void setPlasmaNotificationsWanted(bool wanted);
+    bool plasmaNotificationsShown() const;
+
     /**
      * @brief isSystemTrayApplet checks if applet is allowed in the System Tray
      * @param appletId also known as plugin Id
@@ -137,6 +149,8 @@ public:
 Q_SIGNALS:
     void panelGeometryChanged();
     void hostAvailableWidthChanged();
+    void plasmaNotificationsWantedChanged();
+    void plasmaNotificationsShownChanged();
 
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets
@@ -152,9 +166,16 @@ private:
     void migrateFromSystrayContainer();
     SystemTrayModel *systemTrayModel();
     void initSettingsAndRegistry();
+    void watchPlasmaNotifications(Plasma::Applet *applet);
+    void setPlasmaNotificationsShown(bool shown);
+    void releasePlasmaNotificationPopups();
 
     KConfigWatcher::Ptr m_configWatcher;
     bool m_xwaylandClientsScale = true;
+    bool m_plasmaNotificationsWanted = false;
+    bool m_plasmaNotificationsShown = false;
+    // The engine Plasma's Notifications widget ran in, which keeps its popups.
+    QPointer<QQmlEngine> m_plasmaNotificationsEngine;
 
     QPointer<SystemTraySettings> m_settings;
     QPointer<PlasmoidRegistry> m_plasmoidRegistry;

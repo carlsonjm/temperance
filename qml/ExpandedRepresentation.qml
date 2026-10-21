@@ -76,8 +76,11 @@ Item {
         font: pageHeading.font
         text: i18n("Control Center")
     }
-    readonly property real sessionRoom: heading.width - titleMetrics.advanceWidth
-        - Kirigami.Units.largeSpacing - heading.spacing
+    // Taken from Control Center's fixed width, not the header's live one:
+    // the row is the header's own content, and a header whose content
+    // followed its width would change while it was being laid out.
+    readonly property real sessionRoom: pageWidth - headerSafety - pageInset
+        - titleMetrics.advanceWidth - Kirigami.Units.largeSpacing - heading.spacing
     // The row and the menu, as ids: the row in the order chosen, Shut down
     // last when it was not placed, and never more than sessionRowCap.
     // Whatever the row has no room for moves to the front of the menu, from
@@ -96,15 +99,18 @@ Item {
             if (placed[last] === "shutdown") --last;
             menu.unshift(placed.splice(last, 1)[0]);
         }
-        return { "row": placed.map(id => sessionActionInfo[id]), "menu": menu };
+        return { "row": placed, "menu": menu };
     }
+    // The row as text, so the pills are rebuilt only when the row changes.
+    readonly property string sessionRowIds: sessionLayout.row.join(" ")
     function inSessionMenu(id) {
         return sessionLayout.menu.indexOf(id) >= 0;
     }
 
+    readonly property real pageWidth: Kirigami.Units.gridUnit * 24
     readonly property real desiredWidth: calendarShown
         ? calendarPage.implicitWidth + contentSafety * 2
-        : Kirigami.Units.gridUnit * 24
+        : pageWidth
             + (systemTrayState.activeApplet ? nativePagePadding * 2 : 0)
             + contentSafety * 2
     // Room under the header for the More menu, so it always opens straight
@@ -375,259 +381,252 @@ Item {
         anchors.margins: popup.contentSafety
         spacing: headingBackground.bottomPadding
 
-        RowLayout {
-            id: heading
+        // The header is laid out on its own rather than as a row inside the
+        // page column. Most of what it shows changes while the popup is
+        // closed, as a tap chooses the page before the popup opens, and a
+        // row nested in another layout that changes as it is placed can be
+        // left unplaced until its own size changes: buttons drawn over the
+        // title, Do not disturb at no width.
+        Item {
             Layout.fillWidth: true
             Layout.leftMargin: popup.headerSafety
             // On the calendar the arrows end on the grid's 16 px margin line.
             Layout.rightMargin: popup.pageInset
             Layout.topMargin: popup.headerSafety
-
-            // A page an entry opens, Networks or Performance say, goes back
-            // to the page it was opened from.
-            HeaderCircle {
-                objectName: "temperance-header-back"
-                visible: systemTrayState.activeApplet !== null || popup.performanceShown
-                glyph: "chevron-left"
-                text: i18n("Back")
-                onClicked: {
-                    if (systemTrayState.activeApplet) systemTrayState.setActiveApplet(null);
-                    else systemTrayState.page = "control";
-                }
-            }
-
-            Kirigami.Heading {
-                id: pageHeading
-                objectName: "temperance-page-heading"
-                Layout.fillWidth: true
-                leftPadding: Kirigami.Units.largeSpacing
-                level: 1
-                text: popup.pageTitle()
-                maximumLineCount: 1
-                elide: Text.ElideRight
-            }
+            implicitHeight: heading.implicitHeight
 
             RowLayout {
-                id: calendarNavigation
-                visible: popup.calendarShown
-                spacing: 8
+                id: heading
+                anchors.fill: parent
 
-                PlasmaComponents.ToolButton {
-                    id: calendarToday
-                    visible: !calendarPage.showingCurrentMonth
-                    Layout.preferredHeight: 30
-                    leftPadding: 12
-                    rightPadding: 12
-                    text: i18nc("@action:button go to the current month", "Today")
-                    contentItem: PlasmaComponents.Label {
-                        text: calendarToday.text
-                        font.pixelSize: 13
-                        font.weight: Font.Medium
-                        color: tone.text
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                // A page an entry opens, Networks or Performance say, goes back
+                // to the page it was opened from.
+                HeaderCircle {
+                    objectName: "temperance-header-back"
+                    visible: systemTrayState.activeApplet !== null || popup.performanceShown
+                    glyph: "chevron-left"
+                    text: i18n("Back")
+                    onClicked: {
+                        if (systemTrayState.activeApplet) systemTrayState.setActiveApplet(null);
+                        else systemTrayState.page = "control";
                     }
-                    background: Rectangle {
-                        radius: height / 2
-                        color: calendarToday.down ? tone.wash(0.18)
-                            : todayHover.hovered ? tone.wash(0.12) : "transparent"
-                        border.width: 1
-                        border.color: calendarToday.visualFocus ? tone.text : tone.divider
-                        Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
-                    }
-                    onClicked: calendarPage.reset()
-                    PointerHover { id: todayHover }
+                }
+
+                Kirigami.Heading {
+                    id: pageHeading
+                    objectName: "temperance-page-heading"
+                    Layout.fillWidth: true
+                    leftPadding: Kirigami.Units.largeSpacing
+                    level: 1
+                    text: popup.pageTitle()
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
                 }
 
                 RowLayout {
-                    spacing: 4
-                    CalendarArrow {
-                        glyph: "chevron-left"
-                        text: i18n("Previous month")
-                        onClicked: calendarPage.showMonth(-1)
-                    }
-                    CalendarArrow {
-                        glyph: "chevron-right"
-                        text: i18n("Next month")
-                        onClicked: calendarPage.showMonth(1)
-                    }
-                }
-            }
+                    id: calendarNavigation
+                    visible: popup.calendarShown
+                    spacing: 8
 
-            RowLayout {
-                id: sessionActions
-                visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
-                spacing: popup.sessionSpacing
-                // The actions placed in the row stand here, as many as fit
-                // beside the title; every other shown one waits behind the
-                // ellipsis. Shut down always stands in the row.
-                Repeater {
-                    model: popup.sessionLayout.row
-                    delegate: HeaderPill {
-                        required property var modelData
-                        glyph: modelData.glyph
-                        text: modelData.text
-                        onClicked: controlPage.requestSessionAction(modelData.id)
-                    }
-                }
-                HeaderCircle {
-                    id: sessionMore
-                    objectName: "temperance-session-more"
-                    visible: popup.sessionLayout.menu.length > 0
-                    glyph: "ellipsis-vertical"
-                    icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/ellipsis-vertical.svg"
-                    held: sessionMenu.visible
-                    text: i18n("More session options")
-                    onClicked: sessionMenu.open()
-                    QQC2.Menu {
-                        id: sessionMenu
-                        y: sessionMore.height + 4
-                        x: sessionMore.width - width
-                        width: 150
-                        padding: 6
-                        closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
-                        // Drawn inside Control Center's own window, so it
-                        // goes when Control Center does, never left standing
-                        // on screen as a window of its own.
-                        popupType: QQC2.Popup.Item
-                        // Closes before acting: an action that hides
-                        // Control Center or covers the screen must not
-                        // leave the menu open behind it.
-                        function choose(id) {
-                            close();
-                            controlPage.requestSessionAction(id);
+                    PlasmaComponents.ToolButton {
+                        id: calendarToday
+                        visible: !calendarPage.showingCurrentMonth
+                        Layout.preferredHeight: 30
+                        leftPadding: 12
+                        rightPadding: 12
+                        text: i18nc("@action:button go to the current month", "Today")
+                        contentItem: PlasmaComponents.Label {
+                            text: calendarToday.text
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            color: tone.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
                         }
                         background: Rectangle {
-                            color: tone.surface
-                            radius: 12
+                            radius: height / 2
+                            color: calendarToday.down ? tone.wash(0.18)
+                                : todayHover.hovered ? tone.wash(0.12) : "transparent"
                             border.width: 1
-                            border.color: tone.divider
+                            border.color: calendarToday.visualFocus ? tone.text : tone.divider
+                            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         }
-                        SessionMenuItem {
-                            visible: popup.inSessionMenu("sleep")
-                            text: popup.sessionText("sleep")
-                            onTriggered: sessionMenu.choose("sleep")
+                        onClicked: calendarPage.reset()
+                        PointerHover { id: todayHover }
+                    }
+
+                    RowLayout {
+                        spacing: 4
+                        CalendarArrow {
+                            glyph: "chevron-left"
+                            text: i18n("Previous month")
+                            onClicked: calendarPage.showMonth(-1)
                         }
-                        SessionMenuItem {
-                            visible: popup.inSessionMenu("lock")
-                            text: popup.sessionText("lock")
-                            onTriggered: sessionMenu.choose("lock")
-                        }
-                        SessionMenuItem {
-                            visible: popup.inSessionMenu("restart")
-                            text: popup.sessionText("restart")
-                            onTriggered: sessionMenu.choose("restart")
-                        }
-                        SessionMenuItem {
-                            visible: popup.inSessionMenu("logout")
-                            text: popup.sessionText("logout")
-                            onTriggered: sessionMenu.choose("logout")
-                        }
-                        SessionMenuItem {
-                            visible: popup.inSessionMenu("switchUser")
-                            text: popup.sessionText("switchUser")
-                            onTriggered: sessionMenu.choose("switchUser")
+                        CalendarArrow {
+                            glyph: "chevron-right"
+                            text: i18n("Next month")
+                            onClicked: calendarPage.showMonth(1)
                         }
                     }
                 }
-                onVisibleChanged: if (!visible) sessionMenu.close()
-            }
 
-            HeaderPill {
-                visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                glyph: "settings"
-                icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/settings.svg"
-                text: i18n("Open system settings")
-                onClicked: {
-                    systemTrayState.expanded = false;
-                    KCM.KCMLauncher.openSystemSettings("kcm_landingpage");
-                }
-            }
-
-            HeaderPill {
-                visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
-                glyph: "sliders-horizontal"
-                text: i18n("Configure system tray icons")
-                onClicked: Plasmoid.internalAction("configure").trigger()
-            }
-
-            PlasmaComponents.ToolButton {
-                id: addBluetoothDevice
-                objectName: "addBluetoothDevice"
-                visible: systemTrayState.activeApplet
-                    && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
-                text: i18n("Add new device")
-                icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/plus.svg"
-                icon.color: tone.text
-                contentItem: Row {
-                    spacing: 6
-                    SuiteIcon {
-                        glyph: "plus"
-                        width: 18; height: 18
-                        anchors.verticalCenter: parent.verticalCenter
+                RowLayout {
+                    id: sessionActions
+                    visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
+                    spacing: popup.sessionSpacing
+                    // The actions placed in the row stand here, as many as fit
+                    // beside the title; every other shown one waits behind the
+                    // ellipsis. Shut down always stands in the row.
+                    Repeater {
+                        model: popup.sessionRowIds.split(" ")
+                        delegate: HeaderPill {
+                            required property string modelData
+                            glyph: popup.sessionActionInfo[modelData].glyph
+                            text: popup.sessionText(modelData)
+                            onClicked: controlPage.requestSessionAction(modelData)
+                        }
                     }
-                    PlasmaComponents.Label {
-                        text: addBluetoothDevice.text
-                        anchors.verticalCenter: parent.verticalCenter
+                    HeaderCircle {
+                        id: sessionMore
+                        objectName: "temperance-session-more"
+                        visible: popup.sessionLayout.menu.length > 0
+                        glyph: "ellipsis-vertical"
+                        icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/ellipsis-vertical.svg"
+                        held: sessionMenu.visible
+                        text: i18n("More session options")
+                        onClicked: sessionMenu.open()
+                        QQC2.Menu {
+                            id: sessionMenu
+                            y: sessionMore.height + 4
+                            x: sessionMore.width - width
+                            width: 150
+                            padding: 6
+                            closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
+                            // Drawn inside Control Center's own window, so it
+                            // goes when Control Center does, never left standing
+                            // on screen as a window of its own.
+                            popupType: QQC2.Popup.Item
+                            // Closes before acting: an action that hides
+                            // Control Center or covers the screen must not
+                            // leave the menu open behind it.
+                            function choose(id) {
+                                close();
+                                controlPage.requestSessionAction(id);
+                            }
+                            background: Rectangle {
+                                color: tone.surface
+                                radius: 12
+                                border.width: 1
+                                border.color: tone.divider
+                            }
+                            SessionMenuItem {
+                                visible: popup.inSessionMenu("sleep")
+                                text: popup.sessionText("sleep")
+                                onTriggered: sessionMenu.choose("sleep")
+                            }
+                            SessionMenuItem {
+                                visible: popup.inSessionMenu("lock")
+                                text: popup.sessionText("lock")
+                                onTriggered: sessionMenu.choose("lock")
+                            }
+                            SessionMenuItem {
+                                visible: popup.inSessionMenu("restart")
+                                text: popup.sessionText("restart")
+                                onTriggered: sessionMenu.choose("restart")
+                            }
+                            SessionMenuItem {
+                                visible: popup.inSessionMenu("logout")
+                                text: popup.sessionText("logout")
+                                onTriggered: sessionMenu.choose("logout")
+                            }
+                            SessionMenuItem {
+                                visible: popup.inSessionMenu("switchUser")
+                                text: popup.sessionText("switchUser")
+                                onTriggered: sessionMenu.choose("switchUser")
+                            }
+                        }
+                    }
+                    onVisibleChanged: if (!visible) sessionMenu.close()
+                }
+
+                HeaderPill {
+                    visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
+                    glyph: "settings"
+                    icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/settings.svg"
+                    text: i18n("Open system settings")
+                    onClicked: {
+                        systemTrayState.expanded = false;
+                        KCM.KCMLauncher.openSystemSettings("kcm_landingpage");
                     }
                 }
-                Layout.minimumHeight: 44
-                leftPadding: 12
-                rightPadding: 12
-                background: Item {
-                    Rectangle {
-                        objectName: "bluetoothPairingPill"
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        height: 30
-                        radius: height / 2
-                        color: addBluetoothDevice.down ? tone.controlPressed
-                            : addBluetoothHover.hovered ? tone.controlHover : tone.control
-                        border.width: addBluetoothDevice.visualFocus ? 1 : 0
-                        border.color: tone.text
-                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                HeaderPill {
+                    visible: systemTrayState.page === "tray" && !systemTrayState.activeApplet
+                    glyph: "sliders-horizontal"
+                    text: i18n("Configure system tray icons")
+                    onClicked: Plasmoid.internalAction("configure").trigger()
+                }
+
+                PlasmaComponents.ToolButton {
+                    id: addBluetoothDevice
+                    objectName: "addBluetoothDevice"
+                    visible: systemTrayState.activeApplet
+                        && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.bluetooth"
+                    text: i18n("Add new device")
+                    icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/plus.svg"
+                    icon.color: tone.text
+                    contentItem: Row {
+                        spacing: 6
+                        SuiteIcon {
+                            glyph: "plus"
+                            width: 18; height: 18
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        PlasmaComponents.Label {
+                            text: addBluetoothDevice.text
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    Layout.minimumHeight: 44
+                    leftPadding: 12
+                    rightPadding: 12
+                    background: Item {
+                        Rectangle {
+                            objectName: "bluetoothPairingPill"
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width
+                            height: 30
+                            radius: height / 2
+                            color: addBluetoothDevice.down ? tone.controlPressed
+                                : addBluetoothHover.hovered ? tone.controlHover : tone.control
+                            border.width: addBluetoothDevice.visualFocus ? 1 : 0
+                            border.color: tone.text
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                        }
+                    }
+                    onClicked: {
+                        Plasmoid.launchApplication("org.kde.bluedevilwizard");
+                        systemTrayState.expanded = false;
+                    }
+                    PointerHover { id: addBluetoothHover }
+                    HeaderToolTip { text: parent.text }
+                }
+
+                HeaderPill {
+                    readonly property bool isWeather: systemTrayState.activeApplet
+                        && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.weather"
+                    visible: isWeather && String(Plasmoid.configuration.weatherApplication || "").length > 0
+                    glyph: "cloud-sun"
+                    text: i18n("Open weather")
+                    onClicked: {
+                        systemTrayState.expanded = false;
+                        Plasmoid.launchApplication(Plasmoid.configuration.weatherApplication);
                     }
                 }
-                onClicked: {
-                    Plasmoid.launchApplication("org.kde.bluedevilwizard");
-                    systemTrayState.expanded = false;
-                }
-                PointerHover { id: addBluetoothHover }
-                HeaderToolTip { text: parent.text }
-            }
-
-            HeaderPill {
-                readonly property bool isWeather: systemTrayState.activeApplet
-                    && systemTrayState.activeApplet.Plasmoid.pluginName === "org.kde.plasma.weather"
-                visible: isWeather && String(Plasmoid.configuration.weatherApplication || "").length > 0
-                glyph: "cloud-sun"
-                text: i18n("Open weather")
-                onClicked: {
-                    systemTrayState.expanded = false;
-                    Plasmoid.launchApplication(Plasmoid.configuration.weatherApplication);
-                }
-            }
-
-            // The bell's page is usually chosen while the popup is closed, and
-            // a row that turned visible then could be drawn where the header
-            // never placed it, over the title. The slot stays in the header on
-            // every page and only its width changes, so the header always
-            // places it; on any other page it has no width and nothing to tap.
-            Item {
-                id: doNotDisturbSlot
-                readonly property bool shown: systemTrayState.page === "notifications" && !systemTrayState.activeApplet
-                Layout.preferredWidth: shown ? doNotDisturbControl.implicitWidth : 0
-                Layout.maximumWidth: Layout.preferredWidth
-                Layout.preferredHeight: doNotDisturbControl.implicitHeight
-                // Hidden, it takes no gap beside the title either.
-                Layout.leftMargin: shown ? 0 : -heading.spacing
-                clip: true
 
                 RowLayout {
                     id: doNotDisturbControl
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    enabled: doNotDisturbSlot.shown
+                    visible: systemTrayState.page === "notifications" && !systemTrayState.activeApplet
                     spacing: 7
 
                     PlasmaComponents.Label {
@@ -674,15 +673,15 @@ Item {
                         }
                     }
                 }
-            }
 
-            HeaderPill {
-                visible: Plasmoid.configuration.showPinButton
-                checkable: true
-                checked: Plasmoid.configuration.pin
-                onToggled: Plasmoid.configuration.pin = checked
-                glyph: "pin"
-                text: i18n("Keep open")
+                HeaderPill {
+                    visible: Plasmoid.configuration.showPinButton
+                    checkable: true
+                    checked: Plasmoid.configuration.pin
+                    onToggled: Plasmoid.configuration.pin = checked
+                    glyph: "pin"
+                    text: i18n("Keep open")
+                }
             }
         }
 

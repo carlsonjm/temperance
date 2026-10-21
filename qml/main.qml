@@ -163,7 +163,10 @@ ContainmentItem {
         + (clockEnabled ? statusClock.implicitWidth
             + statusClock.Layout.leftMargin + statusClock.Layout.rightMargin : 0)
     property int responsiveMeasuredWidth: responsiveMinimumWidth
-    readonly property bool notificationsEnabled: Plasmoid.configuration.showNotifications !== false
+    // Off, Plasma's own Notifications widget shows them in Status's place;
+    // Status keeps showing them until it is up, or if it cannot load.
+    readonly property bool notificationsWanted: Plasmoid.configuration.showNotifications !== false
+    readonly property bool notificationsEnabled: notificationsWanted || !Plasmoid.plasmaNotificationsShown
     // With the ticker off the bell stays and counts what waits; nothing
     // scrolls beside it.
     readonly property bool tickerEnabled: notificationsEnabled
@@ -1081,6 +1084,12 @@ ContainmentItem {
     // changes and resume from suspend, which a local timer would not.
     PlasmaClock.Clock { id: systemClock }
 
+    // Notifications off asks for Plasma's own Notifications widget.
+    Binding {
+        target: Plasmoid
+        property: "plasmaNotificationsWanted"
+        value: !root.needsUpdate && !root.notificationsWanted
+    }
     // The calendars linked in the settings; a link is read when it is added.
     Binding {
         target: Plasmoid.calendarFeeds

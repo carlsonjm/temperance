@@ -40,6 +40,8 @@
 #include <QMetaMethod>
 #include <QMetaObject>
 #include <QPointer>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QQueue>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -340,10 +342,18 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     setHasConfigurationInterface(true);
 }
 
+// Plasma's own Notifications widget, loaded only while Status's
+// notifications are off.
+static const QString plasmaNotificationsId = u"org.kde.plasma.notifications"_s;
+
 SystemTray::~SystemTray()
 {
     // When the applet is about to be deleted, delete now to avoid calling loadConfig()
     delete m_settings;
+    // The applets outlive this part of the object; none may call back into it.
+    for (Plasma::Applet *applet : applets()) {
+        applet->disconnect(this);
+    }
 }
 
 void SystemTray::init()
@@ -753,6 +763,10 @@ void SystemTray::onEnabledAppletsChanged()
             delete applet;
         } else {
             const QString task = applet->pluginMetaData().pluginId();
+            // Shown in Status's place, whatever the tray's own list says.
+            if (task == plasmaNotificationsId && m_plasmaNotificationsWanted) {
+                continue;
+            }
             if (!m_settings->isEnabledPlugin(task)) {
                 // in those cases we do delete the applet config completely
                 // as they were explicitly disabled by the user
@@ -764,9 +778,99 @@ void SystemTray::onEnabledAppletsChanged()
     }
 }
 
+bool SystemTray::plasmaNotificationsWanted() const
+{
+    return m_plasmaNotificationsWanted;
+}
+
+bool SystemTray::plasmaNotificationsShown() const
+{
+    return m_plasmaNotificationsShown;
+}
+
+// Both read the same notifications from the one server in this process, so
+// switching changes only who shows them: the service, the history and Do Not
+// Disturb stay as they are.
+void SystemTray::setPlasmaNotificationsWanted(bool wanted)
+{
+    if (m_needsUpdate || wanted == m_plasmaNotificationsWanted) {
+        return;
+    }
+    m_plasmaNotificationsWanted = wanted;
+    Q_EMIT plasmaNotificationsWantedChanged();
+    if (wanted) {
+        startApplet(plasmaNotificationsId);
+    } else {
+        // Gone before Status shows notifications again, so none shows twice.
+        stopApplet(plasmaNotificationsId);
+        setPlasmaNotificationsShown(false);
+    }
+}
+
+void SystemTray::setPlasmaNotificationsShown(bool shown)
+{
+    if (shown == m_plasmaNotificationsShown) {
+        return;
+    }
+    m_plasmaNotificationsShown = shown;
+    Q_EMIT plasmaNotificationsShownChanged();
+}
+
+// The widget takes over the popups when its page is complete, which making
+// its item does at once. Until then, and if it fails or goes away, Status
+// keeps showing notifications.
+void SystemTray::watchPlasmaNotifications(Plasma::Applet *applet)
+{
+    connect(applet, &QObject::destroyed, this, [this]() {
+        // Once now and once its item is surely gone, whichever goes last.
+        releasePlasmaNotificationPopups();
+        QTimer::singleShot(0, this, &SystemTray::releasePlasmaNotificationPopups);
+        setPlasmaNotificationsShown(false);
+    });
+    QTimer::singleShot(0, applet, [this, applet]() {
+        if (!m_plasmaNotificationsWanted) {
+            return;
+        }
+        if (auto *item = PlasmaQuick::AppletQuickItem::itemForApplet(applet)) {
+            m_plasmaNotificationsEngine = qmlEngine(item);
+            setPlasmaNotificationsShown(true);
+        } else {
+            qCWarning(SYSTEM_TRAY) << "Plasma's Notifications widget did not load;"
+                                   << "Status keeps showing notifications";
+        }
+    });
+}
+
+// The widget's popups live in a singleton of its own that outlives it. When
+// the last such widget goes, the singleton fails before it lets go of it, so
+// its popups keep coming, placed at the screen's corner. Let go of it here,
+// unless another Notifications widget elsewhere still shows them.
+void SystemTray::releasePlasmaNotificationPopups()
+{
+    if (!m_plasmaNotificationsEngine || QCoreApplication::closingDown()) {
+        return;
+    }
+    QQmlComponent release(m_plasmaNotificationsEngine);
+    release.setData(QByteArrayLiteral("import QtQml\n"
+                                      "import plasma.applet.org.kde.plasma.notifications as Notifications\n"
+                                      "QtObject {\n"
+                                      "    Component.onCompleted: {\n"
+                                      "        if (Notifications.Globals.plasmoidItems.length === 0) {\n"
+                                      "            Notifications.Globals.plasmoidItem = null;\n"
+                                      "            Notifications.Globals.plasmoid = null;\n"
+                                      "        }\n"
+                                      "    }\n"
+                                      "}\n"),
+                    QUrl());
+    const std::unique_ptr<QObject> done(release.create());
+    if (!done) {
+        qCWarning(SYSTEM_TRAY) << "Could not release Plasma's notification popups:" << release.errorString();
+    }
+}
+
 void SystemTray::startApplet(const QString &pluginId)
 {
-    if (pluginId == u"org.kde.plasma.notifications"_s) {
+    if (pluginId == plasmaNotificationsId && !m_plasmaNotificationsWanted) {
         return;
     }
     const auto appletsList = applets();
@@ -798,12 +902,21 @@ void SystemTray::startApplet(const QString &pluginId)
             return;
         }
         adoptExistingWeatherStation(applet);
+        if (pluginId == plasmaNotificationsId) {
+            watchPlasmaNotifications(applet);
+        }
         // create a new one automatic id, new config group
     } else {
         Applet *applet = createApplet(pluginId, QVariantList() << u"org.kde.plasma:force-create"_s);
         if (applet) {
             m_configGroupIds[pluginId] = applet->id();
             adoptExistingWeatherStation(applet);
+            if (pluginId == plasmaNotificationsId) {
+                watchPlasmaNotifications(applet);
+            }
+        } else if (pluginId == plasmaNotificationsId) {
+            qCWarning(SYSTEM_TRAY) << "Plasma's Notifications widget is not installed;"
+                                   << "Status keeps showing notifications";
         }
     }
 }

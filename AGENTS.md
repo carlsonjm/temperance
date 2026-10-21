@@ -16,7 +16,7 @@ typed. `docs/README.md` routes every other document.
 
 ## Rules
 
-- Product behavior and visual direction are approved before implementation
+- Behavior and visual direction are approved before implementation
   begins.
 - Preserve behavior unless the task explicitly changes it. Reproduce a defect and
   measure the property controlling it before changing it.
@@ -24,7 +24,7 @@ typed. `docs/README.md` routes every other document.
   set.
 - `docs/INPUT.md` defines every input and opens with the controls map; a README
   may repeat the map.
-- Public text describes the product, without names, approvals or narration;
+- Public text describes Temperance, without names, approvals or narration;
   `tests/verify-public.py` checks it. History lives in Git.
 - Preserve licensing, ABI, packaging, ownership, geometry, and accessibility
   invariants unless a roadmap item changes them.

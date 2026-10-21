@@ -4,10 +4,19 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Every page is right the first time it opens after Plasma starts. The tray's
+  settings buttons no longer land over the System Tray title, and Do not
+  disturb no longer goes missing from Notifications & Events until the page
+  is closed and opened again. The header's last button now ends on the page's
+  margin line on every page.
+- Turning off the notification ticker and bell hands notifications back to
+  Plasma's own Notifications widget, which shows them with its bell in the
+  tray. Before, they were kept but shown nowhere. Turned back on, Temperance
+  shows them again; the history stays as it was throughout.
 - Control Center's More menu always opens straight under the power row. A
   short Control Center, on a computer with no battery or brightness, used to
   push it up over the row; Control Center now keeps room for it.
-- Control Center's KDE Connect pill shows on a fresh Status: an applet listed
+- Control Center's KDE Connect pill shows on a fresh Temperance: an applet listed
   as a pill is loaded even where the tray would leave it off. Kadunce's Cards
   switch joins the pills by default, after KDE Connect, where Kadunce runs.
 - Switching profile on the Performance page no longer leaves only the chosen
@@ -19,7 +28,7 @@ This file records user-visible changes.
   and an unfolded editor taller than the screen scrolls by touch or wheel.
   A profile list opens under its chooser from the first click, or over it
   where there is no room below.
-- Status draws its network, volume, Bluetooth, battery and other status icons
+- Temperance draws its network, volume, Bluetooth, battery and other status icons
   from drawings it carries, Colloid's bold panel set, so they look the same
   whatever icon theme is installed. Wi-Fi without the internet now shows its
   own mark instead of the theme's.
@@ -190,7 +199,7 @@ This file records user-visible changes.
 - A transfer's end, and a drive plugged in that nothing opened, are filed in
   the history without crossing the ticker: Ambient has already shown each for
   a minute.
-- Corners follow the suite's three tiers: Control Center and alerts at 12 px,
+- Corners follow three tiers: Control Center and alerts at 12 px,
   the cards inside them at 10 px, and every control a pill.
 - Sized the status icons for touch: a third larger, set as one group, each
   answering a touch across the panel's height, and lifting under the finger.
@@ -200,26 +209,26 @@ This file records user-visible changes.
   the clock's form, and a notification with its application, ending a line too
   long for the ticker in an ellipsis.
 - Added Temperance's own clock at the Status Bar's right end, its new minute dealt
-  like a card, and the same clock as a block for Shuffle Lock.
+  like a card, and the same clock as a block for Shuffle's lock screen.
 - Added a month calendar card with holidays and read-only events from linked
   private calendar addresses, each with a chosen color.
 - Brought today's next timed event into the ticker and today's events into the
   history, now titled Notifications & Events.
 - Put every popup page on the calendar's margins and spacing.
-- Added producer-named notification actions and individual dismissal to standalone
+- Added application-named notification actions and individual dismissal to standalone
   and grouped history cards while preserving default-action and application
   fallback behavior.
 - Kept wrapped notification action controls inside their cards with 44 px input
   targets, visible focus, and distinct hover/pressed states.
 - Improved notification card rhythm, bounded priority-banner content, popup
-  clearance, session glyph sizing, and suite casing.
+  clearance, session glyph sizing, and casing.
 - Made adaptive width refresh when Plasma moves an ancestor AppletContainer
   without changing the applet root's local geometry.
 - Added native Bluetooth pairing access through the installed KDE wizard.
 - Made formatted notification text expandable and improved bell-count geometry.
-- Added a pinned Lucide subset for suite-owned action chrome while protecting the
-  animated bell, weather treatment, and custom tray work.
-- Mirrored the panel allocation contract used by Ambient Tette without adding
+- Added a pinned Lucide subset for Temperance's button icons, leaving the
+  animated bell, weather treatment, and custom tray work as they were.
+- Mirrored the panel allocation contract used by Tettegouche's Ambient without adding
   cross-repository runtime ownership.
 
 ## 1.1.0 — 2026-09-08

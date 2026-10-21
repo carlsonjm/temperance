@@ -49,7 +49,7 @@ two taking the nearer, and a second tap on it closes the page.
 Pulled 16 px away from the bar, more than a tap's wobble and two thirds of a
 24 px bar, the controls grow out of the bar into a strip of their own beside it,
 whole at once, however far the finger has gone. There each control is 78 px
-from the next, about 16 mm on the Z13, with its mark at 40 px, and the strip is
+from the next, about 16 mm on an ASUS ROG Flow Z13, with its mark at 40 px, and the strip is
 placed so the control pressed, or the nearer one to a press between two, comes
 out under the finger, kept on the screen. That control is chosen first. The
 finger then chooses by how far it slides, a control for every 78 px; where the
