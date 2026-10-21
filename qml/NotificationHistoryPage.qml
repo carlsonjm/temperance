@@ -252,20 +252,31 @@ Item {
                 font.weight: Font.Medium
                 color: page.focusArrivals ? tone.text : tone.secondaryText
             }
+            // How many, and when: one time when they all came in the same
+            // minute. It takes the room left beside the label and Clear, and
+            // is cut short there rather than run under Clear.
             PlasmaComponents.Label {
                 objectName: "notificationFocusSpan"
                 Layout.fillWidth: true
+                Layout.preferredWidth: 0
+                Layout.minimumWidth: 0
                 visible: !!page.focusArrivals
                 horizontalAlignment: Text.AlignRight
-                text: page.focusArrivals
-                    ? i18nc("@label how many came in during Do Not Disturb, and from when to when", "%1 · %2 to %3",
-                        page.focusArrivals.count, page.formatTime(page.focusArrivals.from), page.formatTime(page.focusArrivals.to))
-                    : ""
+                text: {
+                    if (!page.focusArrivals) return "";
+                    const from = page.formatTime(page.focusArrivals.from);
+                    const to = page.formatTime(page.focusArrivals.to);
+                    return from === to
+                        ? i18nc("@label how many came in during Do Not Disturb, and when", "%1 · %2",
+                            page.focusArrivals.count, from)
+                        : i18nc("@label how many came in during Do Not Disturb, and from when to when", "%1 · %2 to %3",
+                            page.focusArrivals.count, from, to);
+                }
                 font.pixelSize: 13
                 color: tone.secondaryText
-                elide: Text.ElideLeft
+                elide: Text.ElideRight
+                maximumLineCount: 1
             }
-
             PlasmaComponents.ToolButton {
                 text: i18n("Clear")
                 display: PlasmaComponents.AbstractButton.TextOnly
@@ -458,6 +469,15 @@ Item {
                             glyph: "trash-2"
                             implicitWidth: 20; implicitHeight: 20
                         }
+                        // A plain round wash on hover and press: Plasma's own
+                        // button frame breaks up at this small size.
+                        background: Rectangle {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            radius: height / 2
+                            color: clearGroupButton.down ? tone.wash(0.20) : clearGroupButton.hovered ? tone.wash(0.12) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                        }
                         display: PlasmaComponents.AbstractButton.IconOnly
                         onClicked: page.notificationModel.close(
                             page.notificationModel.index(historyItem.index, 0))
@@ -477,6 +497,15 @@ Item {
                         contentItem: SuiteIcon {
                             glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
                             implicitWidth: 20; implicitHeight: 20
+                        }
+                        // A plain round wash on hover and press: Plasma's own
+                        // button frame breaks up at this small size.
+                        background: Rectangle {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            radius: height / 2
+                            color: expandGroupButton.down ? tone.wash(0.20) : expandGroupButton.hovered ? tone.wash(0.12) : "transparent"
+                            Behavior on color { ColorAnimation { duration: 120 } }
                         }
                         display: PlasmaComponents.AbstractButton.IconOnly
                         text: historyItem.isGroupExpanded
