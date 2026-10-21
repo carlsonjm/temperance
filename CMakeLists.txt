@@ -352,6 +352,18 @@ if(BUILD_TESTING)
             $<TARGET_FILE:temperance-panel-load-test>
             ${CMAKE_CURRENT_BINARY_DIR}/bin)
     set_tests_properties(temperance_panel_load PROPERTIES TIMEOUT 30)
+    add_executable(temperance-first-open-test tests/FirstOpenTest.cpp)
+    target_link_libraries(temperance-first-open-test PRIVATE
+        Qt6::Widgets Qt6::Quick Qt6::Test KF6::ConfigGui Plasma::Plasma Plasma::PlasmaQuick KF6::Package)
+    add_dependencies(temperance-first-open-test co.goodinput.temperance)
+    foreach(page tray notifications control calendar)
+        add_test(NAME temperance_first_open_${page}
+            COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/run-panel-test.sh
+                $<TARGET_FILE:temperance-first-open-test>
+                ${CMAKE_CURRENT_BINARY_DIR}/bin)
+        set_tests_properties(temperance_first_open_${page} PROPERTIES
+            ENVIRONMENT "TEMPERANCE_FIRST_OPEN_PAGE=${page}" TIMEOUT 30)
+    endforeach()
 endif()
 
 if(BUILD_TESTING)

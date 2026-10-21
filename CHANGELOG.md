@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Every page is right the first time it opens after Plasma starts. The tray's
+  settings buttons no longer land over the System Tray title, and Do not
+  disturb no longer goes missing from Notifications & Events until the page
+  is closed and opened again. The header's last button now ends on the page's
+  margin line on every page.
 - Turning off the notification ticker and bell hands notifications back to
   Plasma's own Notifications widget, which shows them with its bell in the
   tray. Before, they were kept but shown nowhere. Turned back on, Temperance
