@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning off the notification ticker and bell hands notifications back to
+  Plasma's own Notifications widget, which shows them with its bell in the
+  tray. Before, they were kept but shown nowhere. Turned back on, Status
+  shows them again; the history stays as it was throughout.
 - Control Center's More menu always opens straight under the power row. A
   short Control Center, on a computer with no battery or brightness, used to
   push it up over the row; Control Center now keeps room for it.
