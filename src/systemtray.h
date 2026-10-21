@@ -19,6 +19,7 @@
 #include "shared/PanelRoom.h"
 
 class QQuickItem;
+class QQmlEngine;
 
 namespace Plasma
 {
@@ -161,11 +162,14 @@ private:
     void initSettingsAndRegistry();
     void watchPlasmaNotifications(Plasma::Applet *applet);
     void setPlasmaNotificationsShown(bool shown);
+    void releasePlasmaNotificationPopups();
 
     KConfigWatcher::Ptr m_configWatcher;
     bool m_xwaylandClientsScale = true;
     bool m_plasmaNotificationsWanted = false;
     bool m_plasmaNotificationsShown = false;
+    // The engine Plasma's Notifications widget ran in, which keeps its popups.
+    QPointer<QQmlEngine> m_plasmaNotificationsEngine;
 
     QPointer<SystemTraySettings> m_settings;
     QPointer<PlasmoidRegistry> m_plasmoidRegistry;

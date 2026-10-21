@@ -39,6 +39,8 @@
 #include <QMetaMethod>
 #include <QMetaObject>
 #include <QPointer>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QQueue>
 #include <QQuickItem>
 #include <QQuickWindow>
@@ -817,19 +819,50 @@ void SystemTray::setPlasmaNotificationsShown(bool shown)
 void SystemTray::watchPlasmaNotifications(Plasma::Applet *applet)
 {
     connect(applet, &QObject::destroyed, this, [this]() {
+        // Once now and once its item is surely gone, whichever goes last.
+        releasePlasmaNotificationPopups();
+        QTimer::singleShot(0, this, &SystemTray::releasePlasmaNotificationPopups);
         setPlasmaNotificationsShown(false);
     });
     QTimer::singleShot(0, applet, [this, applet]() {
         if (!m_plasmaNotificationsWanted) {
             return;
         }
-        if (PlasmaQuick::AppletQuickItem::itemForApplet(applet)) {
+        if (auto *item = PlasmaQuick::AppletQuickItem::itemForApplet(applet)) {
+            m_plasmaNotificationsEngine = qmlEngine(item);
             setPlasmaNotificationsShown(true);
         } else {
             qCWarning(SYSTEM_TRAY) << "Plasma's Notifications widget did not load;"
                                    << "Status keeps showing notifications";
         }
     });
+}
+
+// The widget's popups live in a singleton of its own that outlives it. When
+// the last such widget goes, the singleton fails before it lets go of it, so
+// its popups keep coming, placed at the screen's corner. Let go of it here,
+// unless another Notifications widget elsewhere still shows them.
+void SystemTray::releasePlasmaNotificationPopups()
+{
+    if (!m_plasmaNotificationsEngine || QCoreApplication::closingDown()) {
+        return;
+    }
+    QQmlComponent release(m_plasmaNotificationsEngine);
+    release.setData(QByteArrayLiteral("import QtQml\n"
+                                      "import plasma.applet.org.kde.plasma.notifications as Notifications\n"
+                                      "QtObject {\n"
+                                      "    Component.onCompleted: {\n"
+                                      "        if (Notifications.Globals.plasmoidItems.length === 0) {\n"
+                                      "            Notifications.Globals.plasmoidItem = null;\n"
+                                      "            Notifications.Globals.plasmoid = null;\n"
+                                      "        }\n"
+                                      "    }\n"
+                                      "}\n"),
+                    QUrl());
+    const std::unique_ptr<QObject> done(release.create());
+    if (!done) {
+        qCWarning(SYSTEM_TRAY) << "Could not release Plasma's notification popups:" << release.errorString();
+    }
 }
 
 void SystemTray::startApplet(const QString &pluginId)
