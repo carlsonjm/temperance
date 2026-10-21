@@ -19,9 +19,13 @@ class FakeCore : public QObject
 
 public:
     QList<uint> ended;
+    QList<uint> endedInView;
+    int seen = 0;
 
 public Q_SLOTS:
     Q_SCRIPTABLE void FocusEnded(uint notifications) { ended.append(notifications); }
+    Q_SCRIPTABLE void FocusEndedInView(uint notifications) { endedInView.append(notifications); }
+    Q_SCRIPTABLE void NotificationsSeen() { ++seen; }
 };
 
 class CoreFocusTest : public QObject
@@ -34,6 +38,8 @@ private Q_SLOTS:
         CoreFocus focus;
         focus.start();
         focus.ended(3);
+        focus.endedInView(3);
+        focus.seen();
         QTest::qWait(100);
         QVERIFY(!QDBusConnection::sessionBus().interface()->isServiceRegistered(QLatin1String(CoreFocus::Service)));
     }
@@ -53,6 +59,12 @@ private Q_SLOTS:
         // A count below zero is sent as nothing came in.
         focus.ended(-2);
         QTRY_COMPARE(core.ended, (QList<uint>{7u, 0u}));
+        // Ended with the history open, and the history opened.
+        focus.endedInView(4);
+        QTRY_COMPARE(core.endedInView, QList<uint>{4u});
+        focus.seen();
+        QTRY_COMPARE(core.seen, 1);
+        QCOMPARE(core.ended.size(), 2);
 
         QSignalSpy asked(&focus, &CoreFocus::openRequested);
         const QDBusMessage signal = QDBusMessage::createSignal(QLatin1String(CoreFocus::Path), QLatin1String(CoreFocus::Interface),

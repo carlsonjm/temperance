@@ -28,6 +28,12 @@ public:
     // Do Not Disturb ended with this many notifications come in. Core is
     // told only while it runs; it is never started for this.
     Q_INVOKABLE void ended(int notifications);
+    // The same, ended inside the notification history, where the person
+    // already sees what came in: Core puts nothing on the island.
+    Q_INVOKABLE void endedInView(int notifications);
+    // The history was opened, so what came in is seen: Core takes its island
+    // about it down.
+    Q_INVOKABLE void seen();
 
 Q_SIGNALS:
     // Core asked to see the notifications that came in.
@@ -37,5 +43,6 @@ private Q_SLOTS:
     void requested();
 
 private:
+    void send(const QString &method, const QVariantList &arguments = {});
     bool m_started = false;
 };

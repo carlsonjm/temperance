@@ -29,6 +29,8 @@ QtObject {
     readonly property color secondaryText: dark ? "#A8FFFFFF" : wash(0.66)
     readonly property color faintText: dark ? "#88FFFFFF" : wash(0.53)
     readonly property color errorText: dark ? "#FFB4A9" : (theme ? theme.negativeTextColor : "#DA4453")
+    // The edge of what came in during Do Not Disturb, in the history.
+    readonly property color focusMark: dark ? "#F2B544" : "#9A6200"
 
     // The popup's own panel, and the solid controls and lines drawn on it.
     readonly property color surface: dark ? suite("#141414") : ground
