@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> · <a href="#controls">Controls</a> · <a href="docs/README.md">Docs</a> · <a href="https://shuffleplasma.com">Part of Shuffle</a>
+  <a href="#install">Install</a> · <a href="#controls">Controls</a> · <a href="docs/README.md">Docs</a> · <a href="#used-in-shuffle">Used in Shuffle</a>
 </p>
 
 <p align="center">Temperance is a Status Bar for KDE Plasma 6: notifications, weather, battery, common controls, the System Tray and the time, in one panel widget.</p>
@@ -74,7 +74,7 @@ An app's notifications group together and keep the app's own actions, such as re
 <details>
 <summary>Calendar, Control Center and tray</summary>
 
-The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only and refresh every few minutes. Today's next timed event shows in the bar.
+The calendar is a small card in the corner. Link calendars by pasting their private iCal address from Google, iCloud or Outlook; they are read-only and refresh every ten minutes. Today's next timed event shows in the bar.
 
 Control Center's header always shows Shut down and keeps Lock and Log out behind More. Each other control can stand, wait behind More, or hide. Controls the machine lacks are left out. Control Center and the tray work with notifications or weather off.
 </details>
@@ -110,9 +110,9 @@ cmake --build build
 The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma Workspace 6.7.4; `tools/upstream.sh` records it file by file.
 </details>
 
-## Part of Shuffle
+## Used in Shuffle
 
-Temperance is one open-source piece of Shuffle, a touch-first desktop for KDE Plasma, where it is the Status Bar. The others are [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry) and [Split Rock](https://github.com/carlsonjm/split-rock). Get it all at [shuffleplasma.com](https://shuffleplasma.com).
+Temperance works on any Plasma 6 panel. [Shuffle](https://shuffleplasma.com), a touch-first desktop built on KDE Plasma, uses it as its Status Bar, alongside the open-source [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry), [Shuffle Keyboard](https://github.com/carlsonjm/shuffle-keyboard) and [Split Rock](https://github.com/carlsonjm/split-rock).
 
 ## License
 
