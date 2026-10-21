@@ -1238,11 +1238,18 @@ ContainmentItem {
         return added;
     }
 
-    // Split Rock's Core asked to see what came in during Do Not Disturb.
+    // Split Rock's Core asked to see what came in during Do Not Disturb. The
+    // history opens; where it is open already, as when Do Not Disturb was
+    // turned off from it, it goes back to its top and lights what came in,
+    // so the tap is answered either way.
+    signal focusArrivalsShown()
     Connections {
         target: Plasmoid.coreFocus
         enabled: !root.needsUpdate
-        function onOpenRequested() { root.showStatusPage("notifications"); }
+        function onOpenRequested() {
+            root.showStatusPage("notifications");
+            root.focusArrivalsShown();
+        }
     }
 
     // The server marks what arrives while do not disturb is on.

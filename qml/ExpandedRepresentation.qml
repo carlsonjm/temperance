@@ -749,6 +749,10 @@ Item {
                 return owner && owner.name ? [owner.vendor, owner.name].filter(part => !!part).join(" ") : "";
             }
             formatTime: value => statusClock.timeString(value)
+            Connections {
+                target: root
+                function onFocusArrivalsShown() { Qt.callLater(notificationPage.showArrivals) }
+            }
         }
 
         PlasmoidPopupsContainer {

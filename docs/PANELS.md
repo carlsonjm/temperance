@@ -129,4 +129,7 @@ as added during it since it went on, and tells Split Rock's Core with
 `FocusEnded`, so Core can say once on the island what came in. It never starts
 Core for this; without Core nothing is sent. When Core sends
 `OpenNotifications`, the person tapped that island, and the notification
-history opens as from the bell (`src/corefocus.h`).
+history opens as from the bell (`src/corefocus.h`). Where the history is
+open already, as when Do Not Disturb was turned off from it, it goes back to
+its top instead, and the cards that came in during Do Not Disturb brighten for
+a moment and settle back, so the tap is answered either way.

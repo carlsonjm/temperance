@@ -43,6 +43,26 @@ Item {
     readonly property int cardPaddingH: 12
     readonly property int cardPaddingV: 8
 
+    // What came in during Do Not Disturb, lit once when Core's island is
+    // tapped: the history goes back to its top and those cards brighten and
+    // settle back, so a tap with the history already open still answers.
+    property real arrivalPulse: 0
+    function showArrivals() {
+        historyView.positionViewAtBeginning();
+        arrivalAnimation.restart();
+    }
+    function cameDuringFocus(row) {
+        const model = page.notificationModel;
+        return !!model && Boolean(model.data(model.index(row, 0),
+            NotificationManager.Notifications.WasAddedDuringInhibitionRole));
+    }
+    SequentialAnimation {
+        id: arrivalAnimation
+        NumberAnimation { target: page; property: "arrivalPulse"; to: 1; duration: 180; easing.type: Easing.OutCubic }
+        PauseAnimation { duration: 700 }
+        NumberAnimation { target: page; property: "arrivalPulse"; to: 0; duration: 600; easing.type: Easing.InOutQuad }
+    }
+
     readonly property real naturalHeight: notificationContent.implicitHeight + standardSpacing + surfaceSpacing
     implicitHeight: Math.min(maximumHeight, naturalHeight)
 
@@ -126,7 +146,8 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: eventCardContent.implicitHeight + page.cardPaddingV * 2
                     radius: 10
-                    color: tone.wash(0.07)
+                    color: tone.wash(0.07 + (page.arrivalPulse > 0 && page.cameDuringFocus(historyItem.index)
+                        ? 0.11 * page.arrivalPulse : 0))
                     border.width: 0
                     Accessible.role: Accessible.StaticText
                     Accessible.name: [eventCard.modelData.title, eventTimes.text].join(", ")
