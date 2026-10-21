@@ -748,6 +748,12 @@ Item {
                 return owner && owner.name ? [owner.vendor, owner.name].filter(part => !!part).join(" ") : "";
             }
             formatTime: value => statusClock.timeString(value)
+            focusArrivals: root.focusArrivals
+            cameDuringFocus: (model, modelIndex) => root.cameDuringFocus(model, modelIndex)
+            Connections {
+                target: root
+                function onFocusArrivalsShown() { Qt.callLater(notificationPage.showArrivals) }
+            }
         }
 
         PlasmoidPopupsContainer {

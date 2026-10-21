@@ -121,3 +121,21 @@ never polls. A reply with this schema, version 1 and `presenting` true makes
 and neighbours are not measured. Another version, a bar not presenting, an error
 or no service leaves the width to the neighbour measurement in `ARCHITECTURE.md`
 § Width, and the service leaving hands it back there. A fixed width stays fixed.
+
+### Split Rock's Core
+
+When Do Not Disturb ends, Temperance counts the notifications the server marked
+as added during it since it went on, and tells Split Rock's Core with
+`FocusEnded`, so Core can say once on the island what came in. Turned off from
+the notification history itself, the person is already looking at what came
+in, so Temperance sends `FocusEndedInView` instead and Core raises no island.
+Opening the history any way at all sends `NotificationsSeen`, and Core takes
+its island down. It never starts Core for any of this; without Core nothing is
+sent. When Core sends `OpenNotifications`, the person tapped that island, and
+the notification history opens at its top as from the bell
+(`src/corefocus.h`).
+
+What came in during the last Do Not Disturb leads the history under "While
+you were focused", with how many and from when to when, each card with a 3 px
+amber edge and a stronger wash; the rest follow under "Earlier". The marks
+stay until the history closes after showing them.

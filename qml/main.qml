@@ -1223,6 +1223,73 @@ ContainmentItem {
     onDoNotDisturbChanged: {
         railNotifications.invalidateFilter();
         checkedNotifications.invalidateFilter();
+        if (doNotDisturb) {
+            doNotDisturbSince = new Date();
+        } else if (doNotDisturbSince) {
+            const came = addedSince(doNotDisturbSince);
+            if (came > 0)
+                focusArrivals = { count: came, from: doNotDisturbSince, to: new Date(), seen: notificationsInView };
+            // Turned off from the history itself, what came in is in front
+            // of the person, marked there: Core raises no island.
+            if (Plasmoid.coreFocus) {
+                if (notificationsInView) Plasmoid.coreFocus.endedInView(came);
+                else Plasmoid.coreFocus.ended(came);
+            }
+            doNotDisturbSince = null;
+        }
+    }
+
+    // When Do Not Disturb went on, to count what arrived while it lasted.
+    property var doNotDisturbSince: doNotDisturb ? new Date() : null
+
+    // What came in during the last Do Not Disturb: how many, from when to
+    // when, and whether the history has shown them. The history marks them
+    // under "While you were focused" until it closes after showing them.
+    property var focusArrivals: null
+    readonly property bool notificationsInView: systemTrayState.expanded && !systemTrayState.activeApplet
+        && systemTrayState.page === "notifications"
+    onNotificationsInViewChanged: {
+        if (notificationsInView) {
+            // Seen, however the history was opened: Core's island about
+            // them goes.
+            if (Plasmoid.coreFocus) Plasmoid.coreFocus.seen();
+            if (focusArrivals && !focusArrivals.seen)
+                focusArrivals = Object.assign({}, focusArrivals, { seen: true });
+        } else if (focusArrivals && focusArrivals.seen) {
+            focusArrivals = null;
+        }
+    }
+    // Whether a notification came in during the last Do Not Disturb.
+    function cameDuringFocus(model, modelIndex) {
+        if (!focusArrivals || !addedDuringDoNotDisturb(model, modelIndex)) return false;
+        const created = model.data(modelIndex, NotificationManager.Notifications.CreatedRole);
+        return !!created && !!created.getTime && created.getTime() >= focusArrivals.from.getTime()
+            && created.getTime() <= focusArrivals.to.getTime();
+    }
+
+    // Notifications the server marked as added during Do Not Disturb since
+    // that moment.
+    function addedSince(since) {
+        let added = 0;
+        for (let row = 0; row < notificationHistory.rowCount(); ++row) {
+            const modelIndex = notificationHistory.index(row, 0);
+            if (!addedDuringDoNotDisturb(notificationHistory, modelIndex)) continue;
+            const created = notificationHistory.data(modelIndex, NotificationManager.Notifications.CreatedRole);
+            if (created && created.getTime && created.getTime() >= since.getTime()) ++added;
+        }
+        return added;
+    }
+
+    // Split Rock's Core asked to see what came in during Do Not Disturb: the
+    // history opens at its top, where they are marked.
+    signal focusArrivalsShown()
+    Connections {
+        target: Plasmoid.coreFocus
+        enabled: !root.needsUpdate
+        function onOpenRequested() {
+            root.showStatusPage("notifications");
+            root.focusArrivalsShown();
+        }
     }
 
     // The server marks what arrives while do not disturb is on.

@@ -43,6 +43,41 @@ Item {
     readonly property int cardPaddingH: 12
     readonly property int cardPaddingV: 8
 
+    // What came in during the last Do Not Disturb: { count, from, to }, or
+    // null. Those notifications lead the history under "While you were
+    // focused", each marked, and the rest follow under "Earlier".
+    property var focusArrivals: null
+    property var cameDuringFocus: (model, modelIndex) => false
+    function arrival(row) {
+        const model = page.notificationModel;
+        return !!page.focusArrivals && !!model && page.cameDuringFocus(model, model.index(row, 0));
+    }
+    // The row "Earlier" stands above: the first one after the arrivals that
+    // is not one of them, or -1.
+    readonly property int firstEarlierRow: {
+        const model = page.notificationModel;
+        if (!page.focusArrivals || !model) return -1;
+        const rows = historyView.count;
+        let seenArrival = false;
+        for (let row = 0; row < rows; ++row) {
+            const isGroup = Boolean(model.data(model.index(row, 0), NotificationManager.Notifications.IsGroupRole));
+            if (isGroup) continue;
+            if (page.arrival(row)) {
+                seenArrival = true;
+                continue;
+            }
+            if (!seenArrival) return -1;
+            // A group's heading goes under "Earlier" with its first card.
+            return row > 0 && Boolean(model.data(model.index(row - 1, 0), NotificationManager.Notifications.IsGroupRole))
+                ? row - 1 : row;
+        }
+        return -1;
+    }
+    // Back to the top, where what came in is.
+    function showArrivals() {
+        historyView.positionViewAtBeginning();
+    }
+
     readonly property real naturalHeight: notificationContent.implicitHeight + standardSpacing + surfaceSpacing
     implicitHeight: Math.min(maximumHeight, naturalHeight)
 
@@ -207,13 +242,28 @@ Item {
             visible: page.notificationModel.count > 0 || page.demoNotificationVisible
 
             PlasmaComponents.Label {
-                Layout.fillWidth: true
-                text: page.notificationModel.unreadNotificationsCount > 0
+                objectName: "notificationGroupLabel"
+                Layout.fillWidth: !page.focusArrivals
+                text: page.focusArrivals ? i18n("While you were focused")
+                    : page.notificationModel.unreadNotificationsCount > 0
                     ? i18np("%1 unread", "%1 unread", page.notificationModel.unreadNotificationsCount)
                     : i18n("Recent")
                 font.pixelSize: 13
                 font.weight: Font.Medium
+                color: page.focusArrivals ? tone.text : tone.secondaryText
+            }
+            PlasmaComponents.Label {
+                objectName: "notificationFocusSpan"
+                Layout.fillWidth: true
+                visible: !!page.focusArrivals
+                horizontalAlignment: Text.AlignRight
+                text: page.focusArrivals
+                    ? i18nc("@label how many came in during Do Not Disturb, and from when to when", "%1 · %2 to %3",
+                        page.focusArrivals.count, page.formatTime(page.focusArrivals.from), page.formatTime(page.focusArrivals.to))
+                    : ""
+                font.pixelSize: 13
                 color: tone.secondaryText
+                elide: Text.ElideLeft
             }
 
             PlasmaComponents.ToolButton {
@@ -341,16 +391,34 @@ Item {
                         page.launchApplication(desktopEntry);
                     }
                 }
+                // Came in during the last Do Not Disturb, and the first of
+                // the rest, under "Earlier".
+                readonly property bool arrived: !isGroup && page.arrival(index)
+                readonly property bool startsEarlier: index === page.firstEarlierRow
                 width: historyView.width
-                implicitHeight: isGroup ? 44 : notificationCard.height + 8
+                implicitHeight: (isGroup ? 44 : notificationCard.height + 8) + (startsEarlier ? earlierLabel.height : 0)
                 height: implicitHeight
+
+                PlasmaComponents.Label {
+                    id: earlierLabel
+                    objectName: "notificationEarlierLabel"
+                    visible: historyItem.startsEarlier
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: visible ? implicitHeight + 12 : 0
+                    topPadding: 8
+                    text: i18nc("@title the notifications from before Do Not Disturb", "Earlier")
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    color: tone.secondaryText
+                }
 
                 RowLayout {
                     id: groupHeading
                     visible: historyItem.isGroup
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                    y: earlierLabel.height + (44 - height) / 2
                     // The icon stands where a card's padding ends, so the name
                     // after it lines up with the cards' text below.
                     anchors.leftMargin: page.cardPaddingH
@@ -442,12 +510,28 @@ Item {
                     visible: !historyItem.isGroup
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.top: parent.top
+                    anchors.top: earlierLabel.bottom
                     height: notificationCardContent.implicitHeight
                         + page.cardPaddingV * 2
                     radius: 10
-                    color: tone.wash(0.07)
+                    color: tone.wash(historyItem.arrived ? 0.12 : 0.07)
                     border.width: 0
+
+                    // What came in during Do Not Disturb: a 3 px edge that
+                    // follows the card's corners.
+                    Item {
+                        objectName: "notificationFocusMark"
+                        visible: historyItem.arrived
+                        width: 3
+                        height: parent.height
+                        clip: true
+                        Rectangle {
+                            width: notificationCard.radius * 2
+                            height: parent.height
+                            radius: notificationCard.radius
+                            color: tone.focusMark
+                        }
+                    }
 
                     RowLayout {
                         id: notificationCardContent
