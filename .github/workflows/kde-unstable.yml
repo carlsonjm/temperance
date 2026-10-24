@@ -11,6 +11,8 @@ on:
     - cron: "27 7 * * *"
   workflow_dispatch:
   push:
+    # Branches only: a release tag starts nothing.
+    branches: ['**']
     paths:
       - ".github/workflows/kde-unstable.yml"
       - "CMakeLists.txt"
