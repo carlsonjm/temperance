@@ -17,9 +17,6 @@
 
 <p align="center">Temperance is a Status Bar for KDE Plasma 6: notifications, weather, battery, common controls, the System Tray and the time, in one panel widget.</p>
 
-<p align="center"><img src="assets/readme/showcase.webp" alt="Temperance's Control Center open above the Status Bar" width="100%"></p>
-<p align="center"><sub>Control Center, open above the bar.</sub></p>
-
 ## What you get
 
 <table>
