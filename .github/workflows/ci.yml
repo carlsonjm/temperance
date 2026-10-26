@@ -3,7 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    # A Markdown-only change runs no build.
+    paths-ignore: ['**.md']
   pull_request:
+    # A Markdown-only change runs no build.
+    paths-ignore: ['**.md']
   workflow_dispatch:
 
 concurrency:
