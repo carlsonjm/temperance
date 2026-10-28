@@ -1,7 +1,6 @@
 # Temperance
 
-Native Plasma widget build for x86_64 systems using Plasma 6.7.4, Qt 6.11.2,
-and KDE Frameworks 6.29.
+Native Plasma widget, built for the Plasma and Qt of the system that built it.
 
 ## Install
 

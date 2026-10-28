@@ -54,12 +54,12 @@ Tap an open page's icon again to close it. Every other input is in [docs/INPUT.m
 
 ## Install
 
-In a release's folder, run `./install-system.sh`, then add **Temperance** from **Add Widgets** ([details](packaging/README.md)).
+From a clone, run `./packaging/build-release.sh`, then `./install-system.sh` in the folder it makes under `release/`, and add **Temperance** from **Add Widgets** ([details](packaging/README.md)).
 
 <details>
 <summary>Requirements, upgrading and removing</summary>
 
-The release targets x86_64 Plasma 6.7.4, Qt 6.11.2 and KDE Frameworks 6.29 on a horizontal Wayland panel, and needs KCalendarCore. Its native plugin runs only on the Plasma and Qt it was built for; elsewhere it says it needs an update. It installs system-wide rather than as a user-local `.plasmoid`.
+The build needs the development files under **For developers**, and the widget needs KCalendarCore and a horizontal Wayland panel. Its native plugin runs only on the Plasma and Qt it was built against; rebuild after a Plasma or Qt update. It installs system-wide rather than as a user-local `.plasmoid`.
 
 The package identity changed in 1.1.0: remove 1.0.0 and add Temperance as a new widget. `./uninstall-system.sh` removes it and puts Plasma's System Tray back.
 </details>
