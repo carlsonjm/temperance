@@ -101,7 +101,7 @@ cd temperance
 
 ### 3. Install
 
-Build it, which takes a few minutes and ends with **Built
+Build it. It ends with **Built
 release/Temperance-…tar.gz**:
 
 ```bash
