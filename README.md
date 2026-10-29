@@ -67,20 +67,26 @@ Check your Plasma version. It must say 6.7 or higher:
 plasmashell --version
 ```
 
-Bring the computer up to date, then restart it. Temperance runs only on the
-Plasma and Qt it was built against:
+Bring the computer up to date. If you just did this for another part of the
+suite, skip it:
 
 ```bash
 sudo pacman -Syu
 ```
 
-After the restart, open Konsole again and install what the build and its
-checks need, KDE's calendar library (`kcalendarcore`) among them. Type your
-password when asked, and answer `Y`:
+Restart the computer only if that update installed a new `kwin`,
+`plasma-workspace` or kernel (`linux`, or `linux-cachyos` on CachyOS): Temperance is built against what is
+installed, so that has to be what is running.
+
+Then install what the build needs. Type your password when asked, and answer
+`Y`:
 
 ```bash
 sudo pacman -S --needed base-devel git cmake ninja python dbus extra-cmake-modules qt6-base qt6-declarative qt6-tools kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui kpackage libplasma plasma-workspace pulseaudio-qt libkscreen layer-shell-qt powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons kdeplasma-addons ttf-dejavu noto-fonts
 ```
+
+If pacman says a package **is up to date -- skipping**, or **there is nothing
+to do**, that is normal: it is already installed.
 
 ### 2. Download
 
