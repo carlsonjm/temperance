@@ -54,15 +54,113 @@ Tap an open page's icon again to close it. Every other input is in [docs/INPUT.m
 
 ## Install
 
-From a clone, run `./packaging/build-release.sh`, then `./install-system.sh` in the folder it makes under `release/`, and add **Temperance** from **Add Widgets** ([details](packaging/README.md)).
+These steps are for Arch Linux or CachyOS running KDE Plasma 6.7 or newer in a
+Wayland session, the default on both. Temperance is built on your computer
+from this page's code, so you type a few commands into **Konsole**, Plasma's
+terminal. Open it from the application launcher.
 
-<details>
-<summary>Requirements, upgrading and removing</summary>
+### 1. What you need
 
-The build needs the development files under **For developers**, and the widget needs KCalendarCore and a horizontal Wayland panel. Its native plugin runs only on the Plasma and Qt it was built against; rebuild after a Plasma or Qt update. It installs system-wide rather than as a user-local `.plasmoid`.
+Check your Plasma version. It must say 6.7 or higher:
 
-The package identity changed in 1.1.0: remove 1.0.0 and add Temperance as a new widget. `./uninstall-system.sh` removes it and puts Plasma's System Tray back.
-</details>
+```bash
+plasmashell --version
+```
+
+Bring the computer up to date, then restart it. Temperance runs only on the
+Plasma and Qt it was built against:
+
+```bash
+sudo pacman -Syu
+```
+
+After the restart, open Konsole again and install what the build and its
+checks need, KDE's calendar library (`kcalendarcore`) among them. Type your
+password when asked, and answer `Y`:
+
+```bash
+sudo pacman -S --needed base-devel git cmake ninja python dbus extra-cmake-modules qt6-base qt6-declarative qt6-tools kcalendarcore kconfig kcoreaddons kiconthemes ki18n kitemmodels kjobwidgets kio kservice kstatusnotifieritem kwindowsystem kxmlgui kpackage libplasma plasma-workspace pulseaudio-qt libkscreen layer-shell-qt powerdevil kdeclarative kcmutils kirigami ksvg breeze-icons kdeplasma-addons ttf-dejavu noto-fonts
+```
+
+### 2. Download
+
+This puts the code in a folder called `temperance` in your home folder. Use
+`git`, not GitHub's Download ZIP: the build reads the download's history.
+
+```bash
+cd ~
+git clone https://github.com/carlsonjm/temperance.git
+cd temperance
+```
+
+### 3. Install
+
+Build it, which takes a few minutes and ends with **Built
+release/Temperance-…tar.gz**:
+
+```bash
+./packaging/build-release.sh
+```
+
+Then install what it built. It asks for your password in Konsole (nothing
+shows as you type) and restarts the panel, which blinks out for a moment; your
+windows stay open:
+
+```bash
+cd release/Temperance-*/
+./install-system.sh
+```
+
+It ends with **Installed Temperance and restarted the panel**.
+
+### 4. Put it on the panel
+
+1. Right-click an empty part of the panel and choose **Add Widgets…**.
+2. Search for **Temperance** and drag it onto the panel. It needs a
+   horizontal panel, such as Plasma's own along the bottom.
+3. Temperance brings its own tray, notifications and clock. Remove Plasma's
+   **System Tray** and **Digital Clock** from that panel, so they don't show
+   twice: right-click each and choose **Remove**, or remove them in the
+   panel's edit mode.
+
+### 5. Check it worked
+
+- The bar shows a bell, a network icon, the battery where there is one, a tray
+  icon and the time.
+- Tap the clock: a month calendar opens. Tap it again to close it.
+- Tap the network icon: Control Center opens, with volume, brightness and
+  connections.
+
+**Configure Temperance**, in the widget's right-click menu, sets the highlight
+colour, which tray entries show, and linked calendars.
+
+### 6. Update
+
+After every Plasma or Qt update, the panel says Temperance needs an update.
+Build and install it again, which also brings in a newer Temperance:
+
+```bash
+cd ~/temperance
+git pull
+./packaging/build-release.sh
+cd release/Temperance-*/
+./install-system.sh
+```
+
+Upgrading from 1.0.0: remove the old widget from the panel first, then add
+Temperance as a new widget.
+
+### 7. Uninstall
+
+```bash
+cd ~/temperance
+./packaging/uninstall-system.sh
+```
+
+It asks for your password, takes Temperance off every panel and puts Plasma's
+System Tray back in its place, so notifications show again. Put the clock back
+from **Add Widgets…**: **Digital Clock**. To delete the download too, run
+`rm -rf ~/temperance`.
 
 ## Details
 

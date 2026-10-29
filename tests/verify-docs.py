@@ -111,7 +111,7 @@ def check_live_hygiene() -> None:
 WORD_BUDGETS = {
     "AGENTS.md": 345,
     "CLAUDE.md": 60,
-    "README.md": 840,
+    "README.md": 1300,
     "docs/AMBIENT-BOUNDARY.md": 295,
     "docs/ARCHITECTURE.md": 1875,
     "docs/INPUT.md": 1655,
