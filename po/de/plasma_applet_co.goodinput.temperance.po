@@ -1,0 +1,1075 @@
+# German translation of plasma_applet_co.goodinput.temperance.
+# Machine-made first translation; corrections from native speakers are welcome.
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_co.goodinput.temperance\n"
+"Report-Msgid-Bugs-To: https://github.com/carlsonjm/temperance/issues\n"
+"POT-Creation-Date: 2026-10-30 14:21+0000\n"
+"PO-Revision-Date: 2026-10-30 00:00+0000\n"
+"Last-Translator: Claude\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: qml/AbstractItem.qml
+msgid "Disks & devices"
+msgstr "Laufwerke & Geräte"
+
+#: qml/AbstractItem.qml
+msgid "Display configuration"
+msgstr "Bildschirmeinrichtung"
+
+#: qml/AlertBanners.qml qml/NotificationHistoryPage.qml
+msgid "Dismiss"
+msgstr "Schließen"
+
+#: qml/AlertBanners.qml
+msgid "Keep for review"
+msgstr "Zur Durchsicht behalten"
+
+#: qml/AlertBanners.qml qml/NotificationHistoryPage.qml
+msgid "Show more"
+msgstr "Mehr zeigen"
+
+#: qml/AlertBanners.qml
+msgid "System alert"
+msgstr "Systemwarnung"
+
+#: qml/BackgroundAppItem.qml
+msgctxt "@action:inmenu"
+msgid "Quit %1"
+msgstr "%1 beenden"
+
+#: qml/CalendarPage.qml
+msgctxt "@info events not listed"
+msgid "%1 more"
+msgid_plural "%1 more"
+msgstr[0] "%1 weiterer"
+msgstr[1] "%1 weitere"
+
+#: qml/CalendarPage.qml
+msgid "No holidays"
+msgstr "Keine Feiertage"
+
+#: qml/CalendarPage.qml
+msgid "Nothing scheduled"
+msgstr "Nichts geplant"
+
+#: qml/CalendarPage.qml
+msgctxt "@info an event that lasts the whole day"
+msgid "all day"
+msgstr "ganztägig"
+
+#: qml/ConfigAppearance.qml
+msgid "%1 px"
+msgstr "%1 px"
+
+#: qml/ConfigAppearance.qml
+msgid "%1 second"
+msgid_plural "%1 seconds"
+msgstr[0] "%1 Sekunde"
+msgstr[1] "%1 Sekunden"
+
+#: qml/ConfigAppearance.qml
+msgid "Banner lifetime:"
+msgstr "Bannerdauer:"
+
+#: qml/ConfigAppearance.qml
+msgid "Celsius"
+msgstr "Celsius"
+
+#: qml/ConfigAppearance.qml
+msgid "Choose highlight color"
+msgstr "Akzentfarbe wählen"
+
+#: qml/ConfigAppearance.qml
+msgctxt "@action:button"
+msgid "Choose…"
+msgstr "Wählen…"
+
+#: qml/ConfigAppearance.qml
+msgid "Clock font:"
+msgstr "Schrift der Uhr:"
+
+#: qml/ConfigAppearance.qml
+msgid "Clock:"
+msgstr "Uhr:"
+
+#: qml/ConfigAppearance.qml
+msgid "Control Center:"
+msgstr "Kontrollzentrum:"
+
+#: qml/ConfigAppearance.qml
+msgid "Count them under the bell"
+msgstr "Unter der Glocke zählen"
+
+#: qml/ConfigAppearance.qml
+msgid "Desktop entry name"
+msgstr "Name des Desktop-Eintrags"
+
+#: qml/ConfigAppearance.qml
+msgid "Desktop entry name opened by the weather header button"
+msgstr "Name des Desktop-Eintrags, den der Wetter-Knopf in der Kopfzeile öffnet"
+
+#: qml/ConfigAppearance.qml
+msgid "Fahrenheit"
+msgstr "Fahrenheit"
+
+#: qml/ConfigAppearance.qml
+msgid "Hidden"
+msgstr "Ausgeblendet"
+
+#: qml/ConfigAppearance.qml
+msgid "Highlight color:"
+msgstr "Akzentfarbe:"
+
+#: qml/ConfigAppearance.qml
+msgid "In the menu"
+msgstr "Im Menü"
+
+#: qml/ConfigAppearance.qml
+msgid "In the row"
+msgstr "In der Zeile"
+
+#: qml/ConfigAppearance.qml
+msgid "Lock:"
+msgstr "Sperren:"
+
+#: qml/ConfigAppearance.qml
+msgid "Log out:"
+msgstr "Abmelden:"
+
+#: qml/ConfigAppearance.qml
+msgid "Manual width:"
+msgstr "Manuelle Breite:"
+
+#: qml/ConfigAppearance.qml
+msgctxt "@info"
+msgid "No font matches"
+msgstr "Keine Schrift passt"
+
+#: qml/ConfigAppearance.qml
+msgid "Notifications:"
+msgstr "Benachrichtigungen:"
+
+#: qml/ConfigAppearance.qml
+msgid "Plasma's own notifications show them instead."
+msgstr "Stattdessen zeigen die eigenen Benachrichtigungen von Plasma sie an."
+
+#: qml/ConfigAppearance.qml
+msgid "Popup controls:"
+msgstr "Pop-up-Bedienelemente:"
+
+#: qml/ConfigAppearance.qml
+msgid "Responsive layout:"
+msgstr "Anpassungsfähiges Layout:"
+
+#: qml/ConfigAppearance.qml
+msgid "Restart:"
+msgstr "Neu starten:"
+
+#: qml/ConfigAppearance.qml
+msgid "Same as the color scheme"
+msgstr "Wie das Farbschema"
+
+#: qml/ConfigAppearance.qml
+msgid "Scroll notifications in the ticker"
+msgstr "Benachrichtigungen in der Laufschrift durchlaufen lassen"
+
+#: qml/ConfigAppearance.qml
+msgctxt "@info:placeholder"
+msgid "Search fonts"
+msgstr "Schriften suchen"
+
+#: qml/ConfigAppearance.qml
+msgid "Selected tray entries become pills and leave the organized tray."
+msgstr "Gewählte Einträge der Systemleiste werden zu Knöpfen und verlassen die geordnete Systemleiste."
+
+#: qml/ConfigAppearance.qml
+msgid "Session controls:"
+msgstr "Sitzungssteuerung:"
+
+#: qml/ConfigAppearance.qml
+msgid "Show current conditions and temperature"
+msgstr "Aktuelle Bedingungen und Temperatur zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show important notification banners"
+msgstr "Banner für wichtige Benachrichtigungen zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show keep open pin"
+msgstr "Nadel „Offen halten“ zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show the bell alone"
+msgstr "Nur die Glocke zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show the date"
+msgstr "Datum zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show the notification ticker and bell"
+msgstr "Laufschrift und Glocke für Benachrichtigungen zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Show the time"
+msgstr "Uhrzeit zeigen"
+
+#: qml/ConfigAppearance.qml
+msgid "Shut down always shows. The others stand beside it as room allows, or wait in the menu."
+msgstr "Herunterfahren ist immer zu sehen. Die anderen stehen daneben, soweit Platz ist, oder warten im Menü."
+
+#: qml/ConfigAppearance.qml
+msgid "Sleep:"
+msgstr "Ruhezustand:"
+
+#: qml/ConfigAppearance.qml
+msgid "Switch user:"
+msgstr "Benutzer wechseln:"
+
+#: qml/ConfigAppearance.qml
+msgid "System alerts:"
+msgstr "Systemwarnungen:"
+
+#: qml/ConfigAppearance.qml
+msgctxt "@info the system font's family name follows"
+msgid "System font (%1)"
+msgstr "Systemschrift (%1)"
+
+#: qml/ConfigAppearance.qml
+msgid "Temperature unit:"
+msgstr "Temperatureinheit:"
+
+#: qml/ConfigAppearance.qml
+msgid "Until dismissed"
+msgstr "Bis zum Schließen"
+
+#: qml/ConfigAppearance.qml
+msgid "Use an online fallback when the Weather widget has no temperature"
+msgstr "Online-Ersatz verwenden, wenn das Wetter-Widget keine Temperatur hat"
+
+#: qml/ConfigAppearance.qml
+msgid "Use the live space between neighboring panel widgets"
+msgstr "Den tatsächlichen Platz zwischen benachbarten Leisten-Widgets nutzen"
+
+#: qml/ConfigAppearance.qml
+msgid "Weather application:"
+msgstr "Wetter-Anwendung:"
+
+#: qml/ConfigAppearance.qml
+msgid "Weather fallback:"
+msgstr "Wetter-Ersatz:"
+
+#: qml/ConfigAppearance.qml
+msgid "Weather widget setting"
+msgstr "Einstellung des Wetter-Widgets"
+
+#: qml/ConfigAppearance.qml
+msgid "Weather:"
+msgstr "Wetter:"
+
+#: qml/ConfigAppearance.qml
+msgid "While notifications wait:"
+msgstr "Während Benachrichtigungen warten:"
+
+#: qml/ConfigAppearance.qml
+msgid "Your region's"
+msgstr "Wie in Ihrer Region"
+
+#: qml/ConfigCalendar.qml
+msgctxt "@action:button"
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: qml/ConfigCalendar.qml
+msgid "Calendars:"
+msgstr "Kalender:"
+
+#: qml/ConfigCalendar.qml
+msgctxt "@info a linked calendar's status"
+msgid "Checking…"
+msgstr "Wird geprüft…"
+
+#: qml/ConfigCalendar.qml
+msgid "Choose this calendar's color"
+msgstr "Farbe dieses Kalenders wählen"
+
+#: qml/ConfigCalendar.qml
+msgid "Color of %1"
+msgstr "Farbe von %1"
+
+#: qml/ConfigCalendar.qml
+msgid "Google Calendar gives this address as the secret address in iCal format, iCloud when a calendar is shared publicly, and Outlook when a calendar is published. Temperance only reads the calendar and checks it every 10 minutes. The address stays in this computer's settings; anyone who has it can read the calendar."
+msgstr "Google Kalender gibt diese Adresse als geheime Adresse im iCal-Format an, iCloud bei einem öffentlich geteilten Kalender und Outlook bei einem veröffentlichten Kalender. Temperance liest den Kalender nur und prüft ihn alle 10 Minuten. Die Adresse bleibt in den Einstellungen dieses Computers; jeder, der sie hat, kann den Kalender lesen."
+
+#: qml/ConfigCalendar.qml
+msgid "Link a calendar:"
+msgstr "Kalender verknüpfen:"
+
+#: qml/ConfigCalendar.qml
+msgid "No calendars linked"
+msgstr "Keine Kalender verknüpft"
+
+#: qml/ConfigCalendar.qml
+msgid "Paste a private calendar address"
+msgstr "Private Kalenderadresse einfügen"
+
+#: qml/ConfigCalendar.qml
+msgctxt "@info a calendar link not yet saved"
+msgid "Read once you apply"
+msgstr "Wird nach dem Anwenden gelesen"
+
+#: qml/ConfigCalendar.qml
+msgctxt "@action:button"
+msgid "Remove"
+msgstr "Entfernen"
+
+#: qml/ConfigCalendar.qml
+msgctxt "@info %1 is a time"
+msgid "Updated %1"
+msgstr "Aktualisiert %1"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Always show this System Tray item"
+msgid "Always show"
+msgstr "Immer anzeigen"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@option:check, This is referring to system tray entries"
+msgid "Always show all"
+msgstr "Immer alle anzeigen"
+
+#: qml/ConfigGeneral.qml
+msgid "Application Status"
+msgstr "Anwendungsstatus"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@info:usagetip under a combobox when Touch Mode is on"
+msgid "Automatically set to Large when in Touch Mode"
+msgstr "Im Touch-Modus automatisch auf „Groß“ gesetzt"
+
+#: qml/ConfigGeneral.qml
+msgid "Bottom-to-top"
+msgstr "Von unten nach oben"
+
+#: qml/ConfigGeneral.qml
+msgid "Communications"
+msgstr "Kommunikation"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@label:listbox Which direction system tray icons in the Panel emerge from the expander arrow"
+msgid "Direction:"
+msgstr "Richtung:"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@info:usagetip"
+msgid "Disabling the Notifications widget is not recommended, as notifications sent by apps will no longer be shown.<nl/><nl/>Only do this if you’ve manually added a standalone Notifications widget somewhere else, or are intentionally using a 3rd-party notification manager to handle notifications."
+msgstr "Das Widget „Benachrichtigungen“ zu deaktivieren wird nicht empfohlen, da von Apps gesendete Benachrichtigungen dann nicht mehr angezeigt werden.<nl/><nl/>Tun Sie dies nur, wenn Sie anderswo manuell ein eigenständiges Benachrichtigungen-Widget hinzugefügt haben oder bewusst eine Benachrichtigungsverwaltung eines Drittanbieters verwenden."
+
+#: qml/ConfigGeneral.qml
+msgctxt "@info:usagetip"
+msgid "Disabling the clipboard is not recommended, as it will cause copied data to be lost when the application it was copied from is closed.<nl/><nl/>Only do this if you’ve manually added a standalone Clipboard widget somewhere else, or are using a 3rd-party clipboard manager. Also, instead consider configuring the clipboard to not save history, or to only remember one item at a time."
+msgstr "Die Zwischenablage zu deaktivieren wird nicht empfohlen, da kopierte Daten verloren gehen, wenn die Anwendung geschlossen wird, aus der sie kopiert wurden.<nl/><nl/>Tun Sie dies nur, wenn Sie anderswo manuell ein eigenständiges Zwischenablage-Widget hinzugefügt haben oder eine Zwischenablageverwaltung eines Drittanbieters verwenden. Erwägen Sie stattdessen, die Zwischenablage so einzurichten, dass sie keinen Verlauf speichert oder sich nur einen Eintrag merkt."
+
+#: qml/ConfigGeneral.qml
+msgctxt "@title:column"
+msgid "Entries"
+msgstr "Einträge"
+
+#: qml/ConfigGeneral.qml
+msgid "Hardware Control"
+msgstr "Hardwaresteuerung"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@action:button"
+msgid "I understand the risks"
+msgstr "Ich verstehe die Risiken"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon spacing"
+msgid "Large"
+msgstr "Groß"
+
+#: qml/ConfigGeneral.qml
+msgid "Left-to-right"
+msgstr "Von links nach rechts"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@info:usagetip"
+msgid "Look for a setting in <application>%1</application> to disable its tray icon before doing it here. Some apps’ tray icons were not designed to be disabled, and using this setting may cause them to behave unexpectedly.<nl/><nl/>Use this setting at your own risk, and do not report issues to KDE or the app’s author."
+msgstr "Suchen Sie in <application>%1</application> nach einer Einstellung, um das Symbol in der Systemleiste zu deaktivieren, bevor Sie es hier tun. Manche Symbole von Apps sind nicht zum Deaktivieren gedacht, und diese Einstellung kann zu unerwartetem Verhalten führen.<nl/><nl/>Verwenden Sie diese Einstellung auf eigenes Risiko und melden Sie Probleme nicht an KDE oder den Autor der App."
+
+#: qml/ConfigGeneral.qml
+msgid "Miscellaneous"
+msgstr "Sonstiges"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Never show this System Tray item; disable it"
+msgid "Never show (disabled)"
+msgstr "Nie anzeigen (deaktiviert)"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon spacing"
+msgid "Normal"
+msgstr "Normal"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@label:listbox Whether the system tray icons in the Panel always stay small or scale with the Panel's size"
+msgid "Panel icon size:"
+msgstr "Symbolgröße in der Leiste:"
+
+#: qml/ConfigGeneral.qml
+msgid "Right-to-left"
+msgstr "Von rechts nach links"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon size"
+msgid "Scale with Panel height"
+msgstr "Mit der Leistenhöhe skalieren"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon size"
+msgid "Scale with Panel width"
+msgstr "Mit der Leistenbreite skalieren"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Show this System Tray item only in the expanded popup"
+msgid "Show only in popup"
+msgstr "Nur im Pop-up anzeigen"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Show this System Tray item when relevant"
+msgid "Show when relevant"
+msgstr "Anzeigen, wenn relevant"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon size"
+msgid "Small"
+msgstr "Klein"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@item:inlistbox Icon spacing"
+msgid "Small"
+msgstr "Klein"
+
+#: qml/ConfigGeneral.qml
+msgctxt "@label:listbox The spacing between system tray icons in the Panel"
+msgid "Spacing:"
+msgstr "Abstand:"
+
+#: qml/ConfigGeneral.qml
+msgid "System Services"
+msgstr "Systemdienste"
+
+#: qml/ConfigGeneral.qml
+msgid "Top-to-bottom"
+msgstr "Von oben nach unten"
+
+#: qml/ControlCenterPage.qml
+msgid "Open brightness settings"
+msgstr "Helligkeitseinstellungen öffnen"
+
+#: qml/ControlCenterPage.qml
+msgid "Open sound settings"
+msgstr "Toneinstellungen öffnen"
+
+#: qml/ControlCenterPage.qml qml/ExpandedRepresentation.qml qml/PerformancePage.qml
+msgid "Performance"
+msgstr "Leistung"
+
+#: qml/ControlCenterPage.qml
+msgid "The session action is unavailable or could not be started. Please try again."
+msgstr "Die Sitzungsaktion ist nicht verfügbar oder konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
+
+#: qml/ExpandedRepresentation.qml
+msgid "Add new device"
+msgstr "Neues Gerät hinzufügen"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Back"
+msgstr "Zurück"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Configure system tray icons"
+msgstr "Symbole der Systemleiste einrichten"
+
+#: qml/ExpandedRepresentation.qml qml/main.qml
+msgid "Control Center"
+msgstr "Kontrollzentrum"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Keep open"
+msgstr "Offen halten"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Lock"
+msgstr "Sperren"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Log out"
+msgstr "Abmelden"
+
+#: qml/ExpandedRepresentation.qml
+msgid "More session options"
+msgstr "Weitere Sitzungsoptionen"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Next month"
+msgstr "Nächster Monat"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Notifications & Events"
+msgstr "Benachrichtigungen & Termine"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Open system settings"
+msgstr "Systemeinstellungen öffnen"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Open weather"
+msgstr "Wetter öffnen"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Previous month"
+msgstr "Vorheriger Monat"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Restart"
+msgstr "Neu starten"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Shut down"
+msgstr "Herunterfahren"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Sleep"
+msgstr "Ruhezustand"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Switch user"
+msgstr "Benutzer wechseln"
+
+#: qml/ExpandedRepresentation.qml qml/main.qml
+msgid "System Tray"
+msgstr "Systemleiste"
+
+#: qml/ExpandedRepresentation.qml
+msgctxt "@action:button go to the current month"
+msgid "Today"
+msgstr "Heute"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Turn off do not disturb"
+msgstr "„Nicht stören“ ausschalten"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Turn on do not disturb"
+msgstr "„Nicht stören“ einschalten"
+
+#: qml/ExpandedRepresentation.qml
+msgid "do not disturb"
+msgstr "nicht stören"
+
+#: qml/ExpanderArrow.qml
+msgid "Close popup"
+msgstr "Pop-up schließen"
+
+#: qml/ExpanderArrow.qml
+msgid "Show all the items in the system tray in a popup"
+msgstr "Alle Einträge der Systemleiste in einem Pop-up zeigen"
+
+#: qml/ExpanderArrow.qml
+msgid "Show hidden icons"
+msgstr "Ausgeblendete Symbole zeigen"
+
+#: qml/HiddenItemsView.qml
+msgctxt "Some letters with tall characters, ascenders, descenders, etc"
+msgid "AILlmyjgGJP"
+msgstr "AILlmyjgGJPÄÖÜ"
+
+#: qml/HiddenItemsView.qml
+msgctxt "@info:whatsthis accessible description for popup grid"
+msgid "Grid with %1 items in %2 columns"
+msgstr "Raster mit %1 Einträgen in %2 Spalten"
+
+#: qml/LevelReading.qml
+msgid "Brightness %1%"
+msgstr "Helligkeit %1 %"
+
+#: qml/LevelReading.qml
+msgid "Keyboard light %1%"
+msgstr "Tastaturbeleuchtung %1 %"
+
+#: qml/LevelReading.qml
+msgid "Microphone muted"
+msgstr "Mikrofon stumm"
+
+#: qml/LevelReading.qml
+msgid "Microphone on"
+msgstr "Mikrofon an"
+
+#: qml/LevelReading.qml
+msgid "Volume %1%"
+msgstr "Lautstärke %1 %"
+
+#: qml/NotificationHistoryPage.qml
+msgctxt "@info %1 is a program's vendor and name"
+msgid "%1 is showing notifications instead."
+msgstr "Stattdessen zeigt %1 die Benachrichtigungen."
+
+#: qml/NotificationHistoryPage.qml
+msgid "%1 unread"
+msgid_plural "%1 unread"
+msgstr[0] "%1 ungelesen"
+msgstr[1] "%1 ungelesen"
+
+#: qml/NotificationHistoryPage.qml
+msgctxt "@label how many came in during Do Not Disturb, and when"
+msgid "%1 · %2"
+msgstr "%1 · %2"
+
+#: qml/NotificationHistoryPage.qml
+msgctxt "@label how many came in during Do Not Disturb, and from when to when"
+msgid "%1 · %2 to %3"
+msgstr "%1 · %2 bis %3"
+
+#: qml/NotificationHistoryPage.qml
+msgid "All caught up"
+msgstr "Alles erledigt"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Another program is showing notifications instead."
+msgstr "Stattdessen zeigt ein anderes Programm die Benachrichtigungen."
+
+#: qml/NotificationHistoryPage.qml
+msgid "Clear"
+msgstr "Leeren"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Clear notifications from %1"
+msgstr "Benachrichtigungen von %1 leeren"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Collapse"
+msgstr "Einklappen"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Demo notification"
+msgstr "Beispiel-Benachrichtigung"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Dismiss event: %1"
+msgstr "Termin schließen: %1"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Dismiss notification: %1"
+msgstr "Benachrichtigung schließen: %1"
+
+#: qml/NotificationHistoryPage.qml
+msgctxt "@title the notifications from before Do Not Disturb"
+msgid "Earlier"
+msgstr "Früher"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Expand"
+msgstr "Ausklappen"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Notifications aren't available"
+msgstr "Benachrichtigungen sind nicht verfügbar"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Recent"
+msgstr "Neu"
+
+#: qml/NotificationHistoryPage.qml
+msgid "Show less"
+msgstr "Weniger zeigen"
+
+#: qml/NotificationHistoryPage.qml
+msgid "The adaptive rail and notification history are working."
+msgstr "Die anpassungsfähige Leiste und der Benachrichtigungsverlauf funktionieren."
+
+#: qml/NotificationHistoryPage.qml
+msgctxt "@title the day's calendar events"
+msgid "Today"
+msgstr "Heute"
+
+#: qml/NotificationHistoryPage.qml
+msgid "While you were focused"
+msgstr "Während Sie konzentriert waren"
+
+#: qml/NotificationHistoryPage.qml
+msgid "this app"
+msgstr "diese App"
+
+#: qml/NotificationRail.qml
+msgctxt "@info:tooltip"
+msgid "Notifications"
+msgstr "Benachrichtigungen"
+
+#: qml/NotificationRail.qml
+msgctxt "@info:tooltip"
+msgid "Notifications, %1 unread"
+msgid_plural "Notifications, %1 unread"
+msgstr[0] "Benachrichtigungen, %1 ungelesen"
+msgstr[1] "Benachrichtigungen, %1 ungelesen"
+
+#: qml/NotificationRail.qml
+msgid "Review all notifications"
+msgstr "Alle Benachrichtigungen durchsehen"
+
+#: qml/OrganizedTrayPage.qml
+msgid "Apps"
+msgstr "Apps"
+
+#: qml/OrganizedTrayPage.qml
+msgid "Devices"
+msgstr "Geräte"
+
+#: qml/OrganizedTrayPage.qml
+msgid "System"
+msgstr "System"
+
+#: qml/PerformancePage.qml
+msgid "%1 Hz refresh rate"
+msgstr "%1 Hz Bildwiederholrate"
+
+#: qml/PerformancePage.qml
+msgid "%1 W"
+msgstr "%1 W"
+
+#: qml/PerformancePage.qml
+msgid "%1 is already a profile"
+msgstr "%1 ist bereits ein Profil"
+
+#: qml/PerformancePage.qml
+msgid "%1 °C · fans at %2%"
+msgstr "%1 °C · Lüfter bei %2 %"
+
+#: qml/PerformancePage.qml
+msgid "%1%"
+msgstr "%1 %"
+
+#: qml/PerformancePage.qml
+msgid "%1% · Balanced"
+msgstr "%1 % · Ausgewogen"
+
+#: qml/PerformancePage.qml
+msgid "%1% · Max life"
+msgstr "%1 % · Maximale Lebensdauer"
+
+#: qml/PerformancePage.qml
+msgid "%1% · Standard"
+msgstr "%1 % · Standard"
+
+#: qml/PerformancePage.qml
+msgid "A limit above %1 W stays as it is until you move its slider."
+msgstr "Eine Grenze über %1 W bleibt, wie sie ist, bis Sie ihren Schieberegler bewegen."
+
+#: qml/PerformancePage.qml
+msgid "Balanced"
+msgstr "Ausgewogen"
+
+#: qml/PerformancePage.qml
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: qml/PerformancePage.qml
+msgid "Charge limit"
+msgstr "Ladegrenze"
+
+#: qml/PerformancePage.qml
+msgid "Couldn't create %1."
+msgstr "%1 konnte nicht angelegt werden."
+
+#: qml/PerformancePage.qml
+msgid "Couldn't create %1: %2"
+msgstr "%1 konnte nicht angelegt werden: %2"
+
+#: qml/PerformancePage.qml
+msgid "Couldn't save to %1, which is unchanged."
+msgstr "Konnte nicht in %1 speichern, es bleibt unverändert."
+
+#: qml/PerformancePage.qml
+msgid "Couldn't save to %1, which is unchanged: %2"
+msgstr "Konnte nicht in %1 speichern, es bleibt unverändert: %2"
+
+#: qml/PerformancePage.qml
+msgid "Create"
+msgstr "Anlegen"
+
+#: qml/PerformancePage.qml
+msgid "Create %1"
+msgstr "%1 anlegen"
+
+#: qml/PerformancePage.qml
+msgid "Creating %1…"
+msgstr "%1 wird angelegt…"
+
+#: qml/PerformancePage.qml
+msgid "Drag a point to change it. Fans speed up as the chip warms."
+msgstr "Ziehen Sie einen Punkt, um ihn zu ändern. Die Lüfter drehen schneller, wenn der Chip wärmer wird."
+
+#: qml/PerformancePage.qml
+msgid "Edit a profile"
+msgstr "Ein Profil bearbeiten"
+
+#: qml/PerformancePage.qml
+msgid "Energy use"
+msgstr "Energieverbrauch"
+
+#: qml/PerformancePage.qml
+msgid "Fan curve"
+msgstr "Lüfterkurve"
+
+#: qml/PerformancePage.qml
+msgid "Fan curve · automatic"
+msgstr "Lüfterkurve · automatisch"
+
+#: qml/PerformancePage.qml
+msgid "Fast boost"
+msgstr "Schneller Boost"
+
+#: qml/PerformancePage.qml
+msgid "Fastest"
+msgstr "Am schnellsten"
+
+#: qml/PerformancePage.qml
+msgid "Folds the profile editor away"
+msgstr "Klappt den Profileditor ein"
+
+#: qml/PerformancePage.qml
+msgid "Go back to editing %1"
+msgstr "Zurück zum Bearbeiten von %1"
+
+#: qml/PerformancePage.qml
+msgid "Make a new profile from a copy of %1"
+msgstr "Ein neues Profil aus einer Kopie von %1 erstellen"
+
+#: qml/PerformancePage.qml
+msgid "Manual"
+msgstr "Manuell"
+
+#: qml/PerformancePage.qml
+msgid "Name"
+msgstr "Name"
+
+#: qml/PerformancePage.qml
+msgid "New"
+msgstr "Neu"
+
+#: qml/PerformancePage.qml
+msgid "New profile"
+msgstr "Neues Profil"
+
+#: qml/PerformancePage.qml
+msgid "New profile name"
+msgstr "Name des neuen Profils"
+
+#: qml/PerformancePage.qml
+msgid "On battery"
+msgstr "Im Akkubetrieb"
+
+#: qml/PerformancePage.qml
+msgid "Performance profile"
+msgstr "Leistungsprofil"
+
+#: qml/PerformancePage.qml
+msgid "Plugged in"
+msgstr "Am Netz"
+
+#: qml/PerformancePage.qml
+msgid "Power limits"
+msgstr "Leistungsgrenzen"
+
+#: qml/PerformancePage.qml
+msgid "Power limits · the profile's own"
+msgstr "Leistungsgrenzen · die des Profils"
+
+#: qml/PerformancePage.qml
+msgid "Profile"
+msgstr "Profil"
+
+#: qml/PerformancePage.qml
+msgid "Profile to edit"
+msgstr "Zu bearbeitendes Profil"
+
+#: qml/PerformancePage.qml
+msgid "Quiet"
+msgstr "Leise"
+
+#: qml/PerformancePage.qml
+msgid "Reset"
+msgstr "Zurücksetzen"
+
+#: qml/PerformancePage.qml
+msgid "Respond faster"
+msgstr "Schneller reagieren"
+
+#: qml/PerformancePage.qml
+msgid "Return the fans to automatic"
+msgstr "Lüfter wieder auf automatisch stellen"
+
+#: qml/PerformancePage.qml
+msgid "Return the power limits to the profile's own"
+msgstr "Leistungsgrenzen wieder auf die des Profils stellen"
+
+#: qml/PerformancePage.qml
+msgid "Save most"
+msgstr "Am meisten sparen"
+
+#: qml/PerformancePage.qml
+msgid "Save some"
+msgstr "Etwas sparen"
+
+#: qml/PerformancePage.qml
+msgid "Save to %1"
+msgstr "In %1 speichern"
+
+#: qml/PerformancePage.qml
+msgid "Saving to %1…"
+msgstr "Wird in %1 gespeichert…"
+
+#: qml/PerformancePage.qml
+msgid "Short boost"
+msgstr "Kurzer Boost"
+
+#: qml/PerformancePage.qml
+msgid "Shows the profile editor"
+msgstr "Zeigt den Profileditor"
+
+#: qml/PerformancePage.qml
+msgid "Starts as a copy of %1."
+msgstr "Beginnt als Kopie von %1."
+
+#: qml/PerformancePage.qml
+msgid "Sustained"
+msgstr "Dauerhaft"
+
+#: qml/PerformancePage.qml
+msgid "Switch when plugged in or unplugged"
+msgstr "Beim Ein- oder Ausstecken wechseln"
+
+#: qml/PerformancePage.qml
+msgid "The battery stops charging here while %1 is in use. A lower limit keeps it healthy longer."
+msgstr "Der Akku hört hier auf zu laden, solange %1 in Gebrauch ist. Eine niedrigere Grenze hält ihn länger gesund."
+
+#: qml/PerformancePage.qml
+msgid "The battery stops charging here. A lower limit keeps it healthy longer."
+msgstr "Der Akku hört hier auf zu laden. Eine niedrigere Grenze hält ihn länger gesund."
+
+#: qml/PerformancePage.qml
+msgid "The firmware runs the fans. Drag a point to set your own curve."
+msgstr "Die Firmware steuert die Lüfter. Ziehen Sie einen Punkt, um Ihre eigene Kurve festzulegen."
+
+#: qml/PerformancePage.qml
+msgid "Your profile sets the rate. One switched here stays until the profile changes."
+msgstr "Ihr Profil legt die Rate fest. Eine hier gewechselte bleibt, bis sich das Profil ändert."
+
+#: qml/TodayEvents.qml
+msgctxt "@info an event starting soon"
+msgid "In %1 min"
+msgid_plural "In %1 min"
+msgstr[0] "In %1 Min."
+msgstr[1] "In %1 Min."
+
+#: qml/TodayEvents.qml
+msgctxt "@info an event under way"
+msgid "Now"
+msgstr "Jetzt"
+
+#: qml/config.qml
+msgid "Appearance"
+msgstr "Erscheinungsbild"
+
+#: qml/config.qml
+msgid "Calendar"
+msgstr "Kalender"
+
+#: qml/config.qml
+msgid "Tray Entries"
+msgstr "Einträge der Systemleiste"
+
+#: qml/main.qml
+msgctxt "@info:status %1 is the widget's name"
+msgid "%1 needs an update"
+msgstr "%1 braucht ein Update"
+
+#: qml/main.qml
+msgctxt "@info:status more than nine unread"
+msgid "9+"
+msgstr "9+"
+
+#: qml/main.qml
+msgid "AC power · %1"
+msgstr "Netzstrom · %1"
+
+#: qml/main.qml
+msgid "Battery"
+msgstr "Akku"
+
+#: qml/main.qml
+msgid "Battery and Control Center"
+msgstr "Akku und Kontrollzentrum"
+
+#: qml/main.qml
+msgctxt "@label the clock's page"
+msgid "Calendar"
+msgstr "Kalender"
+
+#: qml/main.qml
+msgid "Downloads: Transfer completed"
+msgstr "Downloads: Übertragung abgeschlossen"
+
+#: qml/main.qml
+msgid "FINAL SCROLL TEST: This message is intentionally much longer than the notification rail can display at once. Rest on the bell and keep reading while the remaining sentence glides cleanly into view."
+msgstr "LETZTER LAUFTEST: Diese Meldung ist absichtlich viel länger, als die Benachrichtigungsleiste auf einmal zeigen kann. Bleiben Sie auf der Glocke und lesen Sie weiter, während der Rest des Satzes sauber ins Bild gleitet."
+
+#: qml/main.qml
+msgid "System Update: Packages are ready"
+msgstr "Systemupdate: Pakete sind bereit"
+
+#: qml/main.qml
+msgid "Weather"
+msgstr "Wetter"
+
+#: src/calendarfeeds.cpp
+msgctxt "@info a linked calendar's status"
+msgid "This link no longer opens the calendar"
+msgstr "Dieser Link öffnet den Kalender nicht mehr"
+
+#: src/calendarfeeds.cpp
+msgctxt "@info a linked calendar's status"
+msgid "Couldn't reach this calendar"
+msgstr "Dieser Kalender war nicht erreichbar"
+
+#: src/calendarfeeds.cpp
+msgctxt "@info a linked calendar's status"
+msgid "This calendar is too large to read"
+msgstr "Dieser Kalender ist zu groß zum Lesen"
+
+#: src/calendarfeeds.cpp
+msgctxt "@info a linked calendar's status"
+msgid "This link isn't a calendar"
+msgstr "Dieser Link ist kein Kalender"
+
+#: src/systemtray.cpp
+msgctxt "@action:inmenu %1 is the widget's name"
+msgid "Configure %1…"
+msgstr "%1 einrichten…"
+
+#: src/systemtray.cpp
+msgctxt "@title Shuffle's name for this widget"
+msgid "Status Bar"
+msgstr "Statusleiste"
