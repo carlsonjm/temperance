@@ -377,7 +377,11 @@ Item {
         implicitWidth: 150 - 2 * 6
         implicitHeight: visible ? 36 : 0
         focusPolicy: Qt.StrongFocus
-        readonly property bool highlighted: optionHover.hovered || activeFocus
+        // Lit by a pointer moving over it since the menu opened, not by one
+        // left over from before, and by focus only when it came from the
+        // keyboard: opened by a click or tap, no line is lit yet.
+        property bool pointedAt: false
+        readonly property bool highlighted: pointedAt || visualFocus
         contentItem: PlasmaComponents.Label {
             text: sessionOption.text
             horizontalAlignment: Text.AlignHCenter
@@ -390,7 +394,11 @@ Item {
         Keys.onReturnPressed: clicked()
         Keys.onEnterPressed: clicked()
         onClicked: sessionMenu.choose(actionId)
-        PointerHover { id: optionHover }
+        PointerHover {
+            id: optionHover
+            onHoveredChanged: sessionOption.pointedAt = hovered
+            onPointChanged: if (hovered) sessionOption.pointedAt = true
+        }
     }
 
     PlasmaExtras.PlasmoidHeading {
@@ -815,10 +823,14 @@ Item {
             return shown;
         }
         function open() {
+            for (let i = 0; i < sessionMenuItems.children.length; ++i)
+                sessionMenuItems.children[i].pointedAt = false;
             visible = true;
             const shown = shownItems();
-            if (shown.length > 0) shown[0].forceActiveFocus(Qt.PopupFocusReason);
-            else forceActiveFocus(Qt.PopupFocusReason);
+            // Opened from the keyboard, the first line shows its focus.
+            const reason = sessionMore.visualFocus ? Qt.TabFocusReason : Qt.PopupFocusReason;
+            if (shown.length > 0) shown[0].forceActiveFocus(reason);
+            else forceActiveFocus(reason);
         }
         function close() {
             if (!visible) return;
