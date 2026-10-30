@@ -12,6 +12,9 @@ This file records user-visible changes.
 - Events other programs put in `~/.local/share/temperance/calendar`, one
   iCalendar file each, show in the calendar and the ticker, as an invitation a
   mail program accepted does. An event answered maybe shows as one.
+- Temperance speaks German, French, Spanish and Brazilian Portuguese as well as English, following the
+  system language. These first translations are machine-made, and
+  corrections from native speakers are welcome.
 - Every page is right the first time it opens after Plasma starts. The tray's
   settings buttons no longer land over the System Tray title, and Do not
   disturb no longer goes missing from Notifications & Events until the page
