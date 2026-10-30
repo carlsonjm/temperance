@@ -324,6 +324,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_needsUpdate = !builtForRunning(QStringLiteral(TEMPERANCE_BUILT_PLASMA), runningPlasma,
                                      QStringLiteral(TEMPERANCE_BUILT_QT), runningQt);
     m_calendarFeeds = new CalendarFeeds(this);
+    m_calendarFeeds->setLocalFolder(CalendarFeeds::defaultLocalFolder());
     // Present on every build, so the bar's bindings always have them; a build
     // for another Plasma or Qt never starts them.
     m_performance = new PerformanceController(this);
