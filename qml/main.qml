@@ -102,6 +102,10 @@ ContainmentItem {
     property int magnifierSelected: -1
     property var magnifierEntries: []
     readonly property bool magnifierUpward: Plasmoid.location === PlasmaCore.Types.BottomEdge
+    // The host's clock the open calendar was opened from, or null.
+    property Item calendarSource: null
+    readonly property bool calendarOpen: systemTrayState.expanded && !systemTrayState.activeApplet
+        && systemTrayState.page === "calendar"
     readonly property bool oneRowOrColumn: true
     readonly property alias systemTrayState: systemTrayState
     readonly property alias hiddenLayout: expandedRepresentation.hiddenLayout
@@ -368,7 +372,21 @@ ContainmentItem {
             systemTrayState.expanded = false;
             return;
         }
+        calendarSource = null;
         showSurface(page);
+    }
+
+    // A host painting its own clock opens the calendar from it, so the
+    // calendar hangs beneath that clock rather than from Status's corner.
+    function openCalendarBeneath(source) {
+        if (calendarOpen || !source) {
+            openSurface("calendar");
+            return;
+        }
+        const middle = source.mapToItem(calendarAnchor.parent, source.width / 2, 0);
+        calendarAnchor.x = Math.round(middle.x);
+        calendarSource = source;
+        showSurface("calendar");
     }
 
     // Opens a page, leaving it open if it is open already.
@@ -1744,10 +1762,19 @@ ContainmentItem {
                 : Plasmoid.location === PlasmaCore.Types.BottomEdge ? -10 : 0)
         }
 
+        // Beneath the host's clock, for the calendar opened from it.
+        Item {
+            id: calendarAnchor
+            objectName: "calendarAnchor"
+            width: 1
+            height: popupAnchor.height
+            y: popupAnchor.y
+        }
+
         PlasmaCore.Dialog {
             id: dialog
             objectName: "popupWindow"
-            visualParent: popupAnchor
+            visualParent: root.calendarOpen && root.calendarSource ? calendarAnchor : popupAnchor
             location: Plasmoid.location
             type: PlasmaCore.Dialog.AppletPopup
             floating: 10

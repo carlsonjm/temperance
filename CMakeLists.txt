@@ -182,6 +182,8 @@ plasma_add_applet(co.goodinput.temperance
         assets/icons/lucide/mic-off.svg
         assets/icons/lucide/cloud-sun.svg
         assets/icons/lucide/gauge.svg
+        assets/icons/lucide/maximize-2.svg
+        assets/icons/lucide/minimize-2.svg
         # Status icons from Colloid, copied by tools/status-glyphs.py.
         assets/icons/colloid/nm-signal-0-symbolic.svg
         assets/icons/colloid/nm-signal-0-secure-symbolic.svg

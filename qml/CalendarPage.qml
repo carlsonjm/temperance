@@ -7,10 +7,13 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.workspace.calendar as PlasmaCalendar
 
 // The month the clock opens: a grid of days, today in the accent, and the
-// selected day's holidays and events beneath. Plasma's calendar backend
+// selected day's holidays and events beneath. Wide, the selected day and the
+// two after it stand in a column beside the month instead, and that column
+// rises beside the popup's header, which then covers only the month. Plasma's calendar backend
 // supplies the holidays and the linked calendars the events; the grid itself is
 // drawn here so it follows the suite's spacing.
 //
@@ -45,6 +48,19 @@ Item {
     readonly property int markSize: 34
     readonly property int topSpacing: 12
     readonly property int bottomSpacing: 24
+
+    property bool wide: false
+    // How far above the page the popup's header begins, so the day column's
+    // heading shares the header's line.
+    property real headerReach: 0
+    readonly property int columnGap: 20
+    readonly property int dayColumnWidth: 293
+    // The month's last circle ends here; a header over the month alone ends
+    // on the same line.
+    readonly property int monthRight: sideInset + cellSize * 7 - (cellSize - markSize) / 2
+    // The first day shows this many events, the next two fewer.
+    readonly property int nextEventLimit: 2
+    signal resizeAsked()
 
     readonly property bool showingCurrentMonth: shownMonth.getFullYear() === today.getFullYear()
         && shownMonth.getMonth() === today.getMonth()
@@ -82,8 +98,10 @@ Item {
     readonly property var selectedEvents: dayEvents(selectedDate)
     readonly property int shownEventLimit: 4
 
-    implicitWidth: sideInset * 2 + cellSize * 7
-    implicitHeight: topSpacing + content.implicitHeight + bottomSpacing
+    implicitWidth: sideInset * 2 + cellSize * 7 + (wide ? columnGap * 2 + 1 + dayColumnWidth : 0)
+    implicitHeight: topSpacing + bottomSpacing
+        + (wide ? Math.max(content.implicitHeight, dayColumn.implicitHeight - headerReach - topSpacing)
+                : content.implicitHeight)
 
     function sameDay(first, second) {
         return first.getFullYear() === second.getFullYear()
@@ -105,8 +123,23 @@ Item {
         const holidays = eventsOn(date).map(event => ({ title: event.title, allDay: true }));
         const inShownMonth = date.getFullYear() === shownMonth.getFullYear()
             && date.getMonth() === shownMonth.getMonth();
-        const linked = inShownMonth ? (linkedEvents[String(date.getDate())] ?? []) : [];
+        const linked = inShownMonth ? (linkedEvents[String(date.getDate())] ?? [])
+            : feeds ? feeds.eventsForDay(date.getFullYear(), date.getMonth() + 1, date.getDate()) : [];
         return holidays.concat(linked);
+    }
+
+    // The selected day and the two after it, for the wide calendar's column.
+    readonly property var shownDays: {
+        if (!wide)
+            return [];
+        if (feeds)
+            feeds.revision;
+        const result = [];
+        for (let step = 0; step < 3; ++step) {
+            const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + step);
+            result.push({ date: date, events: dayEvents(date) });
+        }
+        return result;
     }
 
     function reset() {
@@ -319,6 +352,7 @@ Item {
         // then its title on the same baseline.
         ColumnLayout {
             objectName: "temperance-calendar-agenda"
+            visible: !page.wide
             Layout.topMargin: 16
             Layout.leftMargin: page.textInset - page.sideInset
             Layout.rightMargin: page.textInset - page.sideInset
@@ -397,6 +431,161 @@ Item {
                 font.family: Kirigami.Theme.defaultFont.family
                 font.pixelSize: 15
                 color: tone.faintText
+            }
+        }
+    }
+    Rectangle {
+        id: divider
+        objectName: "temperance-calendar-divider"
+        visible: page.wide
+        x: page.sideInset + page.cellSize * 7 + page.columnGap
+        y: page.topSpacing
+        width: 1
+        height: content.implicitHeight
+        color: tone.divider
+    }
+
+    // The selected day under its heading, then the two days after it, each a
+    // group 20 px from the next.
+    ColumnLayout {
+        id: dayColumn
+        objectName: "temperance-calendar-days"
+        visible: page.wide
+        x: divider.x + 1 + page.columnGap
+        y: -page.headerReach
+        width: page.dayColumnWidth - page.sideInset
+        spacing: 20
+
+        Repeater {
+            model: page.shownDays
+            delegate: ColumnLayout {
+                id: dayGroup
+                required property var modelData
+                required property int index
+                readonly property int limit: index === 0 ? page.shownEventLimit : page.nextEventLimit
+                readonly property var events: modelData.events
+                objectName: "temperance-calendar-day-group"
+                Layout.fillWidth: true
+                spacing: 4
+
+                RowLayout {
+                    visible: dayGroup.index === 0
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    Layout.bottomMargin: 8
+                    spacing: 8
+
+                    Kirigami.Heading {
+                        objectName: "temperance-calendar-day-heading"
+                        Layout.fillWidth: true
+                        level: 1
+                        text: dayGroup.modelData.date.toLocaleDateString(Qt.locale(), "dddd, MMMM d")
+                        maximumLineCount: 1
+                        elide: Text.ElideRight
+                    }
+
+                    PlasmaComponents.ToolButton {
+                        id: smaller
+                        objectName: "temperance-calendar-smaller"
+                        Layout.preferredWidth: 30
+                        Layout.preferredHeight: 30
+                        padding: 6
+                        display: PlasmaComponents.AbstractButton.IconOnly
+                        text: i18n("Smaller calendar")
+                        Accessible.name: text
+                        contentItem: SuiteIcon {
+                            glyph: "minimize-2"
+                            glyphInset: 1
+                            implicitWidth: 18
+                            implicitHeight: 18
+                        }
+                        background: Rectangle {
+                            radius: height / 2
+                            color: smaller.down ? tone.wash(0.18)
+                                : smallerHover.hovered ? tone.wash(0.12) : "transparent"
+                            border.width: smaller.visualFocus ? 1 : 0
+                            border.color: tone.text
+                            Behavior on color { ColorAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                        }
+                        onClicked: page.resizeAsked()
+                        HoverHandler {
+                            id: smallerHover
+                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
+                        }
+                        PlasmaComponents.ToolTip { text: smaller.text }
+                    }
+                }
+
+                Text {
+                    visible: dayGroup.index > 0
+                    Layout.fillWidth: true
+                    text: dayGroup.modelData.date.toLocaleDateString(Qt.locale(), "dddd, MMMM d")
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    color: tone.secondaryText
+                    elide: Text.ElideRight
+                }
+
+                Repeater {
+                    model: dayGroup.events.slice(0, dayGroup.events.length > dayGroup.limit
+                        ? dayGroup.limit - 1 : dayGroup.limit)
+                    delegate: RowLayout {
+                        id: dayEvent
+                        required property var modelData
+                        objectName: "temperance-calendar-day-event"
+                        Layout.fillWidth: true
+                        spacing: 8
+                        Accessible.role: Accessible.StaticText
+                        Accessible.name: [dayEventStart.text, dayEventTitle.text].join(", ")
+
+                        Text {
+                            id: dayEventStart
+                            Layout.preferredWidth: Math.ceil(Math.max(widestStart.advanceWidth, allDayWidth.advanceWidth))
+                            Layout.alignment: Qt.AlignBaseline
+                            text: dayEvent.modelData.allDay ? allDayWidth.text : page.formatTime(dayEvent.modelData.start)
+                            font: widestStart.font
+                            color: tone.secondaryText
+                        }
+                        // The event's calendar colour, where it has one.
+                        Rectangle {
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.preferredWidth: 6
+                            Layout.preferredHeight: 6
+                            radius: 3
+                            color: dayEvent.modelData.color || tone.secondaryText
+                        }
+                        Text {
+                            id: dayEventTitle
+                            objectName: "temperance-calendar-day-event-title"
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignBaseline
+                            text: dayEvent.modelData.tentative
+                                ? i18nc("@info an event answered maybe; %1 is its title", "%1 (maybe)", dayEvent.modelData.title)
+                                : dayEvent.modelData.title
+                            font.family: Kirigami.Theme.defaultFont.family
+                            font.pixelSize: 15
+                            color: dayEvent.modelData.tentative ? tone.secondaryText : tone.text
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+
+                Text {
+                    visible: dayGroup.events.length > dayGroup.limit
+                    text: i18ncp("@info events not listed", "%1 more", "%1 more",
+                                 dayGroup.events.length - dayGroup.limit + 1)
+                    font: widestStart.font
+                    color: tone.secondaryText
+                }
+
+                Text {
+                    visible: dayGroup.events.length === 0
+                    text: i18n("Nothing scheduled")
+                    font.family: Kirigami.Theme.defaultFont.family
+                    font.pixelSize: 15
+                    color: tone.faintText
+                }
             }
         }
     }

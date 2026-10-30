@@ -170,6 +170,49 @@ int main(int argc, char **argv)
     if (qEnvironmentVariableIsSet("TEMPERANCE_CALENDAR_SNAPSHOT"))
         window.grabWindow().save(qEnvironmentVariable("TEMPERANCE_CALENDAR_SNAPSHOT"));
 
+    // Wide, the selected day and the two after it stand beside the month, in
+    // a column as wide again as the month's, and the agenda beneath goes.
+    const qreal narrowWidth = page->implicitWidth();
+    page->setProperty("wide", true);
+    settle(200);
+    check(std::abs(page->implicitWidth() - 644) < 0.5,
+          QStringLiteral("the wide calendar is 644 px, found %1").arg(page->implicitWidth()));
+    check(std::abs(page->property("monthRight").toReal() - 298) < 0.5, QStringLiteral("the month ends on its circles' line"));
+    check(!child(page, QStringLiteral("temperance-calendar-agenda"))->isVisible(), QStringLiteral("the agenda beneath goes"));
+    const QList<QQuickItem *> groups = named(page, QStringLiteral("temperance-calendar-day-group"));
+    check(groups.size() == 3, QStringLiteral("three days are listed, found %1").arg(groups.size()));
+    auto wideRows = [&] {
+        QStringList rows;
+        for (QQuickItem *title : named(page, QStringLiteral("temperance-calendar-day-event-title")))
+            if (title->isVisible()) rows.append(title->property("text").toString());
+        return rows;
+    };
+    check(wideRows() == QStringList{QStringLiteral("Breakfast"), QStringLiteral("Dentist")},
+          QStringLiteral("the 25th lists breakfast and the dentist, the next two nothing: %1").arg(wideRows().join(QStringLiteral(", "))));
+    page->setProperty("selectedDate", QDateTime(QDate(2026, 9, 27), QTime(0, 0)));
+    settle(100);
+    check(wideRows() == QStringList{QStringLiteral("Birthday"), QStringLiteral("Standup"), QStringLiteral("Trip")},
+          QStringLiteral("the days after the 27th list their own events: %1").arg(wideRows().join(QStringLiteral(", "))));
+    check(child(page, QStringLiteral("temperance-calendar-smaller")) && child(page, QStringLiteral("temperance-calendar-smaller"))->isVisible(),
+          QStringLiteral("the wide calendar offers to be made smaller"));
+    // The last days of a month list the next month's days after them.
+    page->setProperty("selectedDate", QDateTime(QDate(2026, 9, 30), QTime(0, 0)));
+    settle(100);
+    QStringList headings;
+    for (QQuickItem *group : named(page, QStringLiteral("temperance-calendar-day-group")))
+        headings.append(group->property("modelData").toMap().value(QStringLiteral("date")).toDateTime().date().toString(Qt::ISODate));
+    check(headings == QStringList{QStringLiteral("2026-09-30"), QStringLiteral("2026-10-01"), QStringLiteral("2026-10-02")},
+          QStringLiteral("the column runs on into October: %1").arg(headings.join(QStringLiteral(", "))));
+    page->setProperty("selectedDate", QDateTime(QDate(2026, 9, 25), QTime(0, 0)));
+    window.resize(int(page->implicitWidth()), int(page->implicitHeight()));
+    page->setSize(QSizeF(page->implicitWidth(), page->implicitHeight()));
+    settle(200);
+    if (qEnvironmentVariableIsSet("TEMPERANCE_CALENDAR_WIDE_SNAPSHOT"))
+        window.grabWindow().save(qEnvironmentVariable("TEMPERANCE_CALENDAR_WIDE_SNAPSHOT"));
+    page->setProperty("wide", false);
+    settle(100);
+    check(std::abs(page->implicitWidth() - narrowWidth) < 0.5, QStringLiteral("made smaller, it is the month alone again"));
+
     // A wheel notch down turns to the next month, and up turns back.
     QQuickItem *grid = child(page, QStringLiteral("temperance-calendar-grid"));
     auto turn = [&](int delta) {
