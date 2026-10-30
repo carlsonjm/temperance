@@ -101,6 +101,28 @@ class NotificationInteractionTest : public QObject {
         }
         return nullptr;
     }
+    // The history page over the model, no taller than maxHeight; null when the
+    // component fails, which then says why.
+    static QObject *createHistoryPage(QQmlEngine &engine, QQmlComponent &component, HistoryFixture &model,
+                                      int maxHeight, const QString &launch = QStringLiteral("(function(){})"),
+                                      const QVariantMap &extra = {}) {
+        QVariantMap properties{
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(launch))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), maxHeight}
+        };
+        properties.insert(extra);
+        return component.createWithInitialProperties(properties);
+    }
+    // Shows the page 430 wide and height tall in the window.
+    static void showInWindow(QQuickItem *item, QQuickWindow &window, int height) {
+        window.resize(430, height);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, height));
+        window.show();
+    }
 private Q_SLOTS:
     void snoozeUsesSystemNotificationAction() {
         auto &server = NotificationManager::Server::self();
@@ -162,21 +184,12 @@ private Q_SLOTS:
         model.append(grouped);
         engine.globalObject().setProperty(QStringLiteral("fixtureModel"), engine.newQObject(&model));
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(id){fixtureModel.invokeAction(fixtureModel.index(0,0), id);})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 600, QStringLiteral("(function(id){fixtureModel.invokeAction(fixtureModel.index(0,0), id);})")));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 600);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 600));
-        window.show();
+        showInWindow(item, window, 600);
         QQuickItem *row = nullptr;
         QTRY_VERIFY_WITH_TIMEOUT((row = findItem(item, QStringLiteral("notificationRow0"))), 2000);
         auto *more = row->findChild<QQuickItem *>("notificationReadMore");
@@ -238,22 +251,13 @@ private Q_SLOTS:
         engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
         HistoryFixture model;
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600},
-            {QStringLiteral("serviceAvailable"), false}, {QStringLiteral("serviceOwner"), QStringLiteral("Example Daemon")}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 600, QStringLiteral("(function(){})"),
+            {{QStringLiteral("serviceAvailable"), false}, {QStringLiteral("serviceOwner"), QStringLiteral("Example Daemon")}}));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 600);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 600));
-        window.show();
+        showInWindow(item, window, 600);
         auto *title = findItem(item, QStringLiteral("notificationEmptyTitle"));
         auto *detail = findItem(item, QStringLiteral("notificationEmptyDetail"));
         QVERIFY(title && detail);
@@ -278,21 +282,12 @@ private Q_SLOTS:
         model.rows[2][QStringLiteral("summary")] = QString();
         for (auto &row : model.rows) row[QStringLiteral("body")] = QStringLiteral("Body only");
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 600));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 600);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 600));
-        window.show();
+        showInWindow(item, window, 600);
         for (int index = 0; index < 3; ++index) {
             QQuickItem *row = nullptr;
             QTRY_VERIFY((row = findItem(item, QStringLiteral("notificationRow%1").arg(index))));
@@ -327,21 +322,12 @@ private Q_SLOTS:
         model.rows[1][QStringLiteral("actionLabels")] = QStringList{QStringLiteral("Accept"), QStringLiteral("Reject"),
             QStringLiteral("Open")};
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 600}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 600));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 600);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 600));
-        window.show();
+        showInWindow(item, window, 600);
         QQuickItem *row = nullptr, *group = nullptr;
         QTRY_VERIFY((row = findItem(item, QStringLiteral("notificationRow1"))));
         QTRY_VERIFY((group = findItem(item, QStringLiteral("notificationRow0"))));
@@ -457,21 +443,12 @@ private Q_SLOTS:
         HistoryFixture model;
         model.append(false);
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 900}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 900));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 900);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 900));
-        window.show();
+        showInWindow(item, window, 900);
         QQuickItem *closedRow = nullptr;
         QTRY_VERIFY((closedRow = findItem(item, QStringLiteral("notificationRow0"))));
         item->setVisible(false);
@@ -506,21 +483,12 @@ private Q_SLOTS:
         HistoryFixture model;
         model.append(false, true);
         QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
-        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
-            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
-            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
-            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
-            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 900}
-        }));
+        QScopedPointer<QObject> page(createHistoryPage(engine, pageComponent, model, 900));
         QVERIFY2(page, qPrintable(pageComponent.errorString()));
         auto *item = qobject_cast<QQuickItem *>(page.data());
         QVERIFY(item);
         QQuickWindow window;
-        window.resize(430, 900);
-        item->setParentItem(window.contentItem());
-        item->setSize(QSizeF(430, 900));
-        window.show();
+        showInWindow(item, window, 900);
         const qreal initialImplicitHeight = item->implicitHeight();
         model.append(true, false, true);
         model.append(false, false, true);
