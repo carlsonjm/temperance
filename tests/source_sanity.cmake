@@ -113,11 +113,11 @@ if(NOT tray_settings_cpp MATCHES "m_extraItems.contains\\(pluginId\\) \\|\\| m_c
    OR NOT expanded_qml MATCHES "Math.max\\(controlPage.implicitHeight, sessionMenuRoom\\)")
     message(FATAL_ERROR "Control Center must load the applets it lists and keep room for the More menu")
 endif()
-# The More menu is drawn as part of its button, never as a popup that
-# places itself.
+# The More menu follows its button, never as a popup that places itself,
+# and is drawn over the whole window, where every line can be pressed.
 if(NOT expanded_qml MATCHES "FocusScope {[\n\r ]*id: sessionMenu"
-   OR NOT expanded_qml MATCHES "y: sessionMore.height \\+ 4")
-    message(FATAL_ERROR "The More menu must stand under its button as part of it")
+   OR NOT expanded_qml MATCHES "y: popup.sessionMoreY \\+ sessionMore.height \\+ 4")
+    message(FATAL_ERROR "The More menu must stand under its button, over the whole window")
 endif()
 if(NOT config_xml MATCHES "<entry name=\"adaptiveWidth\" type=\"Bool\">[\n\r ]*<label>[^<]+</label>[\n\r ]*<default>true</default>")
     message(FATAL_ERROR "Responsive panel sizing must remain enabled by default")
