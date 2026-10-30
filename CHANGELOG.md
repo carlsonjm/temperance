@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Every line of Control Center's More menu works when clicked or tapped. Lock,
+  Log out and the rest could do nothing, and the tap moved the brightness
+  slider under the menu instead.
 - The calendar shows the selected day and the two after it beside the month,
   each day's events with their calendar's color. Smaller calendar makes it the
   month alone, as before, and Larger calendar brings the days back; the choice

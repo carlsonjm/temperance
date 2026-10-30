@@ -108,6 +108,12 @@ Item {
     function inSessionMenu(id) {
         return sessionLayout.menu.indexOf(id) >= 0;
     }
+    // How many of the menu's shown lines stand above this one, in the
+    // menu's fixed order.
+    function sessionMenuLine(id) {
+        const order = ["sleep", "lock", "restart", "logout", "switchUser"];
+        return order.slice(0, order.indexOf(id)).filter(other => inSessionMenu(other)).length;
+    }
 
     readonly property real pageWidth: Kirigami.Units.gridUnit * 24
     readonly property real desiredWidth: calendarShown
@@ -355,10 +361,16 @@ Item {
 
     // A line of the session menu; hidden, it takes no room. Lit under the
     // pointer or with keyboard focus; chosen by click, tap, Enter or Space.
+    // Each line is placed by its own rule rather than by a Column, which
+    // places its lines only before the next frame: opened and tapped
+    // before then, every line stood at the top, the menu measured no
+    // height, and the tap went through to the brightness slider under it.
     component SessionMenuItem: QQC2.AbstractButton {
         id: sessionOption
         required property string actionId
+        objectName: "temperance-session-menu-" + actionId
         visible: popup.inSessionMenu(actionId)
+        y: popup.sessionMenuLine(actionId) * 36
         text: popup.sessionText(actionId)
         Accessible.role: Accessible.MenuItem
         Accessible.name: text
@@ -556,7 +568,7 @@ Item {
                             y: sessionMore.height + 4
                             x: sessionMore.width - width
                             width: 150
-                            height: sessionMenuItems.implicitHeight + 2 * 6
+                            height: sessionMenuItems.height + 2 * 6
                             Accessible.role: Accessible.PopupMenu
                             function shownItems() {
                                 const shown = [];
@@ -609,10 +621,12 @@ Item {
                                 acceptedButtons: Qt.AllButtons
                                 onWheel: wheel => { wheel.accepted = true; }
                             }
-                            Column {
+                            Item {
                                 id: sessionMenuItems
                                 x: 6
                                 y: 6
+                                width: sessionMenu.width - 2 * 6
+                                height: popup.sessionLayout.menu.length * 36
                                 SessionMenuItem { actionId: "sleep" }
                                 SessionMenuItem { actionId: "lock" }
                                 SessionMenuItem { actionId: "restart" }
@@ -762,6 +776,7 @@ Item {
 
         ControlCenterPage {
             id: controlPage
+            objectName: "temperance-control-page"
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: !systemTrayState.activeApplet && systemTrayState.page === "control"

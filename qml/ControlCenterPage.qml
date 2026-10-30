@@ -43,8 +43,11 @@ Item {
         function onFailed() { page.sessionActionError = true }
     }
 
+    // Every session action asked for, from the header's row or its menu.
+    signal sessionActionRequested(string action)
     function requestSessionAction(action) {
         page.sessionActionError = false
+        page.sessionActionRequested(action)
         Plasmoid.session.request(action)
     }
     property int displayBrightness: 0
@@ -279,6 +282,7 @@ Item {
             // sit at the far left while the reading says 100%.
             AccentSlider {
                 id: brightnessSlider
+                objectName: "temperance-brightness-slider"
                 Layout.fillWidth: true
                 from: 0
                 to: 100
