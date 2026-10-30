@@ -95,27 +95,29 @@ rows contribute their real height so controls stay inside the card.
 
 ## Clock and calendar
 
-Temperance draws the time over an optional date at the Status Bar's right end, so
-the panel needs no separate clock applet. It uses the system UI font
-or one you pick, in fixed cells sized for the widest time and date the locale
-produces, so the layout never shifts. The day period is lowercase, light
+Temperance draws the time over an optional date at the Status Bar's right end,
+in the system UI font or one you pick, in cells sized for the locale's widest
+time and date, so the layout never shifts. The day period is lowercase, light
 and smaller, on the time's baseline.
 
-Each new minute is dealt onto the old like a card dropping in from above. The
-deal keeps its own pace whatever Plasma's animation speed, since nobody waits on
-the clock; only Instant, which counts as reduced motion, makes it a fade. Shuffle's
-lock screen shows the same clock as a block at a size the caller gives, a bold
-time over the long date set to the time's width, so lock and bar share one clock and
-animation.
+Each new minute is dealt onto the old like a card dropping in from above, at its
+own pace; only Instant, reduced motion, makes it a fade. Shuffle's
+lock screen shows the same clock as a block, a bold time over the long date, so
+lock and bar share one clock and animation.
 
-The calendar is a small card in the corner, built on Plasma's month grid
-(`org.kde.plasma.workspace.calendar`) and holiday plugin.
+The calendar card, on Plasma's month grid and holiday plugin, shows the month
+beside the selected day and the next two, or the month alone (`calendarCompact`).
+It hangs from Status's corner, or beneath a clock a host passes to
+`openSurface`.
 
-Events come from private iCal addresses you paste, as Google, iCloud and
-Outlook give out, read with KCalendarCore every 10 minutes; a failed read keeps the
-last good copy. KDE's full calendar service was rejected for adding a
-background service and database to every install. Each address is kept in the widget's
-settings in your home folder, and anyone holding it can read that
+Programs on the computer add events as one iCalendar file each in
+`temperance/calendar` under the user's data folder, writing a dotfile and
+renaming it; the folder is watched. `STATUS:TENTATIVE` shows as maybe.
+
+Linked events come from private iCal addresses you paste, read with
+KCalendarCore every 10 minutes; a failed read keeps the last good copy. KDE's
+calendar service was rejected for adding a service and database to every
+install. Anyone holding an address, kept in the widget's settings, can read that
 calendar. Linked calendars are read-only: writing would need a sign-in per service,
 and Google reviews apps that write to calendars.
 

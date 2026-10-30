@@ -129,6 +129,10 @@
       <label>Whether a change of volume, screen or keyboard brightness, or the microphone's mute is shown for a moment in the status area, for a desktop that turns Plasma's own popups off</label>
       <default>false</default>
     </entry>
+    <entry name="calendarCompact" type="Bool">
+      <label>Whether the calendar opens as the small month alone rather than the month beside the selected day and the two after it</label>
+      <default>false</default>
+    </entry>
     <entry name="calendarLinks" type="StringList">
       <label>Private iCal addresses of the calendars whose events the calendar shows</label>
       <default></default>

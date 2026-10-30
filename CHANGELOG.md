@@ -4,6 +4,14 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- The calendar shows the selected day and the two after it beside the month,
+  each day's events with their calendar's color. Smaller calendar makes it the
+  month alone, as before, and Larger calendar brings the days back; the choice
+  is kept. Opened from a clock a host paints, such as a bar's centred time, it
+  hangs beneath that clock rather than from Status's corner.
+- Events other programs put in `~/.local/share/temperance/calendar`, one
+  iCalendar file each, show in the calendar and the ticker, as an invitation a
+  mail program accepted does. An event answered maybe shows as one.
 - Temperance speaks German, French, Spanish and Brazilian Portuguese as well as English, following the
   system language. These first translations are machine-made, and
   corrections from native speakers are welcome.

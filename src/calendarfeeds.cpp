@@ -7,9 +7,13 @@
 #include <KCalendarCore/ICalFormat>
 #include <KLocalizedString>
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QFutureWatcher>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QStandardPaths>
 #include <QThread>
 #include <QtConcurrent/QtConcurrentRun>
 #include <QTimeZone>
@@ -24,6 +28,9 @@ constexpr int fetchTimeout = 30 * 1000;
 // Far above a real calendar's size, even with years of repeating events; a
 // feed past it is refused rather than read into the panel.
 constexpr qint64 maximumFeedSize = 16 * 1024 * 1024;
+// One event in the local folder is a few kilobytes; a file past this is skipped.
+constexpr qint64 maximumLocalFileSize = 1024 * 1024;
+constexpr int localSettleInterval = 250;
 
 // Most feeds name themselves; the address's host stands in for one that
 // does not.
@@ -86,6 +93,13 @@ CalendarFeeds::CalendarFeeds(QObject *parent)
     m_parser.setMaxThreadCount(1);
     m_refresh.setInterval(defaultRefreshInterval);
     connect(&m_refresh, &QTimer::timeout, this, &CalendarFeeds::refresh);
+    m_localSettle.setSingleShot(true);
+    m_localSettle.setInterval(localSettleInterval);
+    connect(&m_localSettle, &QTimer::timeout, this, [this] {
+        watchLocalFolder();
+        readLocalFolder();
+    });
+    connect(&m_localWatcher, &QFileSystemWatcher::directoryChanged, &m_localSettle, qOverload<>(&QTimer::start));
 }
 
 CalendarFeeds::~CalendarFeeds()
@@ -339,6 +353,89 @@ void CalendarFeeds::parsed(const QString &link, quint64 parse, const KCalendarCo
     Q_EMIT eventsChanged();
 }
 
+QString CalendarFeeds::defaultLocalFolder()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QLatin1String("/temperance/calendar");
+}
+
+QString CalendarFeeds::localFolder() const
+{
+    return m_localFolder;
+}
+
+void CalendarFeeds::setLocalFolder(const QString &path)
+{
+    if (path == m_localFolder)
+        return;
+    m_localFolder = path;
+    watchLocalFolder();
+    readLocalFolder();
+}
+
+// The folder itself once it exists; until then the nearest folder above it,
+// so its making is seen.
+void CalendarFeeds::watchLocalFolder()
+{
+    const QStringList watched = m_localWatcher.directories();
+    if (!watched.isEmpty())
+        m_localWatcher.removePaths(watched);
+    if (m_localFolder.isEmpty())
+        return;
+    QString path = m_localFolder;
+    while (!QFileInfo(path).isDir()) {
+        const QString parent = QFileInfo(path).absolutePath();
+        if (parent == path)
+            return;
+        path = parent;
+    }
+    m_localWatcher.addPath(path);
+}
+
+void CalendarFeeds::readLocalFolder()
+{
+    const quint64 read = ++m_localRead;
+    const QString folder = m_localFolder;
+    QThread *home = thread();
+    auto *watcher = new QFutureWatcher<KCalendarCore::MemoryCalendar::Ptr>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, read] {
+        const KCalendarCore::MemoryCalendar::Ptr calendar = watcher->result();
+        watcher->deleteLater();
+        if (read != m_localRead)
+            return;
+        if (!m_local && (!calendar || calendar->rawEvents().isEmpty()))
+            return;
+        m_local = calendar;
+        ++m_revision;
+        Q_EMIT eventsChanged();
+    });
+    watcher->setFuture(QtConcurrent::run(&m_parser, [folder, home]() -> KCalendarCore::MemoryCalendar::Ptr {
+        if (folder.isEmpty())
+            return {};
+        // Each file is read into its own calendar first, so a broken one is
+        // skipped without spoiling the rest.
+        auto calendar = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
+        const QFileInfoList files = QDir(folder).entryInfoList({QStringLiteral("*.ics")}, QDir::Files, QDir::Name);
+        for (const QFileInfo &info : files) {
+            if (info.size() > maximumLocalFileSize)
+                continue;
+            QFile file(info.absoluteFilePath());
+            if (!file.open(QIODevice::ReadOnly))
+                continue;
+            const QByteArray data = file.readAll();
+            if (!data.contains("BEGIN:VCALENDAR"))
+                continue;
+            auto single = KCalendarCore::MemoryCalendar::Ptr::create(QTimeZone::systemTimeZone());
+            KCalendarCore::ICalFormat format;
+            if (!format.fromRawString(single, data))
+                continue;
+            for (const KCalendarCore::Event::Ptr &event : single->rawEvents())
+                calendar->addEvent(KCalendarCore::Event::Ptr(event->clone()));
+        }
+        calendar->moveToThread(home);
+        return calendar;
+    }));
+}
+
 QVariantMap CalendarFeeds::eventsForMonth(int year, int month) const
 {
     if (m_monthsRevision != m_revision) {
@@ -377,11 +474,23 @@ QVariantMap CalendarFeeds::computeMonth(int year, int month) const
     };
     QList<Entry> entries;
 
+    struct Source {
+        KCalendarCore::MemoryCalendar::Ptr calendar;
+        QString name;
+        QString color;
+    };
+    QList<Source> sources;
     for (const Feed &feed : m_feeds) {
         if (!feed.calendar)
             continue;
         const QString picked = m_colors.value(feed.link).toString();
-        const QString calendarColor = picked.isEmpty() ? feed.color : picked;
+        sources.append({feed.calendar, feed.name, picked.isEmpty() ? feed.color : picked});
+    }
+    if (m_local)
+        sources.append({m_local, i18nc("@info the calendar of events kept on this computer", "This computer"), QString()});
+
+    for (const Source &feed : std::as_const(sources)) {
+        const QString calendarColor = feed.color;
         // A long event that began before the month still shows on its days.
         const KCalendarCore::Event::List events = feed.calendar->rawEvents(first.addDays(-62), last, zone, false);
         for (const KCalendarCore::Event::Ptr &event : events) {
@@ -429,6 +538,7 @@ QVariantMap CalendarFeeds::computeMonth(int year, int month) const
                                              {QStringLiteral("title"), event->summary()},
                                              {QStringLiteral("allDay"), wholeDay},
                                              {QStringLiteral("continuing"), continuing},
+                                             {QStringLiteral("tentative"), event->status() == KCalendarCore::Incidence::StatusTentative},
                                              {QStringLiteral("start"), allDay ? QDateTime() : local},
                                              {QStringLiteral("end"), allDay ? QDateTime() : local.addSecs(length)},
                                              {QStringLiteral("calendar"), feed.name},

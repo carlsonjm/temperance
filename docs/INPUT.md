@@ -120,12 +120,13 @@ documents cite this one.
 
 | Input | What happens |
 | --- | --- |
-| Tap or click the clock | Opens the calendar on the current month; again closes it. |
-| Tap or click a day | Shows that day's holidays and events. |
-| Swipe sideways across the days | Turns the month; swiping left shows the next. |
-| Wheel or touchpad scroll over the days | Turns one month per notch or gesture; down shows a later month. |
-| Tap or click the arrows beside the calendar's title | Shows the previous or next month. |
+| Tap or click the clock | Opens or closes the calendar on this month. |
+| Tap or click a day | Shows its holidays and events. |
+| Swipe sideways across the days | Turns the month; left is next. |
+| Wheel or touchpad scroll over the days | A month per notch or gesture; down is later. |
+| Tap or click the month arrows | Shows the previous or next month. |
 | Tap or click Today | Returns to today; shown away from it. |
+| Tap or click Smaller or Larger calendar | The month alone, or with the next days. |
 
 ## Weather
 
@@ -139,9 +140,9 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Right-click Temperance, then Configure Temperance | Opens Tray Entries, Appearance and Calendar, or Shuffle Settings if installed. |
-| Paste a private calendar address, then Add | Links that calendar; its events appear within minutes. |
-| Choose a linked calendar's color | Its events' dot in the ticker takes that color. |
-| Remove a linked calendar | Unlinks it and forgets its color. |
+| Paste a private calendar address, then Add | Links that calendar; events appear within minutes. |
+| Choose a linked calendar's color | Its events' dots take it. |
+| Remove a linked calendar | Unlinks it, forgetting its color. |
 | Notifications off in Appearance | Plasma's own notifications show them. |
 | Setting "Scroll notifications in the ticker", off | The bell counts what waits; nothing scrolls. |
-| Choose a clock font | Sets the clock's typeface from a searchable list. |
+| Choose a clock font | Sets the clock's typeface from a list. |

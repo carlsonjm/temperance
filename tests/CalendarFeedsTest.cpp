@@ -2,7 +2,10 @@
 #include "calendarfeeds.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QElapsedTimer>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QThread>
 #include <QUrl>
 
@@ -39,6 +42,21 @@ static QStringList titles(const QVariantMap &month, int day)
     for (const QVariant &event : month.value(QString::number(day)).toList())
         result.append(event.toMap().value(QStringLiteral("title")).toString());
     return result;
+}
+
+static void writeFile(const QString &path, const QByteArray &data)
+{
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        file.write(data);
+}
+
+static QByteArray invitation(const QByteArray &uid, const QByteArray &summary, const QByteArray &status)
+{
+    return "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//EN\r\nBEGIN:VEVENT\r\nUID:" + uid
+        + "\r\nDTSTAMP:20261001T000000Z\r\nDTSTART:20261103T150000Z\r\nDTEND:20261103T160000Z\r\nSUMMARY:"
+        + summary + "\r\n" + (status.isEmpty() ? QByteArray() : "STATUS:" + status + "\r\n")
+        + "END:VEVENT\r\nEND:VCALENDAR\r\n";
 }
 
 static QVariantMap feedAt(CalendarFeeds &feeds, int index)
@@ -174,6 +192,32 @@ int main(int argc, char **argv)
     const int before = feeds.revision();
     feeds.setLinks({});
     check(feeds.revision() > before && feeds.eventsForMonth(2026, 9).isEmpty(), QStringLiteral("an unlinked calendar's events go"));
+
+    // The local folder: one file per event, hidden files left alone, read
+    // again when it changes, and made after it is first asked for.
+    QTemporaryDir home;
+    const QString folder = home.path() + QStringLiteral("/temperance/calendar");
+    CalendarFeeds local;
+    local.setLocalFolder(folder);
+    check(local.eventsForMonth(2026, 11).isEmpty(), QStringLiteral("a missing local folder has no events"));
+    QDir().mkpath(folder);
+    writeFile(folder + QStringLiteral("/standup.ics"), invitation("standup", "Stand-up", "CONFIRMED"));
+    writeFile(folder + QStringLiteral("/.half-written.ics.tmp"), invitation("hidden", "Hidden", ""));
+    writeFile(folder + QStringLiteral("/.hidden.ics"), invitation("hidden2", "Hidden", ""));
+    check(waitFor([&] { return titles(local.eventsForMonth(2026, 11), 3) == QStringList{QStringLiteral("Stand-up")}; }),
+          QStringLiteral("an event written to the new local folder appears, and hidden files do not"));
+    writeFile(folder + QStringLiteral("/review.ics"), invitation("review", "Review", "TENTATIVE"));
+    writeFile(folder + QStringLiteral("/broken.ics"), "BEGIN:VCALENDAR\r\nnot really\r\n");
+    check(waitFor([&] { return local.eventsForMonth(2026, 11).value(QStringLiteral("3")).toList().size() == 2; }),
+          QStringLiteral("a second local event appears beside the first, and a broken file is skipped"));
+    for (const QVariant &event : local.eventsForMonth(2026, 11).value(QStringLiteral("3")).toList()) {
+        const QVariantMap map = event.toMap();
+        check(map.value(QStringLiteral("tentative")).toBool() == (map.value(QStringLiteral("title")) == QStringLiteral("Review")),
+              QStringLiteral("only the event answered maybe is tentative"));
+    }
+    QFile::remove(folder + QStringLiteral("/standup.ics"));
+    check(waitFor([&] { return titles(local.eventsForMonth(2026, 11), 3) == QStringList{QStringLiteral("Review")}; }),
+          QStringLiteral("a removed local event goes"));
 
     if (failures == 0) qInfo().noquote() << "PASS: calendar feeds";
     return failures == 0 ? 0 : 1;

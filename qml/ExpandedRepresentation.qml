@@ -38,6 +38,8 @@ Item {
         - headingBackground.bottomPadding - contentSafety * 2 - headerSafety)
     readonly property bool calendarShown: !systemTrayState.activeApplet
         && systemTrayState.page === "calendar"
+    // The month beside the days, unless the calendar was made smaller.
+    readonly property bool calendarWide: calendarShown && !Plasmoid.configuration.calendarCompact
     // The Z13's Performance page, opened from Control Center's profile entry.
     readonly property bool performanceShown: !systemTrayState.activeApplet
         && systemTrayState.page === "performance"
@@ -407,8 +409,9 @@ Item {
             z: 1
             Layout.fillWidth: true
             Layout.leftMargin: popup.headerSafety
-            // On the calendar the arrows end on the grid's 16 px margin line.
-            Layout.rightMargin: popup.pageInset
+            // On the calendar the arrows end on the grid's 16 px margin line;
+            // on the wide one the header covers the month alone.
+            Layout.rightMargin: popup.calendarWide ? pageColumn.width - calendarPage.monthRight : popup.pageInset
             Layout.topMargin: popup.headerSafety
             implicitHeight: heading.implicitHeight
 
@@ -483,6 +486,13 @@ Item {
                             glyph: "chevron-right"
                             text: i18n("Next month")
                             onClicked: calendarPage.showMonth(1)
+                        }
+                        CalendarArrow {
+                            objectName: "temperance-calendar-larger"
+                            visible: !popup.calendarWide
+                            glyph: "maximize-2"
+                            text: i18n("Larger calendar")
+                            onClicked: Plasmoid.configuration.calendarCompact = false
                         }
                     }
                 }
@@ -784,6 +794,9 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: popup.calendarShown
+            wide: popup.calendarWide
+            headerReach: y - headerBox.y
+            onResizeAsked: Plasmoid.configuration.calendarCompact = true
             today: systemClock.dateTime
             accentColor: root.accentColor
             feeds: Plasmoid.calendarFeeds
