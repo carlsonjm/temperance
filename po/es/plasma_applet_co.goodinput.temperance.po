@@ -1073,3 +1073,21 @@ msgstr "Configurar %1…"
 msgctxt "@title Shuffle's name for this widget"
 msgid "Status Bar"
 msgstr "Barra de estado"
+
+#: qml/CalendarPage.qml
+msgid "Smaller calendar"
+msgstr "Calendario más pequeño"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Larger calendar"
+msgstr "Calendario más grande"
+
+#: qml/CalendarPage.qml
+msgctxt "@info an event answered maybe; %1 is its title"
+msgid "%1 (maybe)"
+msgstr "%1 (quizás)"
+
+#: src/calendarfeeds.cpp
+msgctxt "@info the calendar of events kept on this computer"
+msgid "This computer"
+msgstr "Este equipo"
