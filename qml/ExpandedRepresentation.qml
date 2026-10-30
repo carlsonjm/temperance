@@ -351,10 +351,19 @@ Item {
         HeaderToolTip { text: headerCircle.text }
     }
 
-    // A line of the session menu; hidden, it takes no room.
-    component SessionMenuItem: QQC2.MenuItem {
+    // A line of the session menu; hidden, it takes no room. Lit under the
+    // pointer or with keyboard focus; chosen by click, tap, Enter or Space.
+    component SessionMenuItem: QQC2.AbstractButton {
         id: sessionOption
+        required property string actionId
+        visible: popup.inSessionMenu(actionId)
+        text: popup.sessionText(actionId)
+        Accessible.role: Accessible.MenuItem
+        Accessible.name: text
+        implicitWidth: 150 - 2 * 6
         implicitHeight: visible ? 36 : 0
+        focusPolicy: Qt.StrongFocus
+        readonly property bool highlighted: optionHover.hovered || activeFocus
         contentItem: PlasmaComponents.Label {
             text: sessionOption.text
             horizontalAlignment: Text.AlignHCenter
@@ -364,6 +373,10 @@ Item {
             radius: height / 2
             color: sessionOption.highlighted ? tone.wash(0.12) : "transparent"
         }
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+        onClicked: sessionMenu.choose(actionId)
+        PointerHover { id: optionHover }
     }
 
     PlasmaExtras.PlasmoidHeading {
@@ -377,6 +390,7 @@ Item {
     }
 
     ColumnLayout {
+        id: pageColumn
         anchors.fill: parent
         anchors.margins: popup.contentSafety
         spacing: headingBackground.bottomPadding
@@ -388,6 +402,9 @@ Item {
         // left unplaced until its own size changes: buttons drawn over the
         // title, Do not disturb at no width.
         Item {
+            id: headerBox
+            // Above the page, so the More menu it holds draws over the pills.
+            z: 1
             Layout.fillWidth: true
             Layout.leftMargin: popup.headerSafety
             // On the calendar the arrows end on the grid's 16 px margin line.
@@ -472,6 +489,8 @@ Item {
 
                 RowLayout {
                     id: sessionActions
+                    // Over the rest of the header, for the More menu it holds.
+                    z: 1
                     visible: systemTrayState.page === "control" && !systemTrayState.activeApplet
                     spacing: popup.sessionSpacing
                     // The actions placed in the row stand here, as many as fit
@@ -494,18 +513,59 @@ Item {
                         icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/ellipsis-vertical.svg"
                         held: sessionMenu.visible
                         text: i18n("More session options")
-                        onClicked: sessionMenu.open()
-                        QQC2.Menu {
+                        onClicked: sessionMenu.visible ? sessionMenu.close() : sessionMenu.open()
+                        onVisibleChanged: if (!visible) sessionMenu.close()
+                        // Any press outside the menu closes it and goes no
+                        // further. It covers the whole window, from wherever
+                        // the button stands in it.
+                        MouseArea {
+                            objectName: "temperance-session-menu-outside"
+                            visible: sessionMenu.visible
+                            z: 1
+                            x: -(sessionMore.x + sessionActions.x + heading.x + headerBox.x + pageColumn.x)
+                            y: -(sessionMore.y + sessionActions.y + heading.y + headerBox.y + pageColumn.y)
+                            width: popup.width
+                            height: popup.height
+                            acceptedButtons: Qt.AllButtons
+                            onPressed: mouse => {
+                                mouse.accepted = true;
+                                sessionMenu.close();
+                            }
+                            onWheel: wheel => { wheel.accepted = true; }
+                        }
+                        // The More menu is part of the button, not a popup: it
+                        // stands 4 px under it, right edges flush, and moves
+                        // only with it. A popup places itself, and could open
+                        // lower when Control Center was still opening or
+                        // growing as it measured.
+                        FocusScope {
                             id: sessionMenu
+                            objectName: "temperance-session-menu"
+                            visible: false
+                            z: 2
                             y: sessionMore.height + 4
                             x: sessionMore.width - width
                             width: 150
-                            padding: 6
-                            closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
-                            // Drawn inside Control Center's own window, so it
-                            // goes when Control Center does, never left standing
-                            // on screen as a window of its own.
-                            popupType: QQC2.Popup.Item
+                            height: sessionMenuItems.implicitHeight + 2 * 6
+                            Accessible.role: Accessible.PopupMenu
+                            function shownItems() {
+                                const shown = [];
+                                for (let i = 0; i < sessionMenuItems.children.length; ++i)
+                                    if (sessionMenuItems.children[i].visible) shown.push(sessionMenuItems.children[i]);
+                                return shown;
+                            }
+                            function open() {
+                                visible = true;
+                                const shown = shownItems();
+                                if (shown.length > 0) shown[0].forceActiveFocus(Qt.PopupFocusReason);
+                                else forceActiveFocus(Qt.PopupFocusReason);
+                            }
+                            function close() {
+                                if (!visible) return;
+                                const hadFocus = activeFocus;
+                                visible = false;
+                                if (hadFocus && sessionMore.visible) sessionMore.forceActiveFocus(Qt.PopupFocusReason);
+                            }
                             // Closes before acting: an action that hides
                             // Control Center or covers the screen must not
                             // leave the menu open behind it.
@@ -513,36 +573,41 @@ Item {
                                 close();
                                 controlPage.requestSessionAction(id);
                             }
-                            background: Rectangle {
+                            function step(delta) {
+                                const shown = shownItems();
+                                if (shown.length === 0) return;
+                                let at = -1;
+                                for (let i = 0; i < shown.length; ++i)
+                                    if (shown[i].activeFocus) at = i;
+                                shown[(at + delta + shown.length) % shown.length].forceActiveFocus(Qt.TabFocusReason);
+                            }
+                            Keys.onEscapePressed: close()
+                            Keys.onUpPressed: step(-1)
+                            Keys.onDownPressed: step(1)
+                            Keys.onTabPressed: step(1)
+                            Keys.onBacktabPressed: step(-1)
+                            Rectangle {
+                                anchors.fill: parent
                                 color: tone.surface
                                 radius: 12
                                 border.width: 1
                                 border.color: tone.divider
                             }
-                            SessionMenuItem {
-                                visible: popup.inSessionMenu("sleep")
-                                text: popup.sessionText("sleep")
-                                onTriggered: sessionMenu.choose("sleep")
+                            // Presses on the menu's own padding stay with it.
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.AllButtons
+                                onWheel: wheel => { wheel.accepted = true; }
                             }
-                            SessionMenuItem {
-                                visible: popup.inSessionMenu("lock")
-                                text: popup.sessionText("lock")
-                                onTriggered: sessionMenu.choose("lock")
-                            }
-                            SessionMenuItem {
-                                visible: popup.inSessionMenu("restart")
-                                text: popup.sessionText("restart")
-                                onTriggered: sessionMenu.choose("restart")
-                            }
-                            SessionMenuItem {
-                                visible: popup.inSessionMenu("logout")
-                                text: popup.sessionText("logout")
-                                onTriggered: sessionMenu.choose("logout")
-                            }
-                            SessionMenuItem {
-                                visible: popup.inSessionMenu("switchUser")
-                                text: popup.sessionText("switchUser")
-                                onTriggered: sessionMenu.choose("switchUser")
+                            Column {
+                                id: sessionMenuItems
+                                x: 6
+                                y: 6
+                                SessionMenuItem { actionId: "sleep" }
+                                SessionMenuItem { actionId: "lock" }
+                                SessionMenuItem { actionId: "restart" }
+                                SessionMenuItem { actionId: "logout" }
+                                SessionMenuItem { actionId: "switchUser" }
                             }
                         }
                     }

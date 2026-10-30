@@ -575,6 +575,76 @@ private Q_SLOTS:
     };
     hoverLightens(QStringLiteral("temperance-header-power"));
     hoverLightens(QStringLiteral("temperance-session-more"));
+    // The More menu opens 4 px under its button, right edges flush, every
+    // time: opened at once, opened while Control Center is still coming
+    // out, and opened again and again. A press outside closes it, and so
+    // does Escape.
+    {
+      const auto menuSitsUnderMore = [&](const char *when) {
+        auto *more = findItem(popupWindow->contentItem(), QStringLiteral("temperance-session-more"));
+        auto *menu = findItem(popupWindow->contentItem(), QStringLiteral("temperance-session-menu"));
+        QVERIFY(more && menu);
+        QTRY_VERIFY(more->isVisible());
+        const QPoint centre = more->mapToScene({more->width() / 2, more->height() / 2}).toPoint();
+        QTest::mouseClick(popupWindow, Qt::LeftButton, {}, centre);
+        QTRY_VERIFY(menu->isVisible());
+        const QPointF topRight = menu->mapToItem(more, QPointF(menu->width(), 0));
+        const QPointF moreBottomRight(more->width(), more->height() + 4);
+        qInfo() << "T1_SESSION_MENU" << when << topRight << moreBottomRight
+                << menu->mapToScene({0, 0}) << more->mapToScene({0, 0});
+        QVERIFY(qAbs(topRight.x() - moreBottomRight.x()) < 0.5);
+        QVERIFY(qAbs(topRight.y() - moreBottomRight.y()) < 0.5);
+        // Nothing places it anywhere else after it shows.
+        QTest::qWait(400);
+        const QPointF settled = menu->mapToItem(more, QPointF(menu->width(), 0));
+        QVERIFY(qAbs(settled.x() - moreBottomRight.x()) < 0.5);
+        QVERIFY(qAbs(settled.y() - moreBottomRight.y()) < 0.5);
+      };
+      auto *menu = findItem(popupWindow->contentItem(), QStringLiteral("temperance-session-menu"));
+      QVERIFY(menu);
+      // Over the pills, left of the menu: the press closes the menu and
+      // opens no pill.
+      const auto pressOutside = [&]() {
+        auto *more = findItem(popupWindow->contentItem(), QStringLiteral("temperance-session-more"));
+        QTest::mouseClick(popupWindow, Qt::LeftButton, {},
+                          more->mapToScene({more->width() - menu->width() - 40,
+                                            more->height() + 40}).toPoint());
+      };
+      for (int round = 0; round < 3; ++round) {
+        menuSitsUnderMore("settled");
+        pressOutside();
+        QTRY_VERIFY(!menu->isVisible());
+        QVERIFY(state->property("expanded").toBool());
+        QCOMPARE(state->property("page").toString(), QStringLiteral("control"));
+      }
+      // With keyboard focus in the menu, Escape closes it.
+      menuSitsUnderMore("settled");
+      const QQuickItem *focused = popupWindow->activeFocusItem();
+      bool focusInMenu = false;
+      for (const QQuickItem *item = focused; item; item = item->parentItem())
+        focusInMenu = focusInMenu || item == menu;
+      qInfo() << "T1_SESSION_MENU_FOCUS" << focusInMenu;
+      if (focusInMenu) {
+        QTest::keyClick(popupWindow, Qt::Key_Escape);
+        QTRY_VERIFY(!menu->isVisible());
+      } else {
+        pressOutside();
+        QTRY_VERIFY(!menu->isVisible());
+      }
+      // Opened while Control Center is still coming out of the panel.
+      for (int round = 0; round < 3; ++round) {
+        state->setProperty("expanded", false);
+        QTRY_VERIFY(!popup->property("visible").toBool());
+        QTest::qWait(300);
+        state->setProperty("page", QStringLiteral("control"));
+        state->setProperty("expanded", true);
+        QTRY_VERIFY(popupWindow->isExposed());
+        menuSitsUnderMore("opening");
+        pressOutside();
+        QTRY_VERIFY(!menu->isVisible());
+      }
+      QTest::qWait(400);
+    }
     // A page an applet shows, opened from a page, has Back, which returns
     // to that page.
     const auto backReturns = [&](const QString &appletId, const QString &page) {
