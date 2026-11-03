@@ -4,8 +4,9 @@
 */
 import QtQuick
 
-// The tray's mark: a rounded triangle, ringed while the tray is open. The
-// canvas leaves room around the mark for the ring.
+// The tray's mark: a rounded triangle pointing down, toward the page it
+// opens, ringed while the tray is open. The canvas leaves room around the
+// mark for the ring.
 Canvas {
     id: glyph
 
@@ -28,9 +29,9 @@ Canvas {
         function triangle(size) {
             const cx = width / 2;
             const cy = height / 2;
-            const vertices = [[cx, cy - size * 0.55],
-                [cx + size * 0.6, cy + size * 0.4],
-                [cx - size * 0.6, cy + size * 0.4]];
+            const vertices = [[cx, cy + size * 0.55],
+                [cx - size * 0.6, cy - size * 0.4],
+                [cx + size * 0.6, cy - size * 0.4]];
             // Round the path itself, not just the stroke join.
             const inset = size * 0.16;
             ctx.beginPath();

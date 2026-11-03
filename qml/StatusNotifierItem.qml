@@ -18,6 +18,13 @@ AbstractItem {
     itemId: model?.Id ?? ""
     // Kadunce's Cards entry turns Cards on and off; it opens nothing.
     readonly property bool isSwitch: itemId === "kadunce-control_kadunce-control"
+    // Cards says On or Off in its tooltip, and draws its off icon while off.
+    inlineState: isSwitch && inlinePresentation ? (model?.ToolTipSubTitle ?? "") : ""
+    // A build run from its own folder sends a drawn icon with no name; its
+    // tooltip still says On in Cards' own words.
+    inlineOn: isSwitch && (model?.IconName
+        ? model.IconName === "co.goodinput.kadunce-cards"
+        : (model?.ToolTipSubTitle ?? "") === i18nd("kadunce-control", "On"))
     text: presentationText || model?.Title || model?.ToolTipTitle || ""
     mainText: inVisibleLayout || (model?.ToolTipTitle !== "" && model?.ToolTipTitle !== text) ? model?.ToolTipTitle ?? "" : ""
     subText: model?.ToolTipSubTitle ?? ""

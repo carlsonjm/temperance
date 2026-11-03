@@ -39,7 +39,7 @@ its own side and caps its width. A host painting a clock publishes the width
 The bell, weather, Control Center, tray and battery are drawn a third larger than
 the panel's small icons and set one 34 px step apart with no gaps, so they read as
 one group. Height makes up the width: each icon's touch area runs the panel's
-full height, about 7 by 13 mm on an ASUS ROG Flow Z13.
+full height.
 
 The row stays a 42 px surface, slim on thinner panels (`PANELS.md`), because the
 popups are placed from it. A separate handler takes presses above and below the
@@ -50,8 +50,8 @@ The bell and the wired port are outlines Temperance draws, kept to the size of
 the theme's filled marks beside them (21 and 18 px, a 1.75 px line): an outline
 reads larger than a filled mark. The count sits 5 px under the rim, in 13 px.
 
-The bell and tray are Temperance's own marks, scaled rather than redrawn. Every
-other status icon is a drawing Temperance carries, Colloid's bold set
+The bell and the tray's downward triangle are Temperance's own marks, scaled
+rather than redrawn. Every other status icon is a drawing Temperance carries, Colloid's bold set
 (`tools/status-glyphs.py`), never the theme's; `qml/StatusGlyphs.js` maps Plasma's state names to them.
 `-locked` means a VPN; apps keep their own icons.
 
@@ -149,7 +149,8 @@ Plasma's buttons ignore the pointer, so these track a mouse, trackpad or pen
 themselves, but not a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
 
 Promoted tray entries, loaded even where the tray leaves them off,
-become Control Center pills in listed order and leave the organized tray, which
+become Control Center pills in listed order, each naming its state under its
+name and accent-filled while on, and leave the organized tray, which
 keeps the Apps, Devices, System order and drops empty sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by
 `temperance.performance`, needs the z13ctl-plus helper's daemon; a right-click lists its profiles.
@@ -164,11 +165,11 @@ opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 
 ## Popups
 
-`PanelPopupAnchor.qml` places the popup, and its `panelGap` is the gap to the
-panel; `Dialog.floating` only treats and clamps screen edges. The critical
-notification host carries its own anchor correction, because its window type does
-not inherit AppletPopup clearance, and its own theme, so an alert keeps the look's
-colours whatever ground the bar has. `ExpandedRepresentation.qml` provides the rounded
+`PanelPopupAnchor.qml` places the popup, and its `panelGap`, from `popupGap()`,
+stands it off the bar so its near edge lands where a window's does;
+`Dialog.floating`, the same gutter, keeps it off other screen edges. The
+critical notification host shares that anchor and has its own theme, so an alert
+keeps the look's colours on any bar. `ExpandedRepresentation.qml` provides the rounded
 surface, padding and entrance motion, and `availablePopupHeight()` caps content
 height. To fix a placement error, first measure the final window, the painted panel edge
 and the anchor; do not change padding, content translation or height limits.

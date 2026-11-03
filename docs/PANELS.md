@@ -80,9 +80,10 @@ setting is off.
 ## Edges
 
 Pages and important banners open away from the panel's edge, above a panel along
-the bottom and below one along the top, and come in from the panel's side. A page
-sits 18 px from the row and a banner 10 px further, since its window type has no
-clearance of its own. The slim row's strip of status controls sits 4 px from the
+the bottom and below one along the top, and come in from the panel's side. Each
+lines up with the windows beside it: its near edge stands Cards' gutter in from
+the room the shell leaves for windows, 10 px where Cards is not installed, and
+never nearer the bar than that. The slim row's strip of status controls sits 4 px from the
 bar.
 
 ## Host interfaces

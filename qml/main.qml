@@ -125,6 +125,8 @@ ContainmentItem {
     property int demoNotificationIndex: 0
     property int lastLiveNotificationCount: 0
     property real notificationPopupHeightLimit: 600
+    // How far a page's visual parent stands off the bar (refreshPopupHeightLimit).
+    property int popupGap: 11
     property var presentedNotificationKeys: ({})
 
     function nextUnpresentedNotification() {
@@ -296,8 +298,11 @@ ContainmentItem {
     // arriving after this one shrink it without moving this one, so it is
     // measured again as a page opens: a page taller than the room is put on
     // the far side of the bar, off the screen.
+    // The gap is measured with it, so a page's near edge lines up with the
+    // windows beside it (PANELS.md § Edges).
     function refreshPopupHeightLimit() {
         notificationPopupHeightLimit = Plasmoid.availablePopupHeight(root);
+        popupGap = Plasmoid.popupGap(compactSurface);
     }
 
     function refreshResponsiveWidth() {
@@ -323,6 +328,7 @@ ContainmentItem {
         target: Plasmoid
         function onPanelGeometryChanged() { Qt.callLater(root.refreshResponsiveWidth); }
         function onHostAvailableWidthChanged() { Qt.callLater(root.refreshResponsiveWidth); }
+        function onPopupRoomChanged() { Qt.callLater(root.refreshPopupHeightLimit); }
     }
     // The output this window is on, for the host's clock; asked once it is
     // known, and again only when the window moves to another output.
@@ -1648,6 +1654,9 @@ ContainmentItem {
                         id: trayGlyph
                         mark: root.slim ? 9 : 12
                         anchors.centerIn: parent
+                        // Measured on the bar: 1 px down sets the downward
+                        // triangle, ring and all, level with the bell, Wi-Fi
+                        // and battery marks beside it.
                         anchors.verticalCenterOffset: 1
                         ink: tone.text
                         ring: trayButton.active
@@ -1748,6 +1757,7 @@ ContainmentItem {
             surfaceWidth: compactSurface.width
             surfaceHeight: compactSurface.height
             panelLocation: Plasmoid.location
+            panelGap: root.popupGap
         }
 
         Item {
@@ -1756,10 +1766,9 @@ ContainmentItem {
             height: compactSurface.height
             x: root.vertical ? popupAnchor.x
                 : compactSurface.width - width
-            // CriticalNotification windows do not inherit the same panel-side
-            // floating clearance as AppletPopup windows.
-            y: popupAnchor.y + (Plasmoid.location === PlasmaCore.Types.TopEdge ? 10
-                : Plasmoid.location === PlasmaCore.Types.BottomEdge ? -10 : 0)
+            // Plasma places a banner as it places a page, so it opens on
+            // the same line.
+            y: popupAnchor.y
         }
 
         // Beneath the host's clock, for the calendar opened from it.
@@ -1777,7 +1786,9 @@ ContainmentItem {
             visualParent: root.calendarOpen && root.calendarSource ? calendarAnchor : popupAnchor
             location: Plasmoid.location
             type: PlasmaCore.Dialog.AppletPopup
-            floating: 10
+            // Held off the screen's edges by the windows' gutter, so a page
+            // ends where a window beside it ends.
+            floating: Plasmoid.windowGutter
             hideOnWindowDeactivate: !(Plasmoid.configuration.showPinButton
                 && Plasmoid.configuration.pin) && !systemTrayState.holdingOpen
             visible: systemTrayState.expanded

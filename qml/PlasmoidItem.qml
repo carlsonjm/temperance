@@ -12,6 +12,7 @@ import QtQuick
 import org.kde.kirigami as Kirigami
 
 import org.kde.plasma.components as PlasmaComponents3
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 
 AbstractItem {
@@ -27,6 +28,71 @@ AbstractItem {
     textFormat: applet?.toolTipTextFormat ?? 0 /* Text.AutoText, the default value */
     active: inVisibleLayout || (pointerMoved && systemTrayState.activeApplet !== applet && (text != mainText || subText.length > 0))
     inlineIcon: presentationIcon || applet?.Plasmoid.icon || "application-x-executable"
+
+    // Plasma's own widgets read in sentence case, as Temperance's names do;
+    // product names and words already capitalised inside stay as written.
+    // Other languages keep their own casing.
+    readonly property string pluginName: applet?.Plasmoid.pluginName ?? ""
+    function sentenceCase(value) {
+        if (!pluginName.startsWith("org.kde.") || !Qt.locale().name.startsWith("en")) return value;
+        const kept = ["Bluetooth", "Plasma", "Wi-Fi"];
+        return value.split(" ").map((word, i, words) => {
+            if (i === 0 || kept.indexOf(word) >= 0 || words[i - 1] === "KDE"
+                    || word.slice(1) !== word.slice(1).toLowerCase())
+                return word;
+            return word.charAt(0).toLowerCase() + word.slice(1);
+        }).join(" ");
+    }
+    readonly property bool needsSetUp: applet?.Plasmoid.configurationRequired ?? false
+    inlineName: {
+        if (presentationText) return presentationText;
+        // Weather, unset, titles itself "Set up Weather Report…": the tile
+        // keeps the name and says what it needs underneath.
+        if (pluginName === "org.kde.plasma.weather" && needsSetUp) return i18n("Weather report");
+        return sentenceCase(suiteSentenceCaseLabel(text));
+    }
+
+    // The network in use, from the first connection the Networks widget
+    // lists as "type: status". Its status names the network in the words
+    // of Plasma's own translation; any other status is shown as it is.
+    function networkState() {
+        const lines = String(applet?.toolTipSubText ?? "").split("\n");
+        const connection = lines.find(line => line.indexOf(": ") > 0);
+        if (!connection) return { text: i18n("Not connected"), on: false };
+        const status = connection.slice(connection.indexOf(": ") + 2);
+        const marker = "@@NETWORK@@";
+        const pattern = i18nd("plasmanetworkmanagement-libs", "Connected to %1", marker);
+        const at = pattern.indexOf(marker);
+        if (at >= 0) {
+            const before = pattern.slice(0, at);
+            const after = pattern.slice(at + marker.length);
+            if (status.startsWith(before) && status.endsWith(after) && status.length > before.length + after.length)
+                return { text: status.slice(before.length, status.length - after.length), on: true };
+        }
+        return { text: status, on: !(applet?.Plasmoid.busy ?? false) };
+    }
+    readonly property var appletState: {
+        if (!applet) return { text: "", on: false };
+        switch (pluginName) {
+        case "org.kde.plasma.networkmanagement":
+            return networkState();
+        case "org.kde.plasma.bluetooth": {
+            // Bluetooth's icon and status say it plainly: active when on,
+            // "activated" while a device is connected.
+            const on = applet.Plasmoid.status === PlasmaCore.Types.ActiveStatus;
+            const connected = String(applet.Plasmoid.icon).indexOf("bluetooth-activated") >= 0;
+            return { text: connected ? i18n("Connected") : on ? i18n("On") : i18n("Off"), on: on };
+        }
+        case "org.kde.kdeconnect": {
+            const on = applet.Plasmoid.status === PlasmaCore.Types.ActiveStatus;
+            return { text: on ? i18n("Connected") : i18n("No device"), on: on };
+        }
+        }
+        if (needsSetUp) return { text: i18n("Not set up"), on: false };
+        return { text: "", on: false };
+    }
+    inlineState: inlinePresentation ? appletState.text : ""
+    inlineOn: appletState.on
 
     Kirigami.Icon {
         parent: plasmoidContainer.iconContainer

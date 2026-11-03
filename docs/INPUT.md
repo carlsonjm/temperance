@@ -37,7 +37,7 @@ documents cite this one.
 | Tap or click Expand or Collapse on an application | Opens or folds its group. |
 | Tap or click Show more or Show less | Opens or folds a long notification in place. |
 | Wheel over the history | Scrolls 80 px a notch at Plasma's usual three lines a notch. |
-| Tap or click do not disturb | Turns it on or off. While on, the ticker stays still and the bell checks what arrives. |
+| Tap or click Do not disturb | Turns it on or off. While on, the ticker stays still and the bell checks what arrives. |
 | Enter or Space on a focused notification | Same as tapping it. |
 
 ### Event ticker

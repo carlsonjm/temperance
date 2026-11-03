@@ -390,6 +390,21 @@ void SystemTray::init()
         disconnect(applet, &Applet::activated, this, &Applet::activated);
     });
 
+    // Pages open where windows stand, so they follow the gutter and the
+    // shell's room for windows as either changes.
+    m_kwinConfig = KSharedConfig::openConfig(u"kwinrc"_s, KConfig::NoGlobals);
+    readWindowGutter();
+    m_kwinWatcher = KConfigWatcher::create(m_kwinConfig);
+    connect(m_kwinWatcher.data(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &group) {
+        if (group.name() == u"Effect-kadunce")
+            readWindowGutter();
+    });
+    if (Plasma::Corona *const shell = corona()) {
+        connect(shell, &Plasma::Corona::availableScreenRectChanged, this, [this] {
+            Q_EMIT popupRoomChanged();
+        });
+    }
+
     if (KWindowSystem::isPlatformWayland()) {
         auto config = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::NoGlobals);
         KConfigGroup kscreenGroup = config->group(QStringLiteral("KScreen"));
@@ -637,26 +652,32 @@ QPointF SystemTray::popupPosition(QQuickItem *visualParent, int x, int y)
     return QPoint();
 }
 
+// On Wayland Qt reports the whole output as available: panels' reserved
+// edges, such as a dock along the bottom, are known only to the shell. Its
+// own room for windows is the one windows are laid out in, invalid where the
+// shell does not say.
+static QRect shellRoom(const Plasma::Corona *shell, const QScreen *qscreen)
+{
+    if (!shell || !qscreen)
+        return {};
+    for (int id = 0, count = int(shell->numScreens()); id < count; ++id) {
+        if (shell->screenGeometry(id) == qscreen->geometry())
+            return shell->availableScreenRect(id);
+    }
+    return {};
+}
+
 int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
 {
     if (!visualParent || !visualParent->window() || !visualParent->window()->screen())
         return 600;
     QScreen *const qscreen = visualParent->window()->screen();
     QRect screen = qscreen->availableGeometry();
-    // On Wayland Qt reports the whole output as available: panels' reserved
-    // edges, such as a dock along the bottom, are known only to the shell.
-    // Its own room for windows is the one to stay inside, so the popup stops
-    // above a dock rather than running under it.
-    if (const Plasma::Corona *const shell = corona()) {
-        for (int id = 0, count = int(shell->numScreens()); id < count; ++id) {
-            if (shell->screenGeometry(id) != qscreen->geometry())
-                continue;
-            const QRect room = shell->availableScreenRect(id);
-            if (room.isValid())
-                screen = screen.intersected(room);
-            break;
-        }
-    }
+    // The popup stays inside the shell's room, so it stops above a dock
+    // rather than running under it.
+    const QRect room = shellRoom(corona(), qscreen);
+    if (room.isValid())
+        screen = screen.intersected(room);
     const QPointF top = visualParent->mapToGlobal(QPointF(0, 0));
     const QPointF bottom = visualParent->mapToGlobal(QPointF(0, visualParent->height()));
     qreal space = screen.height();
@@ -665,6 +686,63 @@ int SystemTray::availablePopupHeight(QQuickItem *visualParent) const
     else if (location() == Plasma::Types::TopEdge)
         space = screen.y() + screen.height() - bottom.y();
     return std::max(1, int(space) - 20);
+}
+
+int SystemTray::windowGutter() const
+{
+    return m_windowGutter;
+}
+
+void SystemTray::readWindowGutter()
+{
+    // Cards' gutter between a window and the work area's edge, as Kadunce
+    // reads it (kadunce native/src/ActiveSettings.h); 10 where Cards is
+    // not installed or the gutter was never set.
+    const KConfigGroup cards(m_kwinConfig, u"Effect-kadunce"_s);
+    const int gutter = std::clamp(cards.readEntry("ActiveCardGutter", 10), 4, 48);
+    if (gutter == m_windowGutter)
+        return;
+    m_windowGutter = gutter;
+    Q_EMIT popupRoomChanged();
+}
+
+int SystemTray::popupGap(QQuickItem *surface) const
+{
+    // Plasma opens a page from its visual parent's rectangle in whole
+    // pixels: a page below or right of the bar starts on that rectangle's
+    // last row or column, one pixel inside it, and a page above or left of
+    // the bar ends where the rectangle begins (Dialog::popupPosition). The
+    // gap moves the parent off the bar's surface so the page's near edge
+    // lands where a window's does: the gutter in from the work area's edge.
+    const auto edge = location();
+    const bool inside = edge == Plasma::Types::TopEdge || edge == Plasma::Types::LeftEdge;
+    // Never nearer the bar than a gutter, as on a panel windows may cover.
+    const int nearest = m_windowGutter + (inside ? 1 : 0);
+    if (!surface || !surface->window())
+        return nearest;
+    const QRect room = shellRoom(corona(), surface->window()->screen());
+    if (!room.isValid())
+        return nearest;
+    const QPointF origin = surface->mapToGlobal(QPointF(0, 0));
+    const QRectF bar(origin, QSizeF(surface->width(), surface->height()));
+    qreal gap = nearest;
+    switch (edge) {
+    case Plasma::Types::TopEdge:
+        gap = room.y() + m_windowGutter + 1 - (bar.y() + bar.height());
+        break;
+    case Plasma::Types::BottomEdge:
+        gap = bar.y() - (room.y() + room.height()) + m_windowGutter;
+        break;
+    case Plasma::Types::LeftEdge:
+        gap = room.x() + m_windowGutter + 1 - (bar.x() + bar.width());
+        break;
+    case Plasma::Types::RightEdge:
+        gap = bar.x() - (room.x() + room.width()) + m_windowGutter;
+        break;
+    default:
+        break;
+    }
+    return std::max(nearest, qRound(gap));
 }
 
 int SystemTray::availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const

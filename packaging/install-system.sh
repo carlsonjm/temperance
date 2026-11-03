@@ -139,6 +139,10 @@ announce_activity() {
 # The panel loads a widget's plugin once, so it restarts to pick up the new
 # build. Windows and the session stay as they are.
 if [[ -z "${root}" ]] && systemctl --user --quiet is-active plasma-plasmashell.service 2>/dev/null; then
+    # The panel keeps compiled copies of the screens it has shown, and a copy
+    # can outlast the update that changed its screen. Without them the
+    # restarted panel compiles this build's afresh.
+    rm -rf -- "${XDG_CACHE_HOME:-${HOME}/.cache}/plasmashell/qmlcache"
     systemctl --user restart plasma-plasmashell.service
     announce_activity
     if panel_runs_this_build; then

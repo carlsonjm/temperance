@@ -93,6 +93,20 @@ PlasmaCore.ToolTipArea {
         return value;
     }
 
+    // A tile's name, and the state it reads under the name: the network in
+    // use, whether a switch is on. An entry Temperance knows nothing about
+    // shows its name alone.
+    property string inlineName: presentationText || suiteSentenceCaseLabel(text)
+    property string inlineState: ""
+    // Whether what the tile switches is on. A Control Center pill
+    // (switchFill) is then filled with the accent, its ink dark or light
+    // to stand on it.
+    property bool inlineOn: false
+    property bool switchFill: false
+    readonly property bool filledOn: switchFill && inlineOn
+    readonly property color accentInk: (root.accentColor.r * 0.299 + root.accentColor.g * 0.587
+        + root.accentColor.b * 0.114) > 0.58 ? "#102729" : "#FFFFFF"
+
     // Keep these in sync with HiddenItems.qml
     readonly property int margins: Kirigami.Units.smallSpacing
     readonly property int maxTextLines: cardBackground ? 1 : 2
@@ -168,9 +182,13 @@ PlasmaCore.ToolTipArea {
         anchors.margins: abstractItem.cardBackground ? 0 : Kirigami.Units.smallSpacing / 2
         radius: abstractItem.cardBackground ? height / 2 : Kirigami.Units.cornerRadius
         visible: abstractItem.inHiddenLayout
-        color: abstractItem.effectivePressed || mouseArea.containsMouse
-            ? tone.wash(0.12)
-            : (abstractItem.cardBackground ? tone.wash(0.07) : "transparent")
+        color: abstractItem.filledOn
+            ? (abstractItem.effectivePressed || mouseArea.containsMouse
+                ? Qt.lighter(root.accentColor, 1.12) : root.accentColor)
+            : abstractItem.effectivePressed || mouseArea.containsMouse
+                ? tone.wash(0.12)
+                : (abstractItem.cardBackground ? tone.wash(0.07) : "transparent")
+        Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
     }
 
     ColumnLayout {
@@ -248,10 +266,19 @@ PlasmaCore.ToolTipArea {
     }
 
     RowLayout {
+        objectName: "temperance-tile-face"
         visible: abstractItem.inlinePresentation
         anchors.centerIn: parent
         width: Math.min(implicitWidth, abstractItem.width - Kirigami.Units.largeSpacing * 2)
         spacing: 8
+
+        // On the accent the tile's own ink follows the fill, for its glyph,
+        // a symbolic icon and both lines alike.
+        Kirigami.Theme.inherit: !abstractItem.filledOn
+        Kirigami.Theme.backgroundColor: abstractItem.filledOn
+            ? root.accentColor : abstractItem.Kirigami.Theme.backgroundColor
+        Kirigami.Theme.textColor: abstractItem.filledOn
+            ? abstractItem.accentInk : abstractItem.Kirigami.Theme.textColor
 
         // Plasma's own status widgets draw from Temperance's glyphs, whatever
         // the icon theme; an application keeps its own icon.
@@ -267,12 +294,26 @@ PlasmaCore.ToolTipArea {
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: implicitWidth
         }
-        PlasmaComponents3.Label {
+        ColumnLayout {
             Layout.fillWidth: true
-            text: abstractItem.presentationText
-                || abstractItem.suiteSentenceCaseLabel(abstractItem.text)
-            maximumLineCount: 1
-            elide: Text.ElideRight
+            spacing: 0
+            PlasmaComponents3.Label {
+                objectName: "temperance-tile-name"
+                Layout.fillWidth: true
+                text: abstractItem.inlineName
+                maximumLineCount: 1
+                elide: Text.ElideRight
+            }
+            PlasmaComponents3.Label {
+                objectName: "temperance-tile-state"
+                Layout.fillWidth: true
+                visible: text !== ""
+                text: abstractItem.inlineState
+                font.pixelSize: 12
+                opacity: 0.72
+                maximumLineCount: 1
+                elide: Text.ElideRight
+            }
         }
     }
 }

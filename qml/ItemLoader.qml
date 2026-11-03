@@ -17,6 +17,8 @@ Loader {
     property string presentationIcon: ""
     property string presentationText: ""
     property bool inlinePresentation: false
+    // A Control Center pill: filled with the accent while what it switches is on.
+    property bool switchFill: false
 
     z: x + 1 // always be above what it's on top of, even for x==0
 
@@ -51,6 +53,7 @@ Loader {
             presentationIcon: Qt.binding(() => presentationIcon),
             presentationText: Qt.binding(() => presentationText),
             inlinePresentation: Qt.binding(() => inlinePresentation),
+            switchFill: Qt.binding(() => switchFill),
         });
     }
 }

@@ -624,53 +624,70 @@ Item {
                     }
                 }
 
-                RowLayout {
-                    id: doNotDisturbControl
+                // One pill that names itself: grey while off, filled with the
+                // accent and the bell struck through while on.
+                Rectangle {
+                    id: doNotDisturbPill
+                    objectName: "temperance-do-not-disturb"
                     visible: systemTrayState.page === "notifications" && !systemTrayState.activeApplet
-                    spacing: 7
+                    readonly property bool checked: NotificationManager.Server.inhibited
+                    readonly property color ink: checked
+                        ? ((root.accentColor.r * 0.299 + root.accentColor.g * 0.587 + root.accentColor.b * 0.114) > 0.58
+                            ? "#102729" : "#FFFFFF")
+                        : tone.text
+                    function toggle() { NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited }
+                    Layout.preferredWidth: doNotDisturbContent.implicitWidth + 22
+                    Layout.minimumWidth: Layout.preferredWidth
+                    Layout.maximumWidth: Layout.preferredWidth
+                    Layout.preferredHeight: 30
+                    Layout.maximumHeight: 30
+                    radius: height / 2
+                    clip: true
+                    color: checked
+                        ? (dndTap.pressed || dndHover.hovered ? Qt.lighter(root.accentColor, 1.12) : root.accentColor)
+                        : dndTap.pressed ? tone.controlPressed : dndHover.hovered ? tone.controlHover : tone.control
+                    border.width: activeFocus ? 1 : 0
+                    border.color: tone.text
+                    Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
-                    PlasmaComponents.Label {
-                        text: i18n("do not disturb")
-                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
-                        font.weight: Font.Medium
-                        color: tone.text
-                        opacity: doNotDisturbPill.checked ? 1 : 0.78
-                        Behavior on opacity { NumberAnimation { duration: 140 } }
-                    }
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: i18n("Do not disturb")
+                    Accessible.checkable: true
+                    Accessible.checked: checked
+                    Accessible.onPressAction: toggle()
+                    Accessible.onToggleAction: toggle()
+                    Keys.onReturnPressed: toggle()
+                    Keys.onEnterPressed: toggle()
+                    Keys.onSpacePressed: toggle()
 
-                    Rectangle {
-                        id: doNotDisturbPill
-                        objectName: "temperance-do-not-disturb"
-                        readonly property bool checked: NotificationManager.Server.inhibited
-                        Layout.preferredWidth: 42
-                        Layout.minimumWidth: 42
-                        Layout.maximumWidth: 42
-                        Layout.preferredHeight: 30
-                        Layout.maximumHeight: 30
-                        radius: height / 2
-                        clip: true
-                        color: checked ? root.accentColor
-                            : dndTap.pressed ? tone.controlPressed : dndHover.hovered ? tone.controlHover : tone.control
-                        Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
-
+                    Row {
+                        id: doNotDisturbContent
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
                         BellGlyph {
-                            width: 18
-                            height: 18
-                            anchors.centerIn: parent
-                            glyphColor: doNotDisturbPill.checked ? "#102729" : tone.text
+                            width: 16
+                            height: 16
+                            anchors.verticalCenter: parent.verticalCenter
+                            glyphColor: doNotDisturbPill.ink
                             slashed: doNotDisturbPill.checked
                             strokeWidth: 1.55
                         }
+                        PlasmaComponents.Label {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: i18n("Do not disturb")
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            color: doNotDisturbPill.ink
+                        }
+                    }
 
-                        PointerHover { id: dndHover }
-                        TapHandler {
-                            id: dndTap
-                            onTapped: NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited
-                        }
-                        HeaderToolTip {
-                            text: doNotDisturbPill.checked
-                                ? i18n("Turn off do not disturb") : i18n("Turn on do not disturb")
-                        }
+                    PointerHover { id: dndHover }
+                    TapHandler {
+                        id: dndTap
+                        onTapped: doNotDisturbPill.toggle()
                     }
                 }
 
