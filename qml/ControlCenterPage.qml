@@ -29,7 +29,9 @@ Item {
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
-    readonly property int levelHeight: 44
+    // As tall as the header's round buttons, so the levels sit below the
+    // switches rather than matching them.
+    readonly property int levelHeight: 36
     readonly property color accentTextColor: (accentColor.r * 0.299 + accentColor.g * 0.587 + accentColor.b * 0.114) > 0.58
         ? "#102729" : "#FFFFFF"
 
@@ -217,20 +219,25 @@ Item {
         id: levelIcon
         required property var level
         readonly property bool onFill: level.fillWidth >= x + width - 6
-        x: 6
+        x: 4
         anchors.verticalCenter: parent.verticalCenter
-        width: 40
-        height: 40
-        padding: 10
+        width: 28
+        height: 28
+        padding: 5
         display: PlasmaComponents.AbstractButton.IconOnly
         Accessible.name: text
         // On the accent, the glyph's own ink follows the fill.
         Kirigami.Theme.inherit: !onFill
         Kirigami.Theme.backgroundColor: onFill ? page.accentColor : page.Kirigami.Theme.backgroundColor
         Kirigami.Theme.textColor: onFill ? page.accentTextColor : page.Kirigami.Theme.textColor
+        // Always on a circle of its own, a shade deeper than what it stands
+        // on, so it reads as a button; deeper still under the pointer.
+        readonly property color chipInk: onFill ? page.accentTextColor : tone.text
         background: Rectangle {
             radius: height / 2
-            color: levelIcon.down ? tone.wash(0.18) : iconHover.hovered ? tone.wash(0.12) : "transparent"
+            color: Qt.rgba(levelIcon.chipInk.r, levelIcon.chipInk.g, levelIcon.chipInk.b,
+                levelIcon.down ? 0.36 : iconHover.hovered ? 0.28 : 0.20)
+            Behavior on color { ColorAnimation { duration: 120 } }
             border.width: levelIcon.visualFocus ? 1 : 0
             border.color: tone.text
         }
