@@ -1648,7 +1648,7 @@ ContainmentItem {
                         id: trayGlyph
                         mark: root.slim ? 9 : 12
                         anchors.centerIn: parent
-                        anchors.verticalCenterOffset: 1
+                        anchors.verticalCenterOffset: -1
                         ink: tone.text
                         ring: trayButton.active
                         rippleProgress: trayButton.rippleProgress
