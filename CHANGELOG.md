@@ -21,6 +21,9 @@ This file records user-visible changes.
   with the reading inside; the whole pill takes a finger. Beside each, a round
   button like the header's opens that level's settings.
 - Control Center's Cards switch fills with the accent while Cards is on.
+- In the calendar, today and the chosen day are marked with a pill that holds
+  the date and its event dot, which used to crowd the circle's edge, and an
+  event that lasts the whole day reads All day.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
   slider under the menu instead. Opened by a click or tap, no line in it is

@@ -46,6 +46,9 @@ Item {
     readonly property int textInset: sideInset + (cellSize - markSize) / 2
     readonly property int cellSize: 42
     readonly property int markSize: 34
+    // A day's mark is a pill as tall as its date and the dot beneath it,
+    // so today's fill holds its dot instead of crowding it.
+    readonly property int markHeight: 38
     readonly property int topSpacing: 12
     readonly property int bottomSpacing: 24
 
@@ -265,7 +268,7 @@ Item {
                             visible: cell.inMonth
                             anchors.centerIn: parent
                             width: page.markSize
-                            height: page.markSize
+                            height: page.markHeight
                             radius: width / 2
                             color: cell.isToday ? page.accentColor
                                 : cell.isSelected ? tone.wash(0.24)
@@ -278,7 +281,10 @@ Item {
                         Text {
                             objectName: "temperance-calendar-number"
                             visible: cell.inMonth
-                            anchors.centerIn: mark
+                            anchors.horizontalCenter: mark.horizontalCenter
+                            // Centred on the pill's upper part, above the dot.
+                            anchors.verticalCenter: mark.top
+                            anchors.verticalCenterOffset: page.markSize / 2 - 2
                             text: cell.modelData
                             font.family: Kirigami.Theme.defaultFont.family
                             font.pixelSize: 15
@@ -295,7 +301,7 @@ Item {
                             height: 4
                             radius: 2
                             anchors.horizontalCenter: mark.horizontalCenter
-                            y: mark.y + mark.height / 2 + 9
+                            y: mark.y + mark.height - 10
                             color: cell.isToday ? "#102729" : tone.secondaryText
                         }
 
@@ -378,7 +384,7 @@ Item {
             TextMetrics {
                 id: allDayWidth
                 font: widestStart.font
-                text: i18nc("@info an event that lasts the whole day", "all day")
+                text: i18nc("@info an event that lasts the whole day", "All day")
             }
 
             Repeater {

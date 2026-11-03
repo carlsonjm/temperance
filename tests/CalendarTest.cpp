@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         const qreal nextTop = markOf(dayCell(page, 13))->mapToItem(page, QPointF(0, 0)).y();
         const qreal top = markOf(sunday)->mapToItem(page, QPointF(0, 0)).y();
         check(std::abs(nextLeft - left - markOf(sunday)->width() - 8) < 0.5, QStringLiteral("circles are 8 px apart across"));
-        check(std::abs(nextTop - top - markOf(sunday)->height() - 8) < 0.5, QStringLiteral("circles are 8 px apart down"));
+        check(std::abs(nextTop - top - markOf(sunday)->height() - 4) < 0.5, QStringLiteral("marks are 4 px apart down"));
     } else {
         check(false, QStringLiteral("the 6th and 12th are in the grid"));
     }
