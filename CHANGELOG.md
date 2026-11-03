@@ -13,6 +13,7 @@ This file records user-visible changes.
   until a place is chosen, and Plasma's widget names read in sentence case in
   English.
 - The tray's triangle in the Status Bar points down, toward the page it opens.
+- Status's pages and banners open 2 px nearer the bar.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
   slider under the menu instead. Opened by a click or tap, no line in it is

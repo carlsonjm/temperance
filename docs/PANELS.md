@@ -81,7 +81,7 @@ setting is off.
 
 Pages and important banners open away from the panel's edge, above a panel along
 the bottom and below one along the top, and come in from the panel's side. A page
-sits 18 px from the row and a banner 10 px further, since its window type has no
+sits 16 px from the row and a banner 10 px further, since its window type has no
 clearance of its own. The slim row's strip of status controls sits 4 px from the
 bar.
 

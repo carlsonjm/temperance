@@ -11,7 +11,7 @@ Item {
     required property real surfaceHeight
     required property int panelLocation
 
-    readonly property real panelGap: 18
+    readonly property real panelGap: 16
 
     width: vertical ? surfaceWidth : 1
     height: surfaceHeight
