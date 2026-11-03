@@ -1648,7 +1648,10 @@ ContainmentItem {
                         id: trayGlyph
                         mark: root.slim ? 9 : 12
                         anchors.centerIn: parent
-                        anchors.verticalCenterOffset: -1
+                        // Measured on the bar: 1 px down sets the downward
+                        // triangle, ring and all, level with the bell, Wi-Fi
+                        // and battery marks beside it.
+                        anchors.verticalCenterOffset: 1
                         ink: tone.text
                         ring: trayButton.active
                         rippleProgress: trayButton.rippleProgress

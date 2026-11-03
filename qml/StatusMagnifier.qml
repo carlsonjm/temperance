@@ -222,7 +222,7 @@ Item {
             TrayGlyph {
                 visible: face.key === "tray"
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: -2
+                anchors.verticalCenterOffset: 2
                 mark: Math.round(9 * strip.iconSize / strip.barIconSize)
                 ink: tone.text
                 ring: face.key === "tray" && face.control.active
