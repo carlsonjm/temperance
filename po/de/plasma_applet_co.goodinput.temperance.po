@@ -61,8 +61,8 @@ msgstr "Nichts geplant"
 
 #: qml/CalendarPage.qml
 msgctxt "@info an event that lasts the whole day"
-msgid "all day"
-msgstr "ganztägig"
+msgid "All day"
+msgstr "Ganztägig"
 
 #: qml/ConfigAppearance.qml
 msgid "%1 px"

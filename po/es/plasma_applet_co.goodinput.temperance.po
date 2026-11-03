@@ -61,8 +61,8 @@ msgstr "Nada programado"
 
 #: qml/CalendarPage.qml
 msgctxt "@info an event that lasts the whole day"
-msgid "all day"
-msgstr "todo el día"
+msgid "All day"
+msgstr "Todo el día"
 
 #: qml/ConfigAppearance.qml
 msgid "%1 px"
