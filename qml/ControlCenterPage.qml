@@ -203,9 +203,8 @@ Item {
         }
     }
 
-    // What stands on a level pill: its icon at the left, which opens the
-    // level's own settings, and its reading at the right. Each takes the
-    // accent's ink while the fill lies under it.
+    // A level pill's reading, at its right, in the accent's ink while the
+    // fill lies under it.
     component LevelReadingLabel: PlasmaComponents.Label {
         required property var level
         anchors.right: parent.right
@@ -215,28 +214,19 @@ Item {
         font.features: { "tnum": 1 }
         color: level.fillWidth >= x ? page.accentTextColor : tone.text
     }
+    // The level's own settings, as a round button of the header's grey
+    // beside its pill, so the pill is only the level.
     component LevelIconButton: PlasmaComponents.ToolButton {
         id: levelIcon
-        required property var level
-        readonly property bool onFill: level.fillWidth >= x + width - 6
-        x: 4
-        anchors.verticalCenter: parent.verticalCenter
-        width: 28
-        height: 28
-        padding: 5
+        Layout.preferredWidth: page.levelHeight
+        Layout.preferredHeight: page.levelHeight
+        padding: 9
         display: PlasmaComponents.AbstractButton.IconOnly
         Accessible.name: text
-        // On the accent, the glyph's own ink follows the fill.
-        Kirigami.Theme.inherit: !onFill
-        Kirigami.Theme.backgroundColor: onFill ? page.accentColor : page.Kirigami.Theme.backgroundColor
-        Kirigami.Theme.textColor: onFill ? page.accentTextColor : page.Kirigami.Theme.textColor
-        // Always on a circle of its own, a shade deeper than what it stands
-        // on, so it reads as a button; deeper still under the pointer.
-        readonly property color chipInk: onFill ? page.accentTextColor : tone.text
         background: Rectangle {
             radius: height / 2
-            color: Qt.rgba(levelIcon.chipInk.r, levelIcon.chipInk.g, levelIcon.chipInk.b,
-                levelIcon.down ? 0.36 : iconHover.hovered ? 0.28 : 0.20)
+            color: levelIcon.down ? tone.controlPressed
+                : iconHover.hovered ? tone.controlHover : tone.control
             Behavior on color { ColorAnimation { duration: 120 } }
             border.width: levelIcon.visualFocus ? 1 : 0
             border.color: tone.text
@@ -282,68 +272,74 @@ Item {
             wrapMode: Text.Wrap
         }
 
-        Item {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: page.levelHeight
-            AccentSlider {
-                id: volumeSlider
-                objectName: "temperance-volume-slider"
-                anchors.fill: parent
-                from: 0
-                to: 100
-                stepSize: 1
-                enabled: Plasmoid.audio.available
-                Accessible.name: i18n("Volume")
-                onMoved: Plasmoid.audio.setPercent(Math.round(value))
-            }
-            Binding { target: volumeSlider; property: "value"; value: Plasmoid.audio.percent; when: !volumeSlider.pressed }
+            spacing: page.compactSpacing
             LevelIconButton {
-                level: volumeSlider
                 text: i18n("Open sound settings")
                 onClicked: page.activateAppletById("org.kde.plasma.volume")
-                contentItem: SpeakerGlyph { muted: Plasmoid.audio.muted; ink: parent.onFill ? page.accentTextColor : tone.text }
+                contentItem: SpeakerGlyph { muted: Plasmoid.audio.muted; ink: tone.text }
             }
-            LevelReadingLabel {
-                level: volumeSlider
-                text: Plasmoid.audio.available ? Plasmoid.audio.percent + "%" : "—"
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: page.levelHeight
+                AccentSlider {
+                    id: volumeSlider
+                    objectName: "temperance-volume-slider"
+                    anchors.fill: parent
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    enabled: Plasmoid.audio.available
+                    Accessible.name: i18n("Volume")
+                    onMoved: Plasmoid.audio.setPercent(Math.round(value))
+                }
+                Binding { target: volumeSlider; property: "value"; value: Plasmoid.audio.percent; when: !volumeSlider.pressed }
+                LevelReadingLabel {
+                    level: volumeSlider
+                    text: Plasmoid.audio.available ? Plasmoid.audio.percent + "%" : "—"
+                }
             }
         }
 
         // Volume and brightness are one group, nearer each other than the
         // tiles below them.
-        Item {
+        RowLayout {
             Layout.fillWidth: true
             Layout.topMargin: page.compactSpacing
-            Layout.preferredHeight: page.levelHeight
-            // The slider works in percent, as its reading does. Bound to the
-            // display's own scale, a level that arrives before its maximum is
-            // clamped to the old maximum and stays there, so the fill can
-            // stand empty while the reading says 100%.
-            AccentSlider {
-                id: brightnessSlider
-                objectName: "temperance-brightness-slider"
-                anchors.fill: parent
-                from: 0
-                to: 100
-                stepSize: 1
-                enabled: screenBrightness.isBrightnessAvailable && page.displayName !== ""
-                Accessible.name: i18n("Brightness")
-                onMoved: screenBrightness.setBrightness(page.displayName,
-                    Math.round(value / 100 * page.displayBrightnessMax))
-            }
-            Binding { target: brightnessSlider; property: "value"; value: page.displayBrightnessPercent; when: !brightnessSlider.pressed }
+            spacing: page.compactSpacing
             LevelIconButton {
-                level: brightnessSlider
                 text: i18n("Open brightness settings")
                 onClicked: page.activateAppletById("org.kde.plasma.brightness")
                 contentItem: SuiteIcon {
                     glyph: "sun"
-                    implicitWidth: 20; implicitHeight: 20
+                    implicitWidth: 18; implicitHeight: 18
                 }
             }
-            LevelReadingLabel {
-                level: brightnessSlider
-                text: page.displayBrightnessMax ? page.displayBrightnessPercent + "%" : "—"
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: page.levelHeight
+                // The slider works in percent, as its reading does. Bound to the
+                // display's own scale, a level that arrives before its maximum is
+                // clamped to the old maximum and stays there, so the fill can
+                // stand empty while the reading says 100%.
+                AccentSlider {
+                    id: brightnessSlider
+                    objectName: "temperance-brightness-slider"
+                    anchors.fill: parent
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    enabled: screenBrightness.isBrightnessAvailable && page.displayName !== ""
+                    Accessible.name: i18n("Brightness")
+                    onMoved: screenBrightness.setBrightness(page.displayName,
+                        Math.round(value / 100 * page.displayBrightnessMax))
+                }
+                Binding { target: brightnessSlider; property: "value"; value: page.displayBrightnessPercent; when: !brightnessSlider.pressed }
+                LevelReadingLabel {
+                    level: brightnessSlider
+                    text: page.displayBrightnessMax ? page.displayBrightnessPercent + "%" : "—"
+                }
             }
         }
 

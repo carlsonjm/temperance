@@ -18,8 +18,8 @@ This file records user-visible changes.
 - The installer clears the panel's compiled copies of its screens before
   restarting it, so an update to a screen is never hidden behind an old copy.
 - Control Center's volume and brightness are slim pills filled to their level,
-  with the reading inside and the icon on a circle of its own, which opens the
-  level's settings; the rest of the pill takes a finger.
+  with the reading inside; the whole pill takes a finger. Beside each, a round
+  button like the header's opens that level's settings.
 - Control Center's Cards switch fills with the accent while Cards is on.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
