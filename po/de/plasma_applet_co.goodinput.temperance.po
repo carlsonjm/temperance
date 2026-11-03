@@ -1111,3 +1111,11 @@ msgstr "Aus"
 #: qml/PlasmoidItem.qml
 msgid "No device"
 msgstr "Kein Gerät"
+
+#: qml/ControlCenterPage.qml
+msgid "Volume"
+msgstr "Lautstärke"
+
+#: qml/ControlCenterPage.qml
+msgid "Brightness"
+msgstr "Helligkeit"

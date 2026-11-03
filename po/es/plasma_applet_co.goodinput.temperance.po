@@ -1111,3 +1111,11 @@ msgstr "Desactivado"
 #: qml/PlasmoidItem.qml
 msgid "No device"
 msgstr "Ningún dispositivo"
+
+#: qml/ControlCenterPage.qml
+msgid "Volume"
+msgstr "Volumen"
+
+#: qml/ControlCenterPage.qml
+msgid "Brightness"
+msgstr "Brillo"
