@@ -215,8 +215,8 @@ int main(int argc, char **argv)
     const auto *leftItem = qobject_cast<QQuickItem *>(leftAnchor.get());
     const auto *rightItem = qobject_cast<QQuickItem *>(rightAnchor.get());
     if (!bottomItem || !topItem || !leftItem || !rightItem
-        || bottomItem->y() != -16 || topItem->y() != 16
-        || leftItem->x() != 16 || rightItem->x() != -16
+        || bottomItem->y() != -11 || topItem->y() != 11
+        || leftItem->x() != 11 || rightItem->x() != -11
         || bottomItem->x() != 239 || bottomItem->width() != 1) {
         qCritical() << "Popup anchor does not provide the intended panel clearance";
         return 19;

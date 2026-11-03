@@ -113,7 +113,7 @@ PlasmaCore.Dialog {
     visualParent: criticalPopupAnchor
     location: Plasmoid.location
     type: PlasmaCore.Dialog.CriticalNotification
-    floating: 10
+    floating: Plasmoid.windowGutter
     flags: Qt.WindowStaysOnTopHint
     hideOnWindowDeactivate: false
     backgroundHints: PlasmaCore.Dialog.NoBackground

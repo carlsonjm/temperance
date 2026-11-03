@@ -72,6 +72,9 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(bool plasmaNotificationsWanted READ plasmaNotificationsWanted WRITE setPlasmaNotificationsWanted
                    NOTIFY plasmaNotificationsWantedChanged)
     Q_PROPERTY(bool plasmaNotificationsShown READ plasmaNotificationsShown NOTIFY plasmaNotificationsShownChanged)
+    // Cards' gutter between a window and the work area's edge, which pages
+    // keep from the screen's edges too.
+    Q_PROPERTY(int windowGutter READ windowGutter NOTIFY popupRoomChanged)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -104,6 +107,10 @@ public:
     Q_INVOKABLE int availablePanelWidth(QQuickItem *visualParent, int minimumWidth, int gap) const;
     Q_INVOKABLE void watchPanelGeometry(QQuickItem *visualParent);
     Q_INVOKABLE int availablePopupHeight(QQuickItem *visualParent) const;
+    // How far a page's visual parent stands off the bar's surface, so the
+    // page's near edge lines up with the windows beside it.
+    Q_INVOKABLE int popupGap(QQuickItem *surface) const;
+    int windowGutter() const;
     // Asks the host about the output the applet's window is on, once, and
     // again only when the output changes or the host says it moved.
     Q_INVOKABLE void watchHostClock(const QString &outputName);
@@ -151,6 +158,7 @@ Q_SIGNALS:
     void hostAvailableWidthChanged();
     void plasmaNotificationsWantedChanged();
     void plasmaNotificationsShownChanged();
+    void popupRoomChanged();
 
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets
@@ -171,6 +179,10 @@ private:
     void releasePlasmaNotificationPopups();
 
     KConfigWatcher::Ptr m_configWatcher;
+    KSharedConfig::Ptr m_kwinConfig;
+    KConfigWatcher::Ptr m_kwinWatcher;
+    int m_windowGutter = 10;
+    void readWindowGutter();
     bool m_xwaylandClientsScale = true;
     bool m_plasmaNotificationsWanted = false;
     bool m_plasmaNotificationsShown = false;

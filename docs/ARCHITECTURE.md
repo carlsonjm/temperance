@@ -165,11 +165,11 @@ opens its `status` page, else Temperance's own. Shuffle titles it Status Bar.
 
 ## Popups
 
-`PanelPopupAnchor.qml` places the popup, and its `panelGap` is the gap to the
-panel; `Dialog.floating` only treats and clamps screen edges. The critical
-notification host carries its own anchor correction, because its window type does
-not inherit AppletPopup clearance, and its own theme, so an alert keeps the look's
-colours whatever ground the bar has. `ExpandedRepresentation.qml` provides the rounded
+`PanelPopupAnchor.qml` places the popup, and its `panelGap`, from `popupGap()`,
+stands it off the bar so its near edge lands where a window's does;
+`Dialog.floating`, the same gutter, keeps it off other screen edges. The
+critical notification host shares that anchor and has its own theme, so an alert
+keeps the look's colours on any bar. `ExpandedRepresentation.qml` provides the rounded
 surface, padding and entrance motion, and `availablePopupHeight()` caps content
 height. To fix a placement error, first measure the final window, the painted panel edge
 and the anchor; do not change padding, content translation or height limits.

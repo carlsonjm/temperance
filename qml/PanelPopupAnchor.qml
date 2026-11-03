@@ -11,7 +11,10 @@ Item {
     required property real surfaceHeight
     required property int panelLocation
 
-    readonly property real panelGap: 16
+    // How far the popup's visual parent stands off the bar, set by the bar
+    // from Plasmoid.popupGap(). The default puts a page 10 px from a bar the
+    // windows stop at, as Cards' default gutter puts a window.
+    property real panelGap: 11
 
     width: vertical ? surfaceWidth : 1
     height: surfaceHeight

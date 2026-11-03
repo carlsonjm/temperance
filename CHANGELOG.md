@@ -13,7 +13,10 @@ This file records user-visible changes.
   until a place is chosen, and Plasma's widget names read in sentence case in
   English.
 - The tray's triangle in the Status Bar points down, toward the page it opens.
-- Status's pages and banners open 2 px nearer the bar.
+- Status's pages and banners open in line with the windows beside them, their
+  top on the same line as a window's top below a bar along the top of the screen.
+- The installer clears the panel's compiled copies of its screens before
+  restarting it, so an update to a screen is never hidden behind an old copy.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
   slider under the menu instead. Opened by a click or tap, no line in it is
