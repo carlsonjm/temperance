@@ -17,6 +17,9 @@ This file records user-visible changes.
   top on the same line as a window's top below a bar along the top of the screen.
 - The installer clears the panel's compiled copies of its screens before
   restarting it, so an update to a screen is never hidden behind an old copy.
+- Control Center's volume and brightness are pills filled to their level, like
+  the switches under them, with the icon and the reading inside; the whole
+  pill takes a finger.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
   slider under the menu instead. Opened by a click or tap, no line in it is
