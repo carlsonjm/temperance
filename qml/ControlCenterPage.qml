@@ -338,6 +338,7 @@ Item {
                         presentationStatus: PlasmaCore.Types.PassiveStatus
                         cardBackground: true
                         inlinePresentation: true
+                        switchFill: true
                     }
                 }
             }

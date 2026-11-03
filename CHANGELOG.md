@@ -4,6 +4,15 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center's pills say what they are doing. Networks names the network in
+  use, Bluetooth and Cards say On or Off, KDE Connect says whether a device is
+  connected, and a pill that is on is filled with the accent.
+- Do not disturb on Notifications & Events is one labelled pill, grey while
+  off and filled with the bell struck through while on.
+- The System Tray's weather tile reads Weather report, with Not set up under it
+  until a place is chosen, and Plasma's widget names read in sentence case in
+  English.
+- The tray's triangle in the Status Bar points down, toward the page it opens.
 - Every line of Control Center's More menu works when clicked or tapped. Lock,
   Log out and the rest could do nothing, and the tap moved the brightness
   slider under the menu instead. Opened by a click or tap, no line in it is

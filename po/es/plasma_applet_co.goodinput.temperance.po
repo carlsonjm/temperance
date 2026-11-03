@@ -564,18 +564,6 @@ msgctxt "@action:button go to the current month"
 msgid "Today"
 msgstr "Hoy"
 
-#: qml/ExpandedRepresentation.qml
-msgid "Turn off do not disturb"
-msgstr "Desactivar No molestar"
-
-#: qml/ExpandedRepresentation.qml
-msgid "Turn on do not disturb"
-msgstr "Activar No molestar"
-
-#: qml/ExpandedRepresentation.qml
-msgid "do not disturb"
-msgstr "no molestar"
-
 #: qml/ExpanderArrow.qml
 msgid "Close popup"
 msgstr "Cerrar la ventana emergente"
@@ -1091,3 +1079,35 @@ msgstr "%1 (quizás)"
 msgctxt "@info the calendar of events kept on this computer"
 msgid "This computer"
 msgstr "Este equipo"
+
+#: qml/ExpandedRepresentation.qml
+msgid "Do not disturb"
+msgstr "No molestar"
+
+#: qml/PlasmoidItem.qml
+msgid "Weather report"
+msgstr "Informe del tiempo"
+
+#: qml/PlasmoidItem.qml
+msgid "Not set up"
+msgstr "Sin configurar"
+
+#: qml/PlasmoidItem.qml
+msgid "Not connected"
+msgstr "Sin conexión"
+
+#: qml/PlasmoidItem.qml
+msgid "Connected"
+msgstr "Conectado"
+
+#: qml/PlasmoidItem.qml
+msgid "On"
+msgstr "Activado"
+
+#: qml/PlasmoidItem.qml
+msgid "Off"
+msgstr "Desactivado"
+
+#: qml/PlasmoidItem.qml
+msgid "No device"
+msgstr "Ningún dispositivo"
