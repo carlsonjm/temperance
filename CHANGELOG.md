@@ -20,6 +20,12 @@ This file records user-visible changes.
 - Control Center's volume and brightness are slim pills filled to their level,
   with the reading inside; the whole pill takes a finger. Beside each, a round
   button like the header's opens that level's settings.
+- The speaker beside Control Center's volume, and in the Status Bar while the
+  volume changes, is drawn sharp at any screen scale from the same outline set
+  as the sun, with a cross while muted.
+- The round buttons beside Control Center's volume and brightness open sound
+  and brightness settings. After the tray re-sorted, they could open another
+  page, such as Bluetooth or the camera.
 - Control Center's Cards switch fills with the accent while Cards is on.
 - In the calendar, today and the chosen day are marked with a pill that holds
   the date and its event dot, which used to crowd the circle's edge, and an

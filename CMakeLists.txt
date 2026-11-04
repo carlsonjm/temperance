@@ -144,7 +144,6 @@ plasma_add_applet(co.goodinput.temperance
         qml/StatusColors.qml
         qml/StatusMagnifier.qml
         qml/StatusClock.qml
-        qml/SpeakerGlyph.qml
         qml/StatusNotifierItem.qml
         qml/SuiteIcon.qml
         qml/SystemTrayState.qml
@@ -177,6 +176,8 @@ plasma_add_applet(co.goodinput.temperance
         assets/icons/lucide/users.svg
         assets/icons/lucide/sliders-horizontal.svg
         assets/icons/lucide/sun.svg
+        assets/icons/lucide/volume-2.svg
+        assets/icons/lucide/volume-x.svg
         assets/icons/lucide/keyboard.svg
         assets/icons/lucide/mic.svg
         assets/icons/lucide/mic-off.svg
