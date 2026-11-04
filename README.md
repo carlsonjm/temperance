@@ -18,6 +18,11 @@
 <p align="center">Temperance is a Status Bar for KDE Plasma 6: notifications, weather, battery, common controls, the System Tray and the time, in one panel widget.</p>
 
 
+<p align="center">
+<b>Temperance is the Status Bar in <a href="https://shuffleplasma.com">Shuffle for Plasma</a></b>, a touch-first desktop for KDE Plasma that comes with every free part already set up to work together.
+</p>
+
+
 
 https://github.com/user-attachments/assets/940503f2-f2d6-489e-9c71-e531ad197180
 
