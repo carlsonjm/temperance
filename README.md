@@ -178,7 +178,7 @@ from **Add Widgets…**: **Digital Clock**. To delete the download too, run
 <details>
 <summary>Status Bar and notifications</summary>
 
-The bar shows recent notifications, weather, battery, tray entries, and the time over the optional date, in the system font or one you choose. If enabled, volume or brightness changes show briefly. Turned-off sections give their space to the rest.
+The bar shows recent notifications, weather, battery, tray entries, and the time over the optional date. If enabled, volume or brightness changes show briefly. Turned-off sections give their space to the rest.
 
 An app's notifications group together and keep the app's own actions, such as reply. Critical and selected system alerts show as larger banners, timed or kept until dismissed. The bell shows how many are waiting, or just the bell.
 </details>
@@ -224,7 +224,7 @@ The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma Wor
 
 ## Used in Shuffle
 
-Temperance works on any Plasma 6 panel. [Shuffle](https://shuffleplasma.com), a touch-first desktop built on KDE Plasma, uses it as its Status Bar, alongside the open-source [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry), [Shuffle Keyboard](https://github.com/carlsonjm/shuffle-keyboard) and [Split Rock](https://github.com/carlsonjm/split-rock).
+Temperance works on any Plasma 6 panel. [Shuffle for Plasma](https://shuffleplasma.com) pairs it with [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry), [Shuffle Keyboard](https://github.com/carlsonjm/shuffle-keyboard) and [Split Rock](https://github.com/carlsonjm/split-rock).
 
 ## License
 
