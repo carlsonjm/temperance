@@ -231,6 +231,7 @@ int main(int argc, char **argv)
         QStringLiteral("chevron-down"), QStringLiteral("lock"), QStringLiteral("log-out"),
         QStringLiteral("rotate-cw"), QStringLiteral("moon"), QStringLiteral("users"),
         QStringLiteral("power"), QStringLiteral("sliders-horizontal"), QStringLiteral("sun"), QStringLiteral("cloud-sun"),
+        QStringLiteral("volume-2"), QStringLiteral("volume-x"),
         QStringLiteral("gauge"), QStringLiteral("nm-signal-100-symbolic"),
         QStringLiteral("nm-signal-50-secure-symbolic"), QStringLiteral("audio-volume-high-symbolic"),
         QStringLiteral("bluetooth-active-symbolic")

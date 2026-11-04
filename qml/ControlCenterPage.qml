@@ -277,7 +277,10 @@ Item {
             LevelIconButton {
                 text: i18n("Open sound settings")
                 onClicked: page.activateAppletById("org.kde.plasma.volume")
-                contentItem: SpeakerGlyph { muted: Plasmoid.audio.muted; ink: tone.text }
+                contentItem: SuiteIcon {
+                    glyph: Plasmoid.audio.muted ? "volume-x" : "volume-2"
+                    implicitWidth: 16; implicitHeight: 16
+                }
             }
             Item {
                 Layout.fillWidth: true

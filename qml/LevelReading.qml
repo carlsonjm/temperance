@@ -195,13 +195,12 @@ Item {
         width: reading.pitch
         height: parent.height
 
-        SpeakerGlyph {
+        SuiteIcon {
             anchors.centerIn: parent
-            width: reading.iconSize + 4
-            height: width
+            glyph: reading.audio && reading.audio.muted ? "volume-x" : "volume-2"
+            width: reading.iconSize
+            height: reading.iconSize
             visible: reading.kind === "volume"
-            muted: reading.audio ? reading.audio.muted : false
-            ink: reading.ink
         }
         SuiteIcon {
             anchors.centerIn: parent
