@@ -335,18 +335,24 @@ ContainmentItem {
     readonly property string outputName: Screen.name
     onOutputNameChanged: if (!needsUpdate) Plasmoid.watchHostClock(outputName)
 
-    function registerApplet(itemId, applet) {
-        if (!itemId || !applet) return;
-        const next = Object.assign({}, appletsById);
-        next[itemId] = applet;
-        appletsById = next;
-    }
-
-    function unregisterApplet(itemId, applet) {
-        if (!itemId || appletsById[itemId] !== applet) return;
-        const next = Object.assign({}, appletsById);
-        delete next[itemId];
-        appletsById = next;
+    // Applets by their own plugin id, rebuilt whole from the tray's rows.
+    // Keyed by the applet itself, never by the row that holds it: a re-sort
+    // hands each row new data one property at a time, and pairing a row's id
+    // with its applet mid-change filed one applet under another's name, so
+    // the volume button opened Bluetooth.
+    function rebuildApplets() {
+        const next = {};
+        let changed = false;
+        for (let i = 0; i < appletInstantiator.count; ++i) {
+            const entry = appletInstantiator.objectAt(i);
+            const applet = entry ? entry.applet : null;
+            const id = applet && applet.plasmoid ? applet.plasmoid.pluginName : "";
+            if (!id) continue;
+            next[id] = applet;
+            if (appletsById[id] !== applet) changed = true;
+        }
+        if (changed || Object.keys(next).length !== Object.keys(appletsById).length)
+            appletsById = next;
     }
 
     function activateAppletById(itemId) {
@@ -1443,30 +1449,17 @@ ContainmentItem {
         Component.onCompleted: sourceModel = Plasmoid.systemTrayModel
     }
 
-    // Applets by id, for the controls that open their pages. One delegate per
-    // tray row, not one per shown or hidden list: a row moving between lists
-    // destroys its old delegate later than the new one registers, and that
-    // late destruction would take the applet back out.
+    // One entry per tray row, so rebuildApplets can read every applet.
     Instantiator {
         id: appletInstantiator
         active: false
         model: Plasmoid.systemTrayModel
         delegate: QtObject {
             required property QtObject applet
-            required property string itemId
-            property QtObject registered: null
-            function sync() {
-                if (registered && registered !== applet)
-                    root.unregisterApplet(itemId, registered);
-                registered = applet;
-                if (applet) root.registerApplet(itemId, applet);
-            }
-            onAppletChanged: sync()
-            Component.onCompleted: sync()
-            Component.onDestruction: {
-                if (registered) root.unregisterApplet(itemId, registered);
-            }
+            onAppletChanged: Qt.callLater(root.rebuildApplets)
         }
+        onObjectAdded: Qt.callLater(root.rebuildApplets)
+        onObjectRemoved: Qt.callLater(root.rebuildApplets)
     }
 
     // Native detail pages need a visual parent even though their stock compact
