@@ -29,9 +29,8 @@ Item {
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
-    // As tall as the header's round buttons, so the levels sit below the
-    // switches rather than matching them.
-    readonly property int levelHeight: 36
+    // Slim, so the levels read as readings beside the switches below.
+    readonly property int levelHeight: 24
     readonly property color accentTextColor: (accentColor.r * 0.299 + accentColor.g * 0.587 + accentColor.b * 0.114) > 0.58
         ? "#102729" : "#FFFFFF"
 
@@ -220,7 +219,7 @@ Item {
         id: levelIcon
         Layout.preferredWidth: page.levelHeight
         Layout.preferredHeight: page.levelHeight
-        padding: 9
+        padding: 4
         display: PlasmaComponents.AbstractButton.IconOnly
         Accessible.name: text
         background: Rectangle {
@@ -313,7 +312,7 @@ Item {
                 onClicked: page.activateAppletById("org.kde.plasma.brightness")
                 contentItem: SuiteIcon {
                     glyph: "sun"
-                    implicitWidth: 18; implicitHeight: 18
+                    implicitWidth: 16; implicitHeight: 16
                 }
             }
             Item {
