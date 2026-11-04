@@ -19,7 +19,7 @@
 
 
 <p align="center">
-<b>Temperance is the Status Bar in <a href="https://shuffleplasma.com">Shuffle for Plasma</a></b>, a touch-first desktop for KDE Plasma with every free part set up to work together.
+<b>Temperance is the Status Bar in <a href="https://shuffleplasma.com">Shuffle for Plasma</a></b>, a touch-first desktop for KDE Plasma that comes with every free part already set up to work together.
 </p>
 
 
@@ -224,7 +224,7 @@ The tray host in `src/`, `libdbusmenuqt/` and `qml/` derives from KDE Plasma Wor
 
 ## Used in Shuffle
 
-Temperance works on any Plasma 6 panel. In [Shuffle](https://shuffleplasma.com) it works beside open-source [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry), [Shuffle Keyboard](https://github.com/carlsonjm/shuffle-keyboard) and [Split Rock](https://github.com/carlsonjm/split-rock).
+Temperance works on any Plasma 6 panel. [Shuffle](https://shuffleplasma.com), a touch-first desktop built on KDE Plasma, uses it as its Status Bar, alongside the open-source [Kadunce](https://github.com/carlsonjm/kadunce), [Tettegouche](https://github.com/carlsonjm/tettegouche), [Gooseberry](https://github.com/carlsonjm/gooseberry), [Shuffle Keyboard](https://github.com/carlsonjm/shuffle-keyboard) and [Split Rock](https://github.com/carlsonjm/split-rock).
 
 ## License
 
