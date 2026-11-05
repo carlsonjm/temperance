@@ -394,6 +394,10 @@ private Q_SLOTS:
         item->setParentItem(window.contentItem());
         item->setSize(QSizeF(430, 600));
         window.show();
+        // The rows exist as soon as the page does; let it lay them out
+        // before reading where the buttons are.
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QTest::qWait(50);
         QQuickItem *row = nullptr, *group = nullptr;
         QTRY_VERIFY((row = findItem(item, QStringLiteral("notificationRow1"))));
         QTRY_VERIFY((group = findItem(item, QStringLiteral("notificationRow0"))));
@@ -455,30 +459,6 @@ private Q_SLOTS:
             const auto hoverPoint = accept->mapToScene(
                 QPointF(accept->width() / 2, accept->height() / 2)).toPoint();
             QTest::mouseMove(&window, hoverPoint);
-            // Diagnostic: every item under the pointer, outermost first.
-            const std::function<void(QQuickItem *, int)> dump = [&](QQuickItem *at, int depth) {
-                const QPointF local = at->mapFromScene(QPointF(hoverPoint));
-                const bool inside = at->contains(local);
-                if (depth < 40 && (inside || at->childItems().size()))
-                    qWarning().noquote() << QString(depth, QLatin1Char(' ')) << at->metaObject()->className()
-                        << at->objectName() << at->mapRectToScene(at->boundingRect()) << "visible" << at->isVisible()
-                        << "enabled" << at->isEnabled() << "clip" << at->clip() << "z" << at->z()
-                        << "hover" << at->acceptHoverEvents() << "inside" << inside;
-                if (!at->isVisible()) return;
-                for (auto *child : at->childItems()) {
-                    const QRectF r = child->mapRectToScene(child->childrenRect().united(child->boundingRect()));
-                    if (r.contains(QPointF(hoverPoint))) dump(child, depth + 1);
-                }
-            };
-            qWarning() << "hoverPoint" << hoverPoint << "now" << accept->mapToScene(QPointF(accept->width() / 2, accept->height() / 2));
-            dump(window.contentItem(), 0);
-            QTest::qWait(100);
-            qWarning() << "after wait" << accept->mapToScene(QPointF(accept->width() / 2, accept->height() / 2))
-                       << "hovered" << accept->property("hovered");
-            for (QQuickItem *part : {accept, accept->parentItem(), accept->parentItem()->parentItem(),
-                     row->findChild<QQuickItem *>("notificationCard"), row, row->parentItem(), row->parentItem()->parentItem()})
-                qWarning() << "rect" << part->metaObject()->className() << part->objectName()
-                           << part->mapRectToScene(part->boundingRect()) << "implicit" << part->implicitHeight();
             QTRY_VERIFY(accept->property("hovered").toBool());
             QTRY_VERIFY(accept->property("visualFill").value<QColor>().alpha() > 0);
         }
