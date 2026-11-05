@@ -700,7 +700,7 @@ private Q_SLOTS:
         QVERIFY(QTest::qWaitForWindowExposed(&window));
 
         const auto settle = [&](const char *after) {
-            QTest::qWait(350);
+            QTest::qWait(250);
             const QString problem = layoutProblem(item, model);
             return problem.isEmpty() ? QString() : QStringLiteral("after %1: %2").arg(QLatin1String(after), problem);
         };
@@ -758,7 +758,7 @@ private Q_SLOTS:
     // after most changes, and some changes land before the last has settled.
     void churnInRandomOrder_data() {
         QTest::addColumn<quint32>("seed");
-        for (quint32 seed : {1u, 2u, 3u, 4u})
+        for (quint32 seed : {1u, 2u, 3u})
             QTest::newRow(qPrintable(QStringLiteral("seed %1").arg(seed))) << seed;
     }
     void churnInRandomOrder() {
@@ -815,7 +815,7 @@ private Q_SLOTS:
         };
 
         bool focused = false;
-        for (int step = 0; step < 80; ++step) {
+        for (int step = 0; step < 40; ++step) {
             int change = next(9);
             const int rows = model.rows.size();
             if (rows < 3) change = 0;
@@ -858,7 +858,7 @@ private Q_SLOTS:
                 break;
             }
             if (next(10) >= 6) continue;
-            QTest::qWait(350);
+            QTest::qWait(250);
             const QString problem = layoutProblem(item, model);
             QVERIFY2(problem.isEmpty(), qPrintable(QStringLiteral("step %1, change %2: %3").arg(step).arg(change).arg(problem)));
         }

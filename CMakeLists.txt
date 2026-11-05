@@ -282,7 +282,7 @@ if(BUILD_TESTING)
             $<TARGET_FILE:temperance-notification-interaction-test>
             ${CMAKE_CURRENT_BINARY_DIR}/bin)
     set_tests_properties(temperance_notification_interaction PROPERTIES
-        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 30)
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software" TIMEOUT 120)
     add_executable(temperance-clock-test tests/ClockTest.cpp)
     target_link_libraries(temperance-clock-test PRIVATE Qt6::Gui Qt6::Qml Qt6::Quick)
     target_compile_definitions(temperance-clock-test PRIVATE

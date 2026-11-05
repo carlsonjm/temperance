@@ -546,8 +546,8 @@ Item {
                                     // The row's controls share one size: a 16 px glyph in a 30 px
                                     // round button, as tall as the Dismiss pill. The glyph keeps its
                                     // size inside whatever room the button gives its content.
-                                    Layout.preferredWidth: 30
-                                    Layout.preferredHeight: 30
+                                    implicitWidth: 30
+                                    implicitHeight: 30
                                     padding: 7
                                     contentItem: Item {
                                         implicitWidth: 16
@@ -587,8 +587,8 @@ Item {
                                     // The row's controls share one size: a 16 px glyph in a 30 px
                                     // round button, as tall as the Dismiss pill. The glyph keeps its
                                     // size inside whatever room the button gives its content.
-                                    Layout.preferredWidth: 30
-                                    Layout.preferredHeight: 30
+                                    implicitWidth: 30
+                                    implicitHeight: 30
                                     padding: 7
                                     contentItem: Item {
                                         implicitWidth: 16
