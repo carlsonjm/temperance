@@ -470,7 +470,11 @@ private Q_SLOTS:
                     if (r.contains(QPointF(hoverPoint))) dump(child, depth + 1);
                 }
             };
+            qWarning() << "hoverPoint" << hoverPoint << "now" << accept->mapToScene(QPointF(accept->width() / 2, accept->height() / 2));
             dump(window.contentItem(), 0);
+            QTest::qWait(100);
+            qWarning() << "after wait" << accept->mapToScene(QPointF(accept->width() / 2, accept->height() / 2))
+                       << "hovered" << accept->property("hovered");
             for (QQuickItem *part : {accept, accept->parentItem(), accept->parentItem()->parentItem(),
                      row->findChild<QQuickItem *>("notificationCard"), row, row->parentItem(), row->parentItem()->parentItem()})
                 qWarning() << "rect" << part->metaObject()->className() << part->objectName()
