@@ -56,6 +56,7 @@ Item {
     // is not one of them, or -1.
     readonly property int firstEarlierRow: {
         const model = page.notificationModel;
+        page.modelRevision;
         if (!page.focusArrivals || !model) return -1;
         const rows = historyView.count;
         let seenArrival = false;
@@ -73,6 +74,20 @@ Item {
         }
         return -1;
     }
+    // Counts every change to the history, so what is read from the model
+    // row by row, like where "Earlier" goes, is read again after a change
+    // that keeps the number of rows.
+    property int modelRevision: 0
+    Connections {
+        target: page.notificationModel
+        function onDataChanged() { ++page.modelRevision; }
+        function onLayoutChanged() { ++page.modelRevision; }
+        function onModelReset() { ++page.modelRevision; }
+        function onRowsInserted() { ++page.modelRevision; }
+        function onRowsRemoved() { ++page.modelRevision; }
+        function onRowsMoved() { ++page.modelRevision; }
+    }
+
     // Back to the top, where what came in is.
     function showArrivals() {
         historyView.positionViewAtBeginning();
@@ -327,382 +342,471 @@ Item {
             }
         }
 
-        ListView {
+        // The history is a plain column of cards: each one stands where the
+        // one above it ends, measured afresh whenever any card's height
+        // changes, so no card can be drawn over another. A list view instead
+        // remembers where it put each card and only moves the cards it is
+        // told have changed, which left cards over one another after a group
+        // opened, a card was dismissed or a long card arrived. The history
+        // holds one heading and one card per app until a group is opened, so
+        // making every card up front costs little.
+        Flickable {
             id: historyView
             objectName: "notificationHistoryView"
+            readonly property alias count: historyRows.count
+            function positionViewAtBeginning() {
+                contentY = 0;
+            }
             // A wheel notch scrolls 80 pixels at Plasma's usual three lines per notch.
             Kirigami.WheelHandler { target: historyView; verticalStepSize: Qt.styleHints.wheelScrollLines * 80 / 3 }
-            // Cards below a dismissed one slide up. Arrivals take no
-            // transition: a new card settles its height a frame after it is
-            // placed (Show more appears once its text measures as cut off), and
-            // the list leaves a card under transition where the transition
-            // put it, so the cards below would keep the shorter height's place
-            // and draw under the new card's Dismiss.
-            removeDisplaced: Transition {
-                NumberAnimation {
-                    properties: "x,y"
-                    duration: Kirigami.Units.longDuration > 0 ? 220 : 0
-                    easing.type: Easing.OutCubic
-                }
-            }
             Layout.fillWidth: true
             Layout.preferredHeight: visible ? contentHeight : 0
             Layout.minimumHeight: 0
             Layout.fillHeight: true
             visible: count > 0
             clip: true
-            spacing: 0
-            model: page.notificationModel
+            contentWidth: width
+            contentHeight: historyColumn.height
+            boundsBehavior: Flickable.StopAtBounds
 
-            delegate: Item {
-                id: historyItem
-                objectName: "notificationRow" + index
-                required property int index
-                required property bool isGroup
-                required property bool isInGroup
-                required property bool isGroupExpanded
-                required property int groupChildrenCount
-                required property string summary
-                required property string body
-                required property string applicationName
-                required property string applicationIconName
-                required property string desktopEntry
-                required property bool hasDefaultAction
-                required property var actionNames
-                required property var actionLabels
-                readonly property var producerActions: {
-                    const actions = [];
-                    if (isGroup) return actions;
-                    const names = actionNames || [];
-                    const labels = actionLabels || [];
-                    for (let i = 0; i < Math.min(names.length, labels.length); ++i) {
-                        // NotificationManager excludes the default action from
-                        // these roles; keep it exclusively on the card even if
-                        // a producer/model supplies it in the named-action list.
-                        if (names[i] && names[i] !== "default" && labels[i])
-                            actions.push({name: names[i], label: labels[i]});
-                    }
-                    return actions;
-                }
-                property bool detailsExpanded: false
-                // What the header shows, from the notification itself. Read
-                // through a label's visible, it would follow the page's own
-                // visibility: closing the bell would hide the header, and it
-                // would stay hidden when the bell opens again.
-                readonly property bool showsApplication: !isInGroup && applicationName.length > 0
-                readonly property bool showsSummary: summary.length > 0
-                readonly property bool canOpen: !isGroup
-                    && (hasDefaultAction || desktopEntry.length > 0)
-                function openNotification() {
-                    if (!canOpen) return;
-                    if (hasDefaultAction) {
-                        page.notificationModel.invokeDefaultAction(
-                            page.notificationModel.index(index, 0));
-                    } else {
-                        page.launchApplication(desktopEntry);
-                    }
-                }
-                // Came in during the last Do Not Disturb, and the first of
-                // the rest, under "Earlier".
-                readonly property bool arrived: !isGroup && page.arrival(index)
-                readonly property bool startsEarlier: index === page.firstEarlierRow
+            Column {
+                id: historyColumn
+                objectName: "notificationHistoryColumn"
                 width: historyView.width
-                implicitHeight: (isGroup ? 44 : notificationCard.height + 8) + (startsEarlier ? earlierLabel.height : 0)
-                height: implicitHeight
+                // Nothing here animates where a row stands. A dismissed card
+                // folds its own height away instead, and the rows below follow
+                // that height frame by frame.
 
-                PlasmaComponents.Label {
-                    id: earlierLabel
-                    objectName: "notificationEarlierLabel"
-                    visible: historyItem.startsEarlier
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: visible ? implicitHeight + 12 : 0
-                    topPadding: 8
-                    text: i18nc("@title the notifications from before Do Not Disturb", "Earlier")
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    color: tone.secondaryText
-                }
+                Repeater {
+                    id: historyRows
+                    model: page.notificationModel
 
-                RowLayout {
-                    id: groupHeading
-                    visible: historyItem.isGroup
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    y: earlierLabel.height + (44 - height) / 2
-                    // The icon stands where a card's padding ends, so the name
-                    // after it lines up with the cards' text below.
-                    anchors.leftMargin: page.cardPaddingH
-                    anchors.rightMargin: page.cardPaddingH
-                    spacing: 8
-
-                    Kirigami.Icon {
-                        source: page.resolveApplicationIcon(
-                            historyItem.applicationName,
-                            historyItem.desktopEntry,
-                            historyItem.applicationIconName)
-                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
-                        implicitHeight: implicitWidth
-                    }
-
-                    Kirigami.Heading {
-                        Layout.fillWidth: true
-                        text: historyItem.applicationName || i18n("Notifications")
-                        level: 3
-                        elide: Text.ElideRight
-                    }
-
-                    PlasmaComponents.Label {
-                        text: historyItem.groupChildrenCount
-                        opacity: 0.58
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.minimumWidth: 20
-                    }
-
-                    PlasmaComponents.ToolButton {
-                        id: clearGroupButton
-                        objectName: "notificationClearGroup"
-                        text: i18n("Clear")
-                        icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/trash-2.svg"
-                        icon.color: tone.text
-                        contentItem: SuiteIcon {
-                            glyph: "trash-2"
-                            implicitWidth: 20; implicitHeight: 20
+                    delegate: Column {
+                        id: historyItem
+                        objectName: "notificationRow" + index
+                        required property int index
+                        required property bool isGroup
+                        required property bool isInGroup
+                        required property bool isGroupExpanded
+                        required property int groupChildrenCount
+                        required property string summary
+                        required property string body
+                        required property string applicationName
+                        required property string applicationIconName
+                        required property string desktopEntry
+                        required property bool hasDefaultAction
+                        required property var actionNames
+                        required property var actionLabels
+                        readonly property var producerActions: {
+                            const actions = [];
+                            if (isGroup) return actions;
+                            const names = actionNames || [];
+                            const labels = actionLabels || [];
+                            for (let i = 0; i < Math.min(names.length, labels.length); ++i) {
+                                // NotificationManager excludes the default action from
+                                // these roles; keep it exclusively on the card even if
+                                // a producer/model supplies it in the named-action list.
+                                if (names[i] && names[i] !== "default" && labels[i])
+                                    actions.push({name: names[i], label: labels[i]});
+                            }
+                            return actions;
                         }
-                        // A plain round wash on hover and press: Plasma's own
-                        // button frame breaks up at this small size.
-                        background: Rectangle {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            radius: height / 2
-                            color: clearGroupButton.down ? tone.wash(0.20) : clearGroupButton.hovered ? tone.wash(0.12) : "transparent"
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                        property bool detailsExpanded: false
+                        // What the header shows, from the notification itself. Read
+                        // through a label's visible, it would follow the page's own
+                        // visibility: closing the bell would hide the header, and it
+                        // would stay hidden when the bell opens again.
+                        readonly property bool showsApplication: !isInGroup && applicationName.length > 0
+                        readonly property bool showsSummary: summary.length > 0
+                        readonly property bool canOpen: !isGroup
+                            && (hasDefaultAction || desktopEntry.length > 0)
+                        function openNotification() {
+                            if (!canOpen) return;
+                            if (hasDefaultAction) {
+                                page.notificationModel.invokeDefaultAction(
+                                    page.notificationModel.index(index, 0));
+                            } else {
+                                page.launchApplication(desktopEntry);
+                            }
                         }
-                        display: PlasmaComponents.AbstractButton.IconOnly
-                        onClicked: page.notificationModel.close(
-                            page.notificationModel.index(historyItem.index, 0))
-                        PlasmaComponents.ToolTip {
-                            text: i18n("Clear notifications from %1",
-                                historyItem.applicationName || i18n("this app"))
-                        }
-                    }
+                        // Came in during the last Do Not Disturb, and the first of
+                        // the rest, under "Earlier".
+                        readonly property bool arrived: !isGroup && page.arrival(index)
+                        readonly property bool startsEarlier: index === page.firstEarlierRow
+                        // A row is its parts stacked, each where the one above ends:
+                        // "Earlier" when it starts the older ones, then the app's
+                        // heading or the card, then the 8 px between cards. Its height
+                        // is theirs added up, so nothing in it can reach the next row.
+                        width: historyView.width
+                        bottomPadding: isGroup ? 0 : 8
+                        height: implicitHeight * (1 - folded)
+                        opacity: 1 - folded
+                        clip: folded > 0
 
-                    PlasmaComponents.ToolButton {
-                        id: expandGroupButton
-                        objectName: "notificationExpandGroup"
-                        icon.source: historyItem.isGroupExpanded
-                            ? "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-up.svg"
-                            : "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-down.svg"
-                        icon.color: tone.text
-                        contentItem: SuiteIcon {
-                            glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
-                            implicitWidth: 20; implicitHeight: 20
+                        // Dismiss folds the card away, then closes it. The
+                        // notification is found again by its id when the fold
+                        // ends, in case the history changed meanwhile.
+                        property real folded: 0
+                        property var leavingId
+                        function dismiss() {
+                            if (foldAway.running) return;
+                            const model = page.notificationModel;
+                            leavingId = model.data(model.index(index, 0), NotificationManager.Notifications.IdRole);
+                            if (Kirigami.Units.longDuration > 0) foldAway.start();
+                            else close();
                         }
-                        // A plain round wash on hover and press: Plasma's own
-                        // button frame breaks up at this small size.
-                        background: Rectangle {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            radius: height / 2
-                            color: expandGroupButton.down ? tone.wash(0.20) : expandGroupButton.hovered ? tone.wash(0.12) : "transparent"
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                        function close() {
+                            const model = page.notificationModel;
+                            let row = index;
+                            if (leavingId !== undefined
+                                    && model.data(model.index(row, 0), NotificationManager.Notifications.IdRole) !== leavingId) {
+                                row = -1;
+                                for (let other = 0; other < model.count; ++other) {
+                                    if (model.data(model.index(other, 0), NotificationManager.Notifications.IdRole) === leavingId) {
+                                        row = other;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (row >= 0) model.close(model.index(row, 0));
+                            // The row leaves the history as it closes, and its
+                            // index with it. If it is still here, the close
+                            // did not take, and the card unfolds again.
+                            if (index >= 0) folded = 0;
                         }
-                        display: PlasmaComponents.AbstractButton.IconOnly
-                        text: historyItem.isGroupExpanded
-                            ? i18n("Collapse") : i18n("Expand")
-                        onClicked: page.notificationModel.setData(
-                            page.notificationModel.index(historyItem.index, 0),
-                            !historyItem.isGroupExpanded,
-                            NotificationManager.Notifications.IsGroupExpandedRole)
-                        PlasmaComponents.ToolTip { text: expandGroupButton.text }
-                    }
-                }
-
-                Rectangle {
-                    id: notificationCard
-                    objectName: "notificationCard"
-                    readonly property real visualOutlineWidth: border.width
-                    readonly property color visualOutline: border.color
-                    activeFocusOnTab: historyItem.canOpen
-                    Accessible.role: Accessible.Button
-                    Accessible.name: historyItem.summary.length > 0 ? historyItem.summary
-                        : historyItem.applicationName.length > 0 ? historyItem.applicationName
-                        : historyItem.body
-                    Accessible.onPressAction: historyItem.openNotification()
-                    Keys.onReturnPressed: historyItem.openNotification()
-                    Keys.onSpacePressed: historyItem.openNotification()
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: historyItem.canOpen
-                        onClicked: historyItem.openNotification()
-                    }
-                    visible: !historyItem.isGroup
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: earlierLabel.bottom
-                    height: notificationCardContent.implicitHeight
-                        + page.cardPaddingV * 2
-                    radius: 10
-                    color: tone.wash(historyItem.arrived ? 0.12 : 0.07)
-                    border.width: 0
-
-                    // What came in during Do Not Disturb: a 3 px edge that
-                    // follows the card's corners.
-                    Item {
-                        objectName: "notificationFocusMark"
-                        visible: historyItem.arrived
-                        width: 3
-                        height: parent.height
-                        clip: true
-                        Rectangle {
-                            width: notificationCard.radius * 2
-                            height: parent.height
-                            radius: notificationCard.radius
-                            color: tone.focusMark
+                        NumberAnimation {
+                            id: foldAway
+                            target: historyItem
+                            property: "folded"
+                            to: 1
+                            duration: 200
+                            easing.type: Easing.OutCubic
+                            onFinished: historyItem.close()
                         }
-                    }
 
-                    RowLayout {
-                        id: notificationCardContent
-                        objectName: "notificationCardContent"
-                        anchors.fill: parent
-                        anchors.leftMargin: page.cardPaddingH
-                        anchors.rightMargin: page.cardPaddingH
-                        anchors.topMargin: page.cardPaddingV
-                        anchors.bottomMargin: page.cardPaddingV
-                        spacing: 8
+                        PlasmaComponents.Label {
+                            id: earlierLabel
+                            objectName: "notificationEarlierLabel"
+                            visible: historyItem.startsEarlier
+                            width: parent.width
+                            topPadding: 8
+                            bottomPadding: 12
+                            text: i18nc("@title the notifications from before Do Not Disturb", "Earlier")
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            color: tone.secondaryText
+                        }
 
                         Item {
-                            // Group headings own the app identity, keeping child
-                            // alerts aligned like pills beneath a Tray section.
-                            Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
+                            objectName: "notificationGroupHeading"
+                            visible: historyItem.isGroup
+                            width: parent.width
+                            height: 44
 
                             RowLayout {
-                                id: notificationHeader
-                                objectName: "notificationHeader"
-                                Layout.fillWidth: true
-                                visible: historyItem.showsApplication || historyItem.showsSummary
-                                spacing: 4
+                                id: groupHeading
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                // The icon stands where a card's padding ends, so the name
+                                // after it lines up with the cards' text below.
+                                anchors.leftMargin: page.cardPaddingH
+                                anchors.rightMargin: page.cardPaddingH
+                                spacing: 8
 
-                                PlasmaComponents.Label {
-                                    id: applicationLabel
-                                    objectName: "notificationApplication"
-                                    Layout.fillWidth: !historyItem.showsSummary
-                                    Layout.maximumWidth: historyItem.showsSummary
-                                        ? Kirigami.Units.gridUnit * 8 : Number.POSITIVE_INFINITY
-                                    visible: historyItem.showsApplication
-                                    text: historyItem.applicationName
-                                    font.pixelSize: 13
-                                    font.weight: Font.Medium
-                                    color: tone.secondaryText
+                                Kirigami.Icon {
+                                    source: page.resolveApplicationIcon(
+                                        historyItem.applicationName,
+                                        historyItem.desktopEntry,
+                                        historyItem.applicationIconName)
+                                    implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                                    implicitHeight: implicitWidth
+                                }
+
+                                Kirigami.Heading {
+                                    Layout.fillWidth: true
+                                    text: historyItem.applicationName || i18n("Notifications")
+                                    level: 3
                                     elide: Text.ElideRight
                                 }
 
                                 PlasmaComponents.Label {
-                                    objectName: "notificationHeaderSeparator"
-                                    visible: historyItem.showsApplication && historyItem.showsSummary
-                                    text: "·"
-                                    opacity: 0.42
+                                    text: historyItem.groupChildrenCount
+                                    opacity: 0.58
+                                    horizontalAlignment: Text.AlignHCenter
+                                    Layout.minimumWidth: 20
                                 }
 
-                                PlasmaComponents.Label {
-                                    id: summaryLabel
-                                    objectName: "notificationSummary"
-                                    Layout.fillWidth: true
-                                    visible: historyItem.showsSummary
-                                    text: historyItem.summary
-                                    textFormat: Text.PlainText
-                                    font.pixelSize: 15
-                                    font.weight: Font.Medium
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: historyItem.detailsExpanded ? 1000 : 1
-                                    elide: historyItem.detailsExpanded
-                                        ? Text.ElideNone : Text.ElideRight
-                                }
-                            }
-                            PlasmaComponents.Label {
-                                id: bodyLabel
-                                objectName: "notificationBody"
-                                Layout.fillWidth: true
-                                visible: text.length > 0 && text !== historyItem.summary
-                                text: historyItem.body
-                                // StyledText supports bounded lines/truncation;
-                                // AutoText may choose RichText, which does not.
-                                textFormat: Text.StyledText
-                                font.pixelSize: 13
-                                color: tone.secondaryText
-                                wrapMode: Text.Wrap
-                                maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
-                                elide: historyItem.detailsExpanded
-                                    ? Text.ElideNone : Text.ElideRight
-                            }
-
-                            PlasmaComponents.ToolButton {
-                                id: detailsButton
-                                objectName: "notificationReadMore"
-                                Layout.alignment: Qt.AlignRight
-                                Layout.minimumHeight: 44
-                                leftPadding: 12
-                                rightPadding: 12
-                                visible: historyItem.detailsExpanded
-                                    || summaryLabel.truncated || bodyLabel.truncated
-                                text: historyItem.detailsExpanded
-                                    ? i18n("Show less") : i18n("Show more")
-                                display: PlasmaComponents.AbstractButton.TextOnly
-                                onClicked: historyItem.detailsExpanded
-                                    = !historyItem.detailsExpanded
-                                background: Rectangle {
-                                    radius: height / 2
-                                    color: detailsButton.hovered || detailsButton.down
-                                        ? tone.wash(0.12)
-                                        : tone.wash(0.07)
-                                    border.width: detailsButton.activeFocus ? 1 : 0
-                                    border.color: tone.text
-                                    Behavior on color { ColorAnimation { duration: 120 } }
-                                }
-                            }
-
-                            Item {
-                                implicitHeight: Math.max(44, actionFlow.childrenRect.height)
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: implicitHeight
-                                // Reserve the accepted touch row before repeater
-                                // delegates finish incubating so ListView never
-                                // positions the next recent card through it.
-                                Layout.minimumHeight: implicitHeight
-                                Layout.topMargin: 4
-
-                                Flow {
-                                    id: actionFlow
-                                    objectName: "notificationActionFlow"
-                                    anchors.fill: parent
-                                    spacing: 8
-                                    // These controls stack above the card's earlier
-                                    // MouseArea and accept their own pointer/key input.
-                                    Repeater {
-                                        model: historyItem.producerActions
-                                        delegate: NotificationActionPill {
-                                            required property var modelData
-                                            objectName: "notificationAction-" + modelData.name
-                                            width: Math.min(implicitWidth, actionFlow.width)
-                                            text: modelData.label
-                                            onClicked: page.notificationModel.invokeAction(
-                                                page.notificationModel.index(historyItem.index, 0),
-                                                modelData.name)
+                                PlasmaComponents.ToolButton {
+                                    id: clearGroupButton
+                                    objectName: "notificationClearGroup"
+                                    text: i18n("Clear")
+                                    icon.source: "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/trash-2.svg"
+                                    icon.color: tone.text
+                                    // The row's controls share one size: a 16 px glyph in a 30 px
+                                    // round button, as tall as the Dismiss pill. The glyph keeps its
+                                    // size inside whatever room the button gives its content.
+                                    implicitWidth: 30
+                                    implicitHeight: 30
+                                    padding: 7
+                                    contentItem: Item {
+                                        implicitWidth: 16
+                                        implicitHeight: 16
+                                        SuiteIcon {
+                                            anchors.centerIn: parent
+                                            glyph: "trash-2"
+                                            width: 16
+                                            height: 16
                                         }
                                     }
-                                    NotificationActionPill {
-                                        objectName: "notificationDismiss"
-                                        width: Math.min(implicitWidth, actionFlow.width)
-                                        text: i18n("Dismiss")
-                                        Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
-                                        onClicked: page.notificationModel.close(
-                                            page.notificationModel.index(historyItem.index, 0))
+                                    // A plain round wash on hover and press: Plasma's own
+                                    // button frame breaks up at this small size.
+                                    background: Rectangle {
+                                        implicitWidth: 30
+                                        implicitHeight: 30
+                                        radius: height / 2
+                                        color: clearGroupButton.down ? tone.wash(0.20) : clearGroupButton.hovered ? tone.wash(0.12) : "transparent"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                    }
+                                    display: PlasmaComponents.AbstractButton.IconOnly
+                                    onClicked: page.notificationModel.close(
+                                        page.notificationModel.index(historyItem.index, 0))
+                                    PlasmaComponents.ToolTip {
+                                        text: i18n("Clear notifications from %1",
+                                            historyItem.applicationName || i18n("this app"))
+                                    }
+                                }
+
+                                PlasmaComponents.ToolButton {
+                                    id: expandGroupButton
+                                    objectName: "notificationExpandGroup"
+                                    icon.source: historyItem.isGroupExpanded
+                                        ? "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-up.svg"
+                                        : "qrc:/qt/qml/plasma/applet/co/goodinput/temperance/chevron-down.svg"
+                                    icon.color: tone.text
+                                    // The row's controls share one size: a 16 px glyph in a 30 px
+                                    // round button, as tall as the Dismiss pill. The glyph keeps its
+                                    // size inside whatever room the button gives its content.
+                                    implicitWidth: 30
+                                    implicitHeight: 30
+                                    padding: 7
+                                    contentItem: Item {
+                                        implicitWidth: 16
+                                        implicitHeight: 16
+                                        SuiteIcon {
+                                            anchors.centerIn: parent
+                                            glyph: historyItem.isGroupExpanded ? "chevron-up" : "chevron-down"
+                                            width: 16
+                                            height: 16
+                                        }
+                                    }
+                                    // A plain round wash on hover and press: Plasma's own
+                                    // button frame breaks up at this small size.
+                                    background: Rectangle {
+                                        implicitWidth: 30
+                                        implicitHeight: 30
+                                        radius: height / 2
+                                        color: expandGroupButton.down ? tone.wash(0.20) : expandGroupButton.hovered ? tone.wash(0.12) : "transparent"
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                    }
+                                    display: PlasmaComponents.AbstractButton.IconOnly
+                                    text: historyItem.isGroupExpanded
+                                        ? i18n("Collapse") : i18n("Expand")
+                                    onClicked: page.notificationModel.setData(
+                                        page.notificationModel.index(historyItem.index, 0),
+                                        !historyItem.isGroupExpanded,
+                                        NotificationManager.Notifications.IsGroupExpandedRole)
+                                    PlasmaComponents.ToolTip { text: expandGroupButton.text }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: notificationCard
+                            objectName: "notificationCard"
+                            readonly property real visualOutlineWidth: border.width
+                            readonly property color visualOutline: border.color
+                            activeFocusOnTab: historyItem.canOpen
+                            Accessible.role: Accessible.Button
+                            Accessible.name: historyItem.summary.length > 0 ? historyItem.summary
+                                : historyItem.applicationName.length > 0 ? historyItem.applicationName
+                                : historyItem.body
+                            Accessible.onPressAction: historyItem.openNotification()
+                            Keys.onReturnPressed: historyItem.openNotification()
+                            Keys.onSpacePressed: historyItem.openNotification()
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: historyItem.canOpen
+                                onClicked: historyItem.openNotification()
+                            }
+                            visible: !historyItem.isGroup
+                            width: parent.width
+                            height: notificationCardContent.implicitHeight
+                                + page.cardPaddingV * 2
+                            radius: 10
+                            color: tone.wash(historyItem.arrived ? 0.12 : 0.07)
+                            border.width: 0
+
+                            // What came in during Do Not Disturb: a 3 px edge that
+                            // follows the card's corners.
+                            Item {
+                                objectName: "notificationFocusMark"
+                                visible: historyItem.arrived
+                                width: 3
+                                height: parent.height
+                                clip: true
+                                Rectangle {
+                                    width: notificationCard.radius * 2
+                                    height: parent.height
+                                    radius: notificationCard.radius
+                                    color: tone.focusMark
+                                }
+                            }
+
+                            RowLayout {
+                                id: notificationCardContent
+                                objectName: "notificationCardContent"
+                                // Laid out from the top only: the card takes its
+                                // height from this, never the other way round.
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.leftMargin: page.cardPaddingH
+                                anchors.rightMargin: page.cardPaddingH
+                                anchors.topMargin: page.cardPaddingV
+                                spacing: 8
+
+                                Item {
+                                    // Group headings own the app identity, keeping child
+                                    // alerts aligned like pills beneath a Tray section.
+                                    Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    RowLayout {
+                                        id: notificationHeader
+                                        objectName: "notificationHeader"
+                                        Layout.fillWidth: true
+                                        visible: historyItem.showsApplication || historyItem.showsSummary
+                                        spacing: 4
+
+                                        PlasmaComponents.Label {
+                                            id: applicationLabel
+                                            objectName: "notificationApplication"
+                                            Layout.fillWidth: !historyItem.showsSummary
+                                            Layout.maximumWidth: historyItem.showsSummary
+                                                ? Kirigami.Units.gridUnit * 8 : Number.POSITIVE_INFINITY
+                                            visible: historyItem.showsApplication
+                                            text: historyItem.applicationName
+                                            font.pixelSize: 13
+                                            font.weight: Font.Medium
+                                            color: tone.secondaryText
+                                            elide: Text.ElideRight
+                                        }
+
+                                        PlasmaComponents.Label {
+                                            objectName: "notificationHeaderSeparator"
+                                            visible: historyItem.showsApplication && historyItem.showsSummary
+                                            text: "·"
+                                            opacity: 0.42
+                                        }
+
+                                        PlasmaComponents.Label {
+                                            id: summaryLabel
+                                            objectName: "notificationSummary"
+                                            Layout.fillWidth: true
+                                            visible: historyItem.showsSummary
+                                            text: historyItem.summary
+                                            textFormat: Text.PlainText
+                                            font.pixelSize: 15
+                                            font.weight: Font.Medium
+                                            wrapMode: Text.Wrap
+                                            maximumLineCount: historyItem.detailsExpanded ? 1000 : 1
+                                            elide: historyItem.detailsExpanded
+                                                ? Text.ElideNone : Text.ElideRight
+                                        }
+                                    }
+                                    PlasmaComponents.Label {
+                                        id: bodyLabel
+                                        objectName: "notificationBody"
+                                        Layout.fillWidth: true
+                                        visible: text.length > 0 && text !== historyItem.summary
+                                        text: historyItem.body
+                                        // StyledText supports bounded lines/truncation;
+                                        // AutoText may choose RichText, which does not.
+                                        textFormat: Text.StyledText
+                                        font.pixelSize: 13
+                                        color: tone.secondaryText
+                                        wrapMode: Text.Wrap
+                                        maximumLineCount: historyItem.detailsExpanded ? 1000 : 2
+                                        elide: historyItem.detailsExpanded
+                                            ? Text.ElideNone : Text.ElideRight
+                                    }
+
+                                    PlasmaComponents.ToolButton {
+                                        id: detailsButton
+                                        objectName: "notificationReadMore"
+                                        Layout.alignment: Qt.AlignRight
+                                        Layout.minimumHeight: 44
+                                        leftPadding: 12
+                                        rightPadding: 12
+                                        visible: historyItem.detailsExpanded
+                                            || summaryLabel.truncated || bodyLabel.truncated
+                                        text: historyItem.detailsExpanded
+                                            ? i18n("Show less") : i18n("Show more")
+                                        display: PlasmaComponents.AbstractButton.TextOnly
+                                        onClicked: historyItem.detailsExpanded
+                                            = !historyItem.detailsExpanded
+                                        background: Rectangle {
+                                            radius: height / 2
+                                            color: detailsButton.hovered || detailsButton.down
+                                                ? tone.wash(0.12)
+                                                : tone.wash(0.07)
+                                            border.width: detailsButton.activeFocus ? 1 : 0
+                                            border.color: tone.text
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+                                        }
+                                    }
+
+                                    Item {
+                                        // At least the 44 px touch row; more when the
+                                        // buttons wrap onto a second line.
+                                        implicitHeight: Math.max(44, actionFlow.childrenRect.height)
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: implicitHeight
+                                        Layout.minimumHeight: implicitHeight
+                                        Layout.topMargin: 4
+
+                                        Flow {
+                                            id: actionFlow
+                                            objectName: "notificationActionFlow"
+                                            anchors.fill: parent
+                                            spacing: 8
+                                            // These controls stack above the card's earlier
+                                            // MouseArea and accept their own pointer/key input.
+                                            Repeater {
+                                                model: historyItem.producerActions
+                                                delegate: NotificationActionPill {
+                                                    required property var modelData
+                                                    objectName: "notificationAction-" + modelData.name
+                                                    width: Math.min(implicitWidth, actionFlow.width)
+                                                    text: modelData.label
+                                                    onClicked: page.notificationModel.invokeAction(
+                                                        page.notificationModel.index(historyItem.index, 0),
+                                                        modelData.name)
+                                                }
+                                            }
+                                            NotificationActionPill {
+                                                objectName: "notificationDismiss"
+                                                width: Math.min(implicitWidth, actionFlow.width)
+                                                text: i18n("Dismiss")
+                                                Accessible.name: i18n("Dismiss notification: %1", historyItem.summary)
+                                                onClicked: historyItem.dismiss()
+                                            }
+                                        }
                                     }
                                 }
                             }

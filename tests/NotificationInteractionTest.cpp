@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.0-or-later
 #include <QApplication>
+#include <algorithm>
+#include <functional>
 #include <QAbstractListModel>
 #include <QDBusConnection>
 #include <notification.h>
@@ -49,7 +51,8 @@ public:
             {Roles::SummaryRole, "summary"}, {Roles::BodyRole, "body"},
             {Roles::ApplicationNameRole, "applicationName"}, {Roles::ApplicationIconNameRole, "applicationIconName"},
             {Roles::DesktopEntryRole, "desktopEntry"}, {Roles::HasDefaultActionRole, "hasDefaultAction"},
-            {Roles::ActionNamesRole, "actionNames"}, {Roles::ActionLabelsRole, "actionLabels"}};
+            {Roles::ActionNamesRole, "actionNames"}, {Roles::ActionLabelsRole, "actionLabels"},
+            {Roles::IdRole, "notificationId"}};
     }
     int rowCount(const QModelIndex &parent = {}) const override { return parent.isValid() ? 0 : rows.size(); }
     QVariant data(const QModelIndex &idx, int role) const override {
@@ -60,7 +63,11 @@ public:
     Q_INVOKABLE void invokeAction(const QModelIndex &idx, const QString &name) {
         actionRow = idx.row(); actionName = name; ++actionCalls;
     }
-    Q_INVOKABLE void close(const QModelIndex &idx) { closedRow = idx.row(); ++closeCalls; }
+    bool closeRemoves = false;
+    Q_INVOKABLE void close(const QModelIndex &idx) {
+        closedRow = idx.row(); ++closeCalls;
+        if (closeRemoves && idx.row() < rows.size()) removeAt(idx.row());
+    }
     bool setData(const QModelIndex &idx, const QVariant &value, int role) override {
         expandedRow = idx.row(); expandedRole = role; expanded = value.toBool();
         rows[idx.row()][QStringLiteral("isGroupExpanded")] = value;
@@ -70,7 +77,13 @@ public:
     void append(bool grouped, bool group = false, bool actionable = false, int at = -1) {
         const int row = at < 0 ? rows.size() : at;
         beginInsertRows({}, row, row);
-        rows.insert(row, {{QStringLiteral("isGroup"), group}, {QStringLiteral("isInGroup"), grouped},
+        rows.insert(row, make(grouped, group, actionable));
+        endInsertRows();
+        Q_EMIT countChanged();
+    }
+    // A row as the history holds it; the churn test names and sizes its own.
+    static QVariantMap make(bool grouped, bool group = false, bool actionable = false) {
+        return {{QStringLiteral("isGroup"), group}, {QStringLiteral("isInGroup"), grouped},
             {QStringLiteral("isGroupExpanded"), true}, {QStringLiteral("groupChildrenCount"), group ? 2 : 0},
             {QStringLiteral("summary"), QStringLiteral("Test alert")},
             {QStringLiteral("body"), QString(QStringLiteral("<html><b>Long formatted body</b><br>")
@@ -84,8 +97,47 @@ public:
                 : QStringList{}},
             {QStringLiteral("actionLabels"), actionable
                 ? QStringList{QStringLiteral("Accept"), QStringLiteral("Reject"), QStringLiteral("Open")}
-                : QStringList{}}});
+                : QStringList{}}};
+    }
+    static QVariantMap entry(const QString &application, const QString &summary, int bodyWords,
+            bool grouped = false, bool group = false) {
+        QVariantMap row = make(grouped, group);
+        row[QStringLiteral("applicationName")] = application;
+        row[QStringLiteral("summary")] = summary;
+        row[QStringLiteral("notificationId")] = summary;
+        row[QStringLiteral("body")] = QStringLiteral("word ").repeated(bodyWords).trimmed();
+        row[QStringLiteral("isGroupExpanded")] = false;
+        row[QStringLiteral("groupChildrenCount")] = group ? 3 : 0;
+        return row;
+    }
+    void insertAt(int row, const QVariantMap &value) {
+        beginInsertRows({}, row, row);
+        rows.insert(row, value);
         endInsertRows();
+        Q_EMIT countChanged();
+    }
+    void removeAt(int row) {
+        beginRemoveRows({}, row, row);
+        rows.removeAt(row);
+        endRemoveRows();
+        Q_EMIT countChanged();
+    }
+    void change(int row, const QString &key, const QVariant &value) {
+        rows[row][key] = value;
+        Q_EMIT dataChanged(index(row, 0), index(row, 0));
+    }
+    // What a sorting or grouping proxy sends when it sorts again or a group
+    // opens: one layoutChanged in which rows move, and some come and go.
+    void relayout(const QList<QVariantMap> &next) {
+        Q_EMIT layoutAboutToBeChanged();
+        rows = next;
+        Q_EMIT layoutChanged();
+        Q_EMIT countChanged();
+    }
+    void reset(const QList<QVariantMap> &next) {
+        beginResetModel();
+        rows = next;
+        endResetModel();
         Q_EMIT countChanged();
     }
 Q_SIGNALS:
@@ -342,6 +394,10 @@ private Q_SLOTS:
         item->setParentItem(window.contentItem());
         item->setSize(QSizeF(430, 600));
         window.show();
+        // The rows exist as soon as the page does; let it lay them out
+        // before reading where the buttons are.
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QTest::qWait(50);
         QQuickItem *row = nullptr, *group = nullptr;
         QTRY_VERIFY((row = findItem(item, QStringLiteral("notificationRow1"))));
         QTRY_VERIFY((group = findItem(item, QStringLiteral("notificationRow0"))));
@@ -550,6 +606,265 @@ private Q_SLOTS:
                 QVERIFY2(actionRect.top() >= 0 && actionRect.bottom() <= actionCard->height() + 0.5,
                     "Repeated notification actions must remain inside their card");
             }
+        }
+        item->setParentItem(nullptr);
+    }
+
+    // Every row on screen, top to bottom, must start where the one above it
+    // ends, show the notification the model holds at its place, and keep its
+    // card, Show more and Dismiss inside itself. Returns what is wrong, or
+    // nothing.
+    static QString layoutProblem(QQuickItem *page, const HistoryFixture &model) {
+        QList<QQuickItem *> rows;
+        const std::function<void(QQuickItem *)> collect = [&](QQuickItem *at) {
+            const QString name = at->objectName();
+            if (name.startsWith(QStringLiteral("notificationRow")) && at->isVisible() && at->height() > 0)
+                rows.append(at);
+            for (auto *child : at->childItems()) collect(child);
+        };
+        collect(page);
+        if (rows.size() != model.rows.size())
+            return QStringLiteral("%1 rows drawn for %2 in the history").arg(rows.size()).arg(model.rows.size());
+        std::sort(rows.begin(), rows.end(), [](QQuickItem *a, QQuickItem *b) {
+            return a->mapToScene(QPointF()).y() < b->mapToScene(QPointF()).y();
+        });
+        qreal previousBottom = -1e9;
+        for (int position = 0; position < rows.size(); ++position) {
+            QQuickItem *row = rows[position];
+            const QRectF rowRect = row->mapRectToScene(row->boundingRect());
+            if (rowRect.top() < previousBottom - 0.5)
+                return QStringLiteral("%1 starts at %2, inside the row above, which ends at %3")
+                    .arg(row->objectName()).arg(rowRect.top()).arg(previousBottom);
+            previousBottom = rowRect.bottom();
+            const int index = row->property("index").toInt();
+            if (index != position)
+                return QStringLiteral("%1 is drawn in place %2").arg(row->objectName()).arg(position);
+            const QVariantMap &held = model.rows[index];
+            if (row->property("summary").toString() != held.value(QStringLiteral("summary")).toString()
+                    || row->property("isGroup").toBool() != held.value(QStringLiteral("isGroup")).toBool())
+                return QStringLiteral("%1 shows another notification than the history holds there").arg(row->objectName());
+            auto *card = findItem(row, QStringLiteral("notificationCard"));
+            if (!card || !card->isVisible()) continue;
+            const QRectF cardRect = card->mapRectToScene(card->boundingRect());
+            if (cardRect.bottom() > rowRect.bottom() + 0.5)
+                return QStringLiteral("%1's card runs past its row").arg(row->objectName());
+            for (const char *part : {"notificationReadMore", "notificationDismiss"}) {
+                auto *control = findItem(row, QString::fromLatin1(part));
+                if (!control || !control->isVisible()) continue;
+                const QRectF controlRect = control->mapRectToScene(control->boundingRect());
+                if (controlRect.top() < cardRect.top() - 0.5 || controlRect.bottom() > cardRect.bottom() + 0.5)
+                    return QStringLiteral("%1's %2 is outside its card").arg(row->objectName(), QString::fromLatin1(part));
+            }
+            auto *earlier = findItem(row, QStringLiteral("notificationEarlierLabel"));
+            if (earlier && earlier->isVisible()
+                    && earlier->mapRectToScene(earlier->boundingRect()).bottom() > cardRect.top() + 0.5)
+                return QStringLiteral("%1's Earlier heading runs into its card").arg(row->objectName());
+        }
+        return {};
+    }
+
+    // The history goes through everything that has put cards over one
+    // another before: a group opening and closing as one re-sort, Show more,
+    // "Earlier" moving, new arrivals, a dismiss, the bell closing and opening,
+    // a reset and Clear. After each, no row may reach into another.
+    void churnKeepsRowsApart() {
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        using Fixture = HistoryFixture;
+        const auto espn = [](const QString &summary, int words) {
+            return Fixture::entry(QStringLiteral("ESPN"), summary, words, true);
+        };
+        const QVariantMap espnGroup = Fixture::entry(QStringLiteral("ESPN"), QStringLiteral("ESPN"), 0, false, true);
+        HistoryFixture model;
+        model.reset({espnGroup, espn(QStringLiteral("Adam Schefter"), 40),
+            Fixture::entry(QStringLiteral("KWin"), QStringLiteral("Graphics card reset"), 30),
+            Fixture::entry(QStringLiteral("Target"), QStringLiteral("$5 gift card"), 8),
+            Fixture::entry(QStringLiteral("NBA"), QStringLiteral("Wild night"), 45)});
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 3000}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        // ESPN's notifications came in during Do Not Disturb, so "Earlier"
+        // stands over the first card from another app.
+        item->setProperty("cameDuringFocus", QVariant::fromValue(engine.evaluate(QStringLiteral(
+            "(function(model, index){ return model.data(index, %1) === 'ESPN'; })")
+            .arg(int(HistoryFixture::Roles::ApplicationNameRole)))));
+        QQuickWindow window;
+        window.resize(430, 3000);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 3000));
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+        const auto settle = [&](const char *after) {
+            QTest::qWait(250);
+            const QString problem = layoutProblem(item, model);
+            return problem.isEmpty() ? QString() : QStringLiteral("after %1: %2").arg(QLatin1String(after), problem);
+        };
+        const auto clickShowMore = [&](int row) {
+            auto *rowItem = findItem(item, QStringLiteral("notificationRow%1").arg(row));
+            auto *more = rowItem ? findItem(rowItem, QStringLiteral("notificationReadMore")) : nullptr;
+            if (more && more->isVisible()) QMetaObject::invokeMethod(more, "clicked");
+        };
+        QString problem;
+#define STEP(name, ...) do { __VA_ARGS__; problem = settle(name); QVERIFY2(problem.isEmpty(), qPrintable(problem)); } while (false)
+
+        STEP("the first layout");
+        STEP("Do Not Disturb ending",
+            item->setProperty("focusArrivals", QVariant::fromValue(engine.evaluate(
+                QStringLiteral("({count: 3, from: new Date(), to: new Date()})")))));
+        STEP("Show more on the KWin card", clickShowMore(2));
+        QList<QVariantMap> opened = model.rows;
+        opened[0][QStringLiteral("isGroupExpanded")] = true;
+        opened.insert(2, espn(QStringLiteral("Kyler Murray"), 50));
+        opened.insert(3, espn(QStringLiteral("Bills"), 5));
+        STEP("ESPN opening as one re-sort", model.relayout(opened));
+        STEP("Show more on an ESPN card", clickShowMore(1));
+        QList<QVariantMap> closed = model.rows;
+        closed[0][QStringLiteral("isGroupExpanded")] = false;
+        closed.removeAt(3);
+        closed.removeAt(2);
+        STEP("ESPN closing as one re-sort", model.relayout(closed));
+        STEP("a long arrival at the top",
+            model.insertAt(0, Fixture::entry(QStringLiteral("Mail"), QStringLiteral("Long letter"), 60)));
+        QList<QVariantMap> resorted = model.rows;
+        resorted.move(1, 0);
+        resorted.move(2, 1);
+        resorted.insert(1, espn(QStringLiteral("Breaking"), 35));
+        STEP("ESPN moving to the top with a new card", model.relayout(resorted));
+        STEP("a card's text growing", model.change(3, QStringLiteral("body"), QStringLiteral("grown ").repeated(80)));
+        STEP("a card's text shrinking", model.change(3, QStringLiteral("body"), QStringLiteral("short")));
+        STEP("a dismiss", model.removeAt(2));
+        STEP("the bell closing and opening", item->setVisible(false); QTest::qWait(50); item->setVisible(true));
+        STEP("Do Not Disturb's arrivals being read",
+            item->setProperty("focusArrivals", QVariant()));
+        STEP("a reset", model.reset({espnGroup, espn(QStringLiteral("Adam Schefter"), 40),
+            Fixture::entry(QStringLiteral("KWin"), QStringLiteral("Graphics card reset"), 30)}));
+        STEP("Clear", model.reset({}));
+        STEP("arrivals after Clear",
+            model.insertAt(0, Fixture::entry(QStringLiteral("Target"), QStringLiteral("$5 gift card"), 8));
+            model.insertAt(0, Fixture::entry(QStringLiteral("NBA"), QStringLiteral("Wild night"), 45)));
+#undef STEP
+        item->setParentItem(nullptr);
+    }
+
+    // The same check through long runs of changes in random order, each run
+    // the same every time: arrivals, dismissals, re-sorts that move, add and
+    // drop rows at once, text growing and shrinking, Show more, "Earlier"
+    // coming and going, the bell closing, and resets. The history is checked
+    // after most changes, and some changes land before the last has settled.
+    void churnInRandomOrder_data() {
+        QTest::addColumn<quint32>("seed");
+        for (quint32 seed : {1u, 2u, 3u})
+            QTest::newRow(qPrintable(QStringLiteral("seed %1").arg(seed))) << seed;
+    }
+    void churnInRandomOrder() {
+        QFETCH(quint32, seed);
+        quint32 state = seed;
+        // A small generator of its own, so a run is the same on every Qt.
+        const auto next = [&state](int below) {
+            state = (state * 1103515245u + 12345u) & 0x7fffffffu;
+            return int((state >> 8) % quint32(below));
+        };
+        static const QStringList applications{QStringLiteral("ESPN"), QStringLiteral("KWin"),
+            QStringLiteral("Target"), QStringLiteral("NBA")};
+        static const int words[]{0, 3, 25, 60};
+        int serial = 0;
+        const auto make = [&]() {
+            ++serial;
+            const QString application = applications[next(4)];
+            const int length = words[next(4)];
+            return HistoryFixture::entry(application, QStringLiteral("Alert %1").arg(serial), length, false, next(5) == 0);
+        };
+
+        QQmlEngine engine;
+        engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+        HistoryFixture model;
+        model.closeRemoves = true;
+        QList<QVariantMap> first;
+        for (int i = 0; i < 5; ++i) first.append(make());
+        model.reset(first);
+        QQmlComponent pageComponent(&engine, QUrl::fromLocalFile(QStringLiteral(HISTORY_QML)));
+        QScopedPointer<QObject> page(pageComponent.createWithInitialProperties({
+            {QStringLiteral("notificationModel"), QVariant::fromValue(&model)},
+            {QStringLiteral("clearHistory"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("resolveApplicationIcon"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){return '';})")))},
+            {QStringLiteral("launchApplication"), QVariant::fromValue(engine.evaluate(QStringLiteral("(function(){})")))},
+            {QStringLiteral("demoNotificationVisible"), false}, {QStringLiteral("maximumHeight"), 3000}
+        }));
+        QVERIFY2(page, qPrintable(pageComponent.errorString()));
+        auto *item = qobject_cast<QQuickItem *>(page.data());
+        QVERIFY(item);
+        item->setProperty("cameDuringFocus", QVariant::fromValue(engine.evaluate(QStringLiteral(
+            "(function(model, index){ return model.data(index, %1) === 'ESPN'; })")
+            .arg(int(HistoryFixture::Roles::ApplicationNameRole)))));
+        const QJSValue focus = engine.evaluate(QStringLiteral("({count: 3, from: new Date(), to: new Date()})"));
+        QQuickWindow window;
+        window.resize(430, 3000);
+        item->setParentItem(window.contentItem());
+        item->setSize(QSizeF(430, 3000));
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        const auto press = [&](int row, const QString &control) {
+            auto *rowItem = findItem(item, QStringLiteral("notificationRow%1").arg(row));
+            auto *target = rowItem ? findItem(rowItem, control) : nullptr;
+            if (target && target->isVisible()) QMetaObject::invokeMethod(target, "clicked");
+        };
+
+        bool focused = false;
+        for (int step = 0; step < 40; ++step) {
+            int change = next(9);
+            const int rows = model.rows.size();
+            if (rows < 3) change = 0;
+            if (rows > 12) change = 1;
+            switch (change) {
+            case 0: { const int at = next(rows + 1); model.insertAt(at, make()); break; }
+            case 1: model.removeAt(next(rows)); break;
+            case 2: {
+                QList<QVariantMap> sorted = model.rows;
+                if (next(2)) sorted.removeAt(next(sorted.size()));
+                for (int added = 1 + next(2); added > 0; --added) {
+                    const int at = next(sorted.size() + 1);
+                    sorted.insert(at, make());
+                }
+                const int a = next(sorted.size());
+                const int b = next(sorted.size());
+                sorted.swapItemsAt(a, b);
+                model.relayout(sorted);
+                break;
+            }
+            case 3: {
+                const int row = next(rows);
+                model.change(row, QStringLiteral("body"),
+                    QStringLiteral("grown ").repeated(words[next(4)]).trimmed());
+                break;
+            }
+            case 4: press(next(rows), QStringLiteral("notificationReadMore")); break;
+            case 5:
+                focused = !focused;
+                item->setProperty("focusArrivals", focused ? QVariant::fromValue(focus) : QVariant());
+                break;
+            case 6: item->setVisible(false); QTest::qWait(30); item->setVisible(true); break;
+            case 7: press(next(rows), QStringLiteral("notificationDismiss")); break;
+            case 8:
+                if (next(4) == 0) {
+                    QList<QVariantMap> fresh;
+                    for (int count = 3 + next(5); count > 0; --count) fresh.append(make());
+                    model.reset(fresh);
+                }
+                break;
+            }
+            if (next(10) >= 6) continue;
+            QTest::qWait(250);
+            const QString problem = layoutProblem(item, model);
+            QVERIFY2(problem.isEmpty(), qPrintable(QStringLiteral("step %1, change %2: %3").arg(step).arg(change).arg(problem)));
         }
         item->setParentItem(nullptr);
     }

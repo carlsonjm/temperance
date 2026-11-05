@@ -86,12 +86,11 @@ own `snooze` action is kept and dispatched.
 ### History keeps the sender's meaning
 
 Named actions come from paired `ActionNamesRole` and `ActionLabelsRole`; empty,
-unpaired and reserved default entries are not drawn as pills. The default action
-falls back to the application's desktop entry, and child controls take their own
-pointer and key events.
-Single dismissal uses the child's model index; group Clear, expansion and collapse
-keep group semantics. Action targets stay at least 44 px high, and wrapped action
-rows contribute their real height so controls stay inside the card.
+unpaired and reserved default entries get no pill. The default action falls back
+to the application's desktop entry. Group Clear, expansion and collapse keep
+group semantics. Action targets are at least 44 px high.
+The history is a column, not a list view: each row starts where the row above
+ends, so a re-sort that moves, adds and drops rows at once cannot overlap them.
 
 ## Clock and calendar
 

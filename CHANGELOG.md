@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Notifications & Events no longer draws cards over one another. After a group
+  opened or closed, a card was dismissed or a long notification arrived, a card
+  could be left over the next one, or a card already gone could stay drawn.
+  Each card now always starts where the one above ends. The group's trash and
+  arrow buttons are the size of the row's other controls.
 - Control Center's pills say what they are doing. Networks names the network in
   use, Bluetooth and Cards say On or Off, KDE Connect says whether a device is
   connected, and a pill that is on is filled with the accent.
