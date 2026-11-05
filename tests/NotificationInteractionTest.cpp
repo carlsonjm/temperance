@@ -471,6 +471,10 @@ private Q_SLOTS:
                 }
             };
             dump(window.contentItem(), 0);
+            for (QQuickItem *part : {accept, accept->parentItem(), accept->parentItem()->parentItem(),
+                     row->findChild<QQuickItem *>("notificationCard"), row, row->parentItem(), row->parentItem()->parentItem()})
+                qWarning() << "rect" << part->metaObject()->className() << part->objectName()
+                           << part->mapRectToScene(part->boundingRect()) << "implicit" << part->implicitHeight();
             QTRY_VERIFY(accept->property("hovered").toBool());
             QTRY_VERIFY(accept->property("visualFill").value<QColor>().alpha() > 0);
         }

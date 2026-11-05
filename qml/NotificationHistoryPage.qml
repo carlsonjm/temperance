@@ -774,7 +774,7 @@ Item {
                                     Item {
                                         // At least the 44 px touch row; more when the
                                         // buttons wrap onto a second line.
-                                        implicitHeight: Math.max(44, actionFlow.implicitHeight)
+                                        implicitHeight: Math.max(44, actionFlow.childrenRect.height)
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: implicitHeight
                                         Layout.minimumHeight: implicitHeight
@@ -783,8 +783,7 @@ Item {
                                         Flow {
                                             id: actionFlow
                                             objectName: "notificationActionFlow"
-                                            width: parent.width
-                                            anchors.verticalCenter: parent.verticalCenter
+                                            anchors.fill: parent
                                             spacing: 8
                                             // These controls stack above the card's earlier
                                             // MouseArea and accept their own pointer/key input.
