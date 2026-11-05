@@ -455,6 +455,22 @@ private Q_SLOTS:
             const auto hoverPoint = accept->mapToScene(
                 QPointF(accept->width() / 2, accept->height() / 2)).toPoint();
             QTest::mouseMove(&window, hoverPoint);
+            // Diagnostic: every item under the pointer, outermost first.
+            const std::function<void(QQuickItem *, int)> dump = [&](QQuickItem *at, int depth) {
+                const QPointF local = at->mapFromScene(QPointF(hoverPoint));
+                const bool inside = at->contains(local);
+                if (depth < 40 && (inside || at->childItems().size()))
+                    qWarning().noquote() << QString(depth, QLatin1Char(' ')) << at->metaObject()->className()
+                        << at->objectName() << at->mapRectToScene(at->boundingRect()) << "visible" << at->isVisible()
+                        << "enabled" << at->isEnabled() << "clip" << at->clip() << "z" << at->z()
+                        << "hover" << at->acceptHoverEvents() << "inside" << inside;
+                if (!at->isVisible()) return;
+                for (auto *child : at->childItems()) {
+                    const QRectF r = child->mapRectToScene(child->childrenRect().united(child->boundingRect()));
+                    if (r.contains(QPointF(hoverPoint))) dump(child, depth + 1);
+                }
+            };
+            dump(window.contentItem(), 0);
             QTRY_VERIFY(accept->property("hovered").toBool());
             QTRY_VERIFY(accept->property("visualFill").value<QColor>().alpha() > 0);
         }
