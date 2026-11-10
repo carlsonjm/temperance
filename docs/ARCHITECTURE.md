@@ -145,7 +145,7 @@ Switch User is opt-in. Lock and Sleep ask nothing; Log Out, Restart and Shut Dow
 go through `org.kde.LogoutPrompt`, so Plasma confirms them. Every header control except the
 calendar's is a grey pill, or for Back and More a grey circle. In tablet mode
 Plasma's buttons ignore the pointer, so these track a mouse, trackpad or pen
-themselves, but not a finger, whose tap would leave a hover behind. Bluetooth pairing uses KDE's wizard.
+themselves, but not a finger, whose tap would leave a hover behind.
 
 Promoted tray entries, loaded even where the tray leaves them off,
 become Control Center pills in listed order, each naming its state under its
@@ -153,6 +153,7 @@ name and accent-filled while on, and leave the organized tray, which
 keeps the Apps, Devices, System order and drops empty sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by
 `temperance.performance`, needs the z13ctl-plus helper's daemon; a right-click lists its profiles.
+Keep awake holds sleep and the screen until sign-out, as Plasma's battery page does.
 Each profile's charge limit lives in `temperancerc`. The refresh-rate switch
 uses libkscreen; a rate other than the profile's holds until the profile
 changes, and returns after unlock when the helper re-applies it.
@@ -181,8 +182,6 @@ capped by the screen.
 
 ## Visual rules
 
-Temperance follows these visual rules:
-
 - Ghost White (`#F8F8FF`) leads on a dark style;
   `StatusColors.qml` follows a light one.
 - Temperance's own button icons come from a pinned Lucide Static 1.46.0 subset
@@ -198,7 +197,7 @@ Temperance follows these visual rules:
 ## Weather
 
 Weather starts off, and reads Plasma's Weather widget hourly; nothing runs without
-it. The Open-Meteo fallback the README describes is the only other provider.
+it. Open-Meteo, in the README, is the only other provider.
 
 ## Licensing, packaging and checks
 

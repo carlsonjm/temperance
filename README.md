@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/940503f2-f2d6-489e-9c71-e531ad197180
 <table>
 <tr>
 <td width="33%" valign="top"><b>Notifications &amp; Events</b><br>Notifications pass through the bar, then wait in a history under today's events.</td>
-<td width="33%" valign="top"><b>Control Center</b><br>Volume, brightness, connections and, where supported, performance profiles. Sleep, Restart and Shut down sit in its header.</td>
+<td width="33%" valign="top"><b>Control Center</b><br>Volume, brightness, connections, Keep awake and, where supported, performance profiles. Sleep, Restart and Shut down sit in its header.</td>
 <td width="33%" valign="top"><b>System Tray</b><br>App and device icons, each shown in the bar, the popup, or nowhere.</td>
 </tr>
 <tr>
