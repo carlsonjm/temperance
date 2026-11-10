@@ -136,7 +136,18 @@ sent. When Core sends `OpenNotifications`, the person tapped that island, and
 the notification history opens at its top as from the bell
 (`src/corefocus.h`).
 
+While an application asks the notification server for quiet, Temperance keeps
+notifications quiet as Plasma's own notifications do: the bell is slashed and
+nothing pops up or scrolls. Plasma's portal asks while the screen is shared,
+when Plasma's "Do not disturb while sharing the screen" is on, so a share
+shows no notifications. Turning Do Not Disturb off meanwhile lifts the
+request, and notifications come back at once. When the share's quiet ends,
+Temperance sends `SharingEnded` or `SharingEndedInView` in place of the two
+above, so Core says "While you were sharing"; a Core without them hears the
+plain ones (`src/sharingquiet.h`).
+
 What came in during the last Do Not Disturb leads the history under "While
-you were focused", with how many and from when to when, each card with a 3 px
-amber edge and a stronger wash; the rest follow under "Earlier". The marks
+you were focused" ("While you were sharing" after a share), with how many and
+from when to when, each card with a 3 px amber edge and a stronger wash; the
+rest follow under "Earlier". The marks
 stay until the history closes after showing them.

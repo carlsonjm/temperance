@@ -125,6 +125,10 @@ public:
      * @param appletId also known as plugin Id
      * @return true if it is a system tray applet, otherwise false
      */
+    // Whether the last quiet, or the one now, was Plasma's while the screen
+    // was shared, rather than the person's own Do Not Disturb.
+    Q_INVOKABLE bool quietWasSharing() const;
+
     Q_INVOKABLE bool isSystemTrayApplet(const QString &appletId);
 
     /**

@@ -1257,13 +1257,23 @@ ContainmentItem {
             doNotDisturbSince = new Date();
         } else if (doNotDisturbSince) {
             const came = addedSince(doNotDisturbSince);
+            // The quiet Plasma keeps while the screen is shared, rather than
+            // the person's own Do Not Disturb.
+            const sharing = Plasmoid.quietWasSharing();
             if (came > 0)
-                focusArrivals = { count: came, from: doNotDisturbSince, to: new Date(), seen: notificationsInView };
+                focusArrivals = { count: came, from: doNotDisturbSince, to: new Date(), seen: notificationsInView,
+                    sharing: sharing };
             // Turned off from the history itself, what came in is in front
             // of the person, marked there: Core raises no island.
             if (Plasmoid.coreFocus) {
-                if (notificationsInView) Plasmoid.coreFocus.endedInView(came);
-                else Plasmoid.coreFocus.ended(came);
+                if (sharing) {
+                    if (notificationsInView) Plasmoid.coreFocus.sharingEndedInView(came);
+                    else Plasmoid.coreFocus.sharingEnded(came);
+                } else if (notificationsInView) {
+                    Plasmoid.coreFocus.endedInView(came);
+                } else {
+                    Plasmoid.coreFocus.ended(came);
+                }
             }
             doNotDisturbSince = null;
         }

@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Notifications stay quiet while the screen is shared, as with Plasma's own
+  notifications when its "Do not disturb while sharing the screen" is on, and
+  while any other application asks for quiet. The bell is slashed meanwhile,
+  and turning Do Not Disturb off brings notifications back at once. After a
+  share, what came in leads the history under "While you were sharing".
 - Notifications & Events no longer draws cards over one another. After a group
   opened or closed, a card was dismissed or a long notification arrived, a card
   could be left over the next one, or a card already gone could stay drawn.

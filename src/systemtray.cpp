@@ -23,6 +23,7 @@
 #include "performancecontroller.h"
 #include "corefocus.h"
 #include "sessionactions.h"
+#include "sharingquiet.h"
 
 #include <QScreen>
 #include <optional>
@@ -71,6 +72,41 @@ using namespace Qt::StringLiterals;
 // to warn before it installs a build the running Plasma or Qt will not run.
 [[gnu::used]] static const char builtFor[] =
     "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
+
+// One keeper of the quiet for the whole shell, however many Status Bars it
+// shows: it follows the applications asking the notification server for
+// quiet, the screen share among them, and sets the server's quiet as Plasma's
+// own notifications do (src/sharingquiet.h).
+static SharingQuiet *sharingQuiet()
+{
+    static QPointer<SharingQuiet> keeper;
+    if (keeper) {
+        return keeper;
+    }
+    keeper = new SharingQuiet(QCoreApplication::instance());
+    auto *server = &NotificationManager::Server::self();
+    const auto sharing = [server] {
+        return SharingQuiet::sharingReason(server->inhibitionReasons(),
+                                           i18ndc("xdg-desktop-portal-kde", "Do not disturb mode is enabled because...",
+                                                  "Screen sharing in progress"));
+    };
+    QObject::connect(keeper, &SharingQuiet::setInhibited, server, [server](bool inhibited) {
+        server->setInhibited(inhibited);
+    });
+    QObject::connect(keeper, &SharingQuiet::clearApplications, server, [server] {
+        server->clearInhibitions();
+    });
+    QObject::connect(server, &NotificationManager::Server::inhibitedChanged, keeper, [](bool inhibited) {
+        keeper->inhibitedChanged(inhibited);
+    });
+    const auto asking = [server, sharing] {
+        keeper->applicationsChanged(server->inhibitedByApplication(), sharing());
+    };
+    QObject::connect(server, &NotificationManager::Server::inhibitionApplicationsChanged, keeper, asking);
+    QObject::connect(server, &NotificationManager::Server::inhibitedByApplicationChanged, keeper, asking);
+    keeper->start(server->inhibited(), server->inhibitedByApplication(), sharing());
+    return keeper;
+}
 
 // Inside Shuffle the widget goes by Shuffle's name for it, in its title and
 // its Configure entry; elsewhere it keeps its own.
@@ -381,6 +417,7 @@ void SystemTray::init()
         qCWarning(SYSTEM_TRAY) << "Another program holds the notification service;"
                                << "Temperance shows no notifications while it does";
     }
+    sharingQuiet();
 
     m_audio->start();
 
@@ -1164,6 +1201,11 @@ SessionActions *SystemTray::session() const
 CoreFocus *SystemTray::coreFocus() const
 {
     return m_coreFocus;
+}
+
+bool SystemTray::quietWasSharing() const
+{
+    return !m_needsUpdate && sharingQuiet()->wasSharing();
 }
 
 K_PLUGIN_CLASS_WITH_JSON(SystemTray, "metadata.json")
