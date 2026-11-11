@@ -4,6 +4,10 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center has a Keep awake button. One tap turns it on, and the screen
+  stops dimming and locking and the computer stops sleeping on its own; one tap
+  turns it off. While it is on it is filled with the accent and reads Until you
+  sign out. Closing the lid still sleeps, and it ends at sign-out.
 - Notifications & Events no longer draws cards over one another. After a group
   opened or closed, a card was dismissed or a long notification arrived, a card
   could be left over the next one, or a card already gone could stay drawn.

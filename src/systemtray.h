@@ -35,6 +35,7 @@ class KJob;
 class AudioStatus;
 class PerformanceController;
 class SessionActions;
+class KeepAwake;
 class CoreFocus;
 class ClockExtent;
 
@@ -46,6 +47,7 @@ class SystemTray : public Plasma::Containment
     Q_MOC_INCLUDE("performancecontroller.h")
     Q_MOC_INCLUDE("sessionactions.h")
     Q_MOC_INCLUDE("corefocus.h")
+    Q_MOC_INCLUDE("keepawake.h")
     Q_PROPERTY(QAbstractItemModel *systemTrayModel READ sortedSystemTrayModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *configSystemTrayModel READ configSystemTrayModel CONSTANT)
     // Temperance's own parts, kept apart from the tray host inherited from
@@ -53,6 +55,8 @@ class SystemTray : public Plasma::Containment
     Q_PROPERTY(PerformanceController *performance READ performance CONSTANT)
     Q_PROPERTY(AudioStatus *audio READ audio CONSTANT)
     Q_PROPERTY(SessionActions *session READ session CONSTANT)
+    // Control Center's Keep awake, held for the length of the session.
+    Q_PROPERTY(KeepAwake *keepAwake READ keepAwake CONSTANT)
     // Do Not Disturb's end, told to Split Rock's Core, and Core asking to
     // show what came in.
     Q_PROPERTY(CoreFocus *coreFocus READ coreFocus CONSTANT)
@@ -149,6 +153,7 @@ public:
     PerformanceController *performance() const;
     AudioStatus *audio() const;
     SessionActions *session() const;
+    KeepAwake *keepAwake() const;
     CoreFocus *coreFocus() const;
     CalendarFeeds *calendarFeeds() const;
     bool needsUpdate() const;
@@ -203,6 +208,7 @@ private:
     PerformanceController *m_performance = nullptr;
     AudioStatus *m_audio = nullptr;
     SessionActions *m_session = nullptr;
+    KeepAwake *m_keepAwake = nullptr;
     CoreFocus *m_coreFocus = nullptr;
     suite::PanelWatch m_panelWatch;
     CalendarFeeds *m_calendarFeeds = nullptr;

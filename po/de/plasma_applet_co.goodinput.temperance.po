@@ -1119,3 +1119,15 @@ msgstr "Lautstärke"
 #: qml/ControlCenterPage.qml
 msgid "Brightness"
 msgstr "Helligkeit"
+
+#: qml/ControlCenterPage.qml
+msgid "Keep awake"
+msgstr "Wach bleiben"
+
+#: qml/ControlCenterPage.qml
+msgid "Until you sign out"
+msgstr "Bis zur Abmeldung"
+
+#: src/keepawake.cpp
+msgid "Keep awake is on in Control Center"
+msgstr "„Wach bleiben“ ist im Kontrollzentrum eingeschaltet"
