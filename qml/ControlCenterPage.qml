@@ -57,6 +57,9 @@ Item {
     readonly property int displayBrightnessPercent: displayBrightnessMax
         ? Math.round(displayBrightness / displayBrightnessMax * 100) : 0
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
+    readonly property bool hasKeepAwake: Plasmoid.keepAwake.available
+    // Keep awake comes after every other pill.
+    readonly property int keepAwakeSlot: controlRepeater.count + (hasPerformanceProfiles ? 1 : 0)
 
     // Closes the profile list, which stands in a window of its own, whenever
     // Control Center closes or changes page.
@@ -348,7 +351,8 @@ Item {
         GridLayout {
             id: controlGrid
             readonly property int visibleRows: Math.ceil(
-                (controlRepeater.count + (page.hasPerformanceProfiles ? 1 : 0)) / columns)
+                (controlRepeater.count + (page.hasPerformanceProfiles ? 1 : 0)
+                    + (page.hasKeepAwake ? 1 : 0)) / columns)
             readonly property real tileHeight: Kirigami.Units.gridUnit * 2.75
             implicitHeight: visibleRows > 0
                 ? visibleRows * tileHeight + (visibleRows - 1) * rowSpacing : 0
@@ -481,6 +485,87 @@ Item {
                         onObjectAdded: (index, object) => profileList.insertItem(index, object)
                         onObjectRemoved: (index, object) => profileList.removeItem(object)
                     }
+                }
+            }
+
+            // Keep awake: one tap holds the screen on and the computer awake
+            // until sign-out, another lets go. Drawn as the tray's switches
+            // are, filled with the accent and saying until when while on.
+            Rectangle {
+                id: keepAwakeEntry
+                objectName: "temperance-keep-awake-entry"
+                readonly property bool switchedOn: Plasmoid.keepAwake.active
+                visible: page.hasKeepAwake
+                Layout.row: Math.floor(page.keepAwakeSlot / controlGrid.columns)
+                Layout.column: page.keepAwakeSlot % controlGrid.columns
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 0
+                Layout.preferredHeight: controlGrid.tileHeight
+                radius: height / 2
+                color: switchedOn
+                    ? (keepAwakeTap.pressed || keepAwakeHover.hovered
+                        ? Qt.lighter(page.accentColor, 1.12) : page.accentColor)
+                    : keepAwakeTap.pressed || keepAwakeHover.hovered ? tone.wash(0.12) : tone.wash(0.07)
+                border.width: activeFocus ? 1 : 0
+                border.color: switchedOn ? page.accentTextColor : tone.text
+                Behavior on color { ColorAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+                RowLayout {
+                    objectName: "temperance-keep-awake-face"
+                    anchors.centerIn: parent
+                    width: Math.min(implicitWidth, keepAwakeEntry.width - Kirigami.Units.largeSpacing * 2)
+                    spacing: 8
+                    // On the accent the glyph and both lines take its ink.
+                    Kirigami.Theme.inherit: !keepAwakeEntry.switchedOn
+                    Kirigami.Theme.backgroundColor: keepAwakeEntry.switchedOn
+                        ? page.accentColor : keepAwakeEntry.Kirigami.Theme.backgroundColor
+                    Kirigami.Theme.textColor: keepAwakeEntry.switchedOn
+                        ? page.accentTextColor : keepAwakeEntry.Kirigami.Theme.textColor
+                    SuiteIcon {
+                        glyph: "coffee"
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: implicitWidth
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+                        PlasmaComponents.Label {
+                            objectName: "temperance-keep-awake-name"
+                            Layout.fillWidth: true
+                            text: i18n("Keep awake")
+                            maximumLineCount: 1
+                            elide: Text.ElideRight
+                        }
+                        PlasmaComponents.Label {
+                            objectName: "temperance-keep-awake-state"
+                            Layout.fillWidth: true
+                            visible: keepAwakeEntry.switchedOn
+                            text: i18n("Until you sign out")
+                            font.pixelSize: 12
+                            opacity: 0.72
+                            maximumLineCount: 1
+                            elide: Text.ElideRight
+                        }
+                    }
+                }
+
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: i18n("Keep awake")
+                Accessible.checkable: true
+                Accessible.checked: switchedOn
+                Accessible.description: switchedOn ? i18n("Until you sign out") : ""
+                Accessible.onPressAction: Plasmoid.keepAwake.toggle()
+                Keys.onReturnPressed: Plasmoid.keepAwake.toggle()
+                Keys.onSpacePressed: Plasmoid.keepAwake.toggle()
+                HoverHandler {
+                    id: keepAwakeHover
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
+                }
+                TapHandler {
+                    id: keepAwakeTap
+                    onTapped: Plasmoid.keepAwake.toggle()
                 }
             }
         }

@@ -115,7 +115,7 @@ target_link_libraries(temperance_core PUBLIC
 
 plasma_add_applet(co.goodinput.temperance
     CPP_SOURCES src/systemtray.cpp src/audiostatus.cpp src/calendarfeeds.cpp src/clockextent.cpp
-        src/performancecontroller.cpp src/screenrefresh.cpp src/sessionactions.cpp src/corefocus.cpp
+        src/performancecontroller.cpp src/screenrefresh.cpp src/sessionactions.cpp src/keepawake.cpp src/corefocus.cpp
         src/sharingquiet.cpp
     QML_SOURCES
         qml/AbstractItem.qml
@@ -184,6 +184,7 @@ plasma_add_applet(co.goodinput.temperance
         assets/icons/lucide/mic-off.svg
         assets/icons/lucide/cloud-sun.svg
         assets/icons/lucide/gauge.svg
+        assets/icons/lucide/coffee.svg
         assets/icons/lucide/maximize-2.svg
         assets/icons/lucide/minimize-2.svg
         # Status icons from Colloid, copied by tools/status-glyphs.py.
@@ -335,6 +336,12 @@ if(BUILD_TESTING)
     target_include_directories(temperance-sharing-quiet-test PRIVATE src)
     target_link_libraries(temperance-sharing-quiet-test PRIVATE Qt6::Core Qt6::Test)
     add_test(NAME temperance_sharing_quiet COMMAND temperance-sharing-quiet-test)
+    add_executable(temperance-keep-awake-test tests/KeepAwakeTest.cpp src/keepawake.cpp)
+    target_include_directories(temperance-keep-awake-test PRIVATE src)
+    target_link_libraries(temperance-keep-awake-test PRIVATE Qt6::DBus Qt6::Gui Qt6::Test KF6::I18n)
+    target_compile_definitions(temperance-keep-awake-test PRIVATE TRANSLATION_DOMAIN="plasma_applet_co.goodinput.temperance")
+    add_test(NAME temperance_keep_awake COMMAND dbus-run-session -- $<TARGET_FILE:temperance-keep-awake-test>)
+    set_tests_properties(temperance_keep_awake PROPERTIES TIMEOUT 30)
     add_executable(temperance-build-match-test tests/BuildMatchTest.cpp)
     target_include_directories(temperance-build-match-test PRIVATE src)
     target_link_libraries(temperance-build-match-test PRIVATE Qt6::Core)

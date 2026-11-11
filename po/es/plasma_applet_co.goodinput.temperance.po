@@ -1119,3 +1119,15 @@ msgstr "Volumen"
 #: qml/ControlCenterPage.qml
 msgid "Brightness"
 msgstr "Brillo"
+
+#: qml/ControlCenterPage.qml
+msgid "Keep awake"
+msgstr "Mantener activo"
+
+#: qml/ControlCenterPage.qml
+msgid "Until you sign out"
+msgstr "Hasta que cierres sesión"
+
+#: src/keepawake.cpp
+msgid "Keep awake is on in Control Center"
+msgstr "«Mantener activo» está activado en el centro de control"

@@ -67,10 +67,11 @@ documents cite this one.
 | Tap or click the battery in the bar | Opens Plasma's Power and Battery page, else Control Center. |
 | Tap or drag volume or brightness | Sets the level. |
 | Tap or click the sound or brightness icon | Opens that control's full page. |
-| Tap or click the profile entry | Opens Performance, to apply or edit profiles. |
+| Tap or click the profile entry | Opens Performance. |
 | Right-click, press and hold, or Menu key on it | Lists the profiles; choosing one applies it. |
+| Tap or click Keep awake | Turns it on or off. |
 | Tap or click Add new device on the Bluetooth page | Opens KDE's pairing wizard. |
-| Tap or click Back | Returns to the page that opened this one. |
+| Tap or click Back | Returns to the previous page. |
 | Tap, click, right-click, middle-click, scroll or press and hold a pill | As on that entry in the System Tray. |
 
 ### Performance
@@ -140,9 +141,9 @@ documents cite this one.
 | Input | What happens |
 | --- | --- |
 | Right-click Temperance, then Configure Temperance | Opens Tray Entries, Appearance and Calendar, or Shuffle Settings if installed. |
-| Paste a private calendar address, then Add | Links that calendar; events appear within minutes. |
+| Paste a private calendar address, then Add | Links that calendar; events follow. |
 | Choose a linked calendar's color | Its events' dots take it. |
 | Remove a linked calendar | Unlinks it, forgetting its color. |
 | Notifications off in Appearance | Plasma's own notifications show them. |
 | Setting "Scroll notifications in the ticker", off | The bell counts what waits; nothing scrolls. |
-| Choose a clock font | Sets the clock's typeface from a list. |
+| Choose a clock font | Sets the clock's typeface. |

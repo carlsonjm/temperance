@@ -22,6 +22,7 @@
 #include "clockextent.h"
 #include "performancecontroller.h"
 #include "corefocus.h"
+#include "keepawake.h"
 #include "sessionactions.h"
 #include "sharingquiet.h"
 
@@ -366,6 +367,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_performance = new PerformanceController(this);
     m_audio = new AudioStatus(this);
     m_session = new SessionActions(this);
+    m_keepAwake = new KeepAwake(this);
     m_coreFocus = new CoreFocus(this);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
     if (m_needsUpdate) {
@@ -375,6 +377,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
         return;
     }
     m_session->start();
+    m_keepAwake->start();
     m_coreFocus->start();
     setHasConfigurationInterface(true);
 }
@@ -1196,6 +1199,11 @@ AudioStatus *SystemTray::audio() const
 SessionActions *SystemTray::session() const
 {
     return m_session;
+}
+
+KeepAwake *SystemTray::keepAwake() const
+{
+    return m_keepAwake;
 }
 
 CoreFocus *SystemTray::coreFocus() const
