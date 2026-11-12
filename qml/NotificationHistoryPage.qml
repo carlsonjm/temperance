@@ -259,7 +259,7 @@ Item {
             PlasmaComponents.Label {
                 objectName: "notificationGroupLabel"
                 Layout.fillWidth: !page.focusArrivals
-                text: page.focusArrivals ? i18n("While you were focused")
+                text: page.focusArrivals ? (page.focusArrivals.sharing ? i18n("While you were sharing") : i18n("While you were focused"))
                     : page.notificationModel.unreadNotificationsCount > 0
                     ? i18np("%1 unread", "%1 unread", page.notificationModel.unreadNotificationsCount)
                     : i18n("Recent")

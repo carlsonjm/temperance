@@ -28,6 +28,25 @@ public Q_SLOTS:
     Q_SCRIPTABLE void NotificationsSeen() { ++seen; }
 };
 
+// A Core that also knows the quiet kept while the screen is shared.
+class FakeSharingCore : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "io.github.carlsonjm.SplitRock.Core")
+
+public:
+    QList<uint> ended;
+    QList<uint> endedInView;
+    QList<uint> sharingEnded;
+    QList<uint> sharingEndedInView;
+
+public Q_SLOTS:
+    Q_SCRIPTABLE void FocusEnded(uint notifications) { ended.append(notifications); }
+    Q_SCRIPTABLE void FocusEndedInView(uint notifications) { endedInView.append(notifications); }
+    Q_SCRIPTABLE void SharingEnded(uint notifications) { sharingEnded.append(notifications); }
+    Q_SCRIPTABLE void SharingEndedInView(uint notifications) { sharingEndedInView.append(notifications); }
+};
+
 class CoreFocusTest : public QObject
 {
     Q_OBJECT
@@ -39,6 +58,8 @@ private Q_SLOTS:
         focus.start();
         focus.ended(3);
         focus.endedInView(3);
+        focus.sharingEnded(3);
+        focus.sharingEndedInView(3);
         focus.seen();
         QTest::qWait(100);
         QVERIFY(!QDBusConnection::sessionBus().interface()->isServiceRegistered(QLatin1String(CoreFocus::Service)));
@@ -74,6 +95,40 @@ private Q_SLOTS:
 
         bus.unregisterService(QLatin1String(CoreFocus::Service));
         bus.unregisterObject(QLatin1String(CoreFocus::Path));
+    }
+
+    // The quiet kept while the screen is shared ends as sharing where Core
+    // knows it, and as Do Not Disturb where Core is older.
+    void sharingEndsAsSharingOrAsFocus()
+    {
+        QDBusConnection bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.isConnected());
+        CoreFocus focus;
+        {
+            FakeSharingCore core;
+            QVERIFY(bus.registerObject(QLatin1String(CoreFocus::Path), &core, QDBusConnection::ExportScriptableSlots));
+            QVERIFY(bus.registerService(QLatin1String(CoreFocus::Service)));
+            focus.sharingEnded(3);
+            QTRY_COMPARE(core.sharingEnded, QList<uint>{3u});
+            focus.sharingEndedInView(2);
+            QTRY_COMPARE(core.sharingEndedInView, QList<uint>{2u});
+            QTest::qWait(100);
+            QVERIFY(core.ended.isEmpty());
+            QVERIFY(core.endedInView.isEmpty());
+            bus.unregisterService(QLatin1String(CoreFocus::Service));
+            bus.unregisterObject(QLatin1String(CoreFocus::Path));
+        }
+        {
+            FakeCore core;
+            QVERIFY(bus.registerObject(QLatin1String(CoreFocus::Path), &core, QDBusConnection::ExportScriptableSlots));
+            QVERIFY(bus.registerService(QLatin1String(CoreFocus::Service)));
+            focus.sharingEnded(5);
+            QTRY_COMPARE(core.ended, QList<uint>{5u});
+            focus.sharingEndedInView(6);
+            QTRY_COMPARE(core.endedInView, QList<uint>{6u});
+            bus.unregisterService(QLatin1String(CoreFocus::Service));
+            bus.unregisterObject(QLatin1String(CoreFocus::Path));
+        }
     }
 };
 

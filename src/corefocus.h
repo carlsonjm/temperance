@@ -31,6 +31,11 @@ public:
     // The same, ended inside the notification history, where the person
     // already sees what came in: Core puts nothing on the island.
     Q_INVOKABLE void endedInView(int notifications);
+    // The same two for the quiet Plasma keeps while the screen is shared, so
+    // Core says "While you were sharing". A Core too old to know them hears
+    // the plain ones instead.
+    Q_INVOKABLE void sharingEnded(int notifications);
+    Q_INVOKABLE void sharingEndedInView(int notifications);
     // The history was opened, so what came in is seen: Core takes its island
     // about it down.
     Q_INVOKABLE void seen();
@@ -43,6 +48,6 @@ private Q_SLOTS:
     void requested();
 
 private:
-    void send(const QString &method, const QVariantList &arguments = {});
+    void send(const QString &method, const QVariantList &arguments = {}, const QString &otherwise = {});
     bool m_started = false;
 };
