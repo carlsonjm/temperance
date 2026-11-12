@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- An important banner's lifetime runs from 1 second to 2 minutes, the range
+  Plasma's own notifications take, or until dismissed. It was 3 to 60 seconds.
 - Control Center has a Keep awake button. One tap turns it on, and the screen
   stops dimming and locking and the computer stops sleeping on its own; one tap
   turns it off. While it is on it is filled with the accent and reads Until you
