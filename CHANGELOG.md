@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- On a thin Status Bar the tray's triangle stands on the same middle line as
+  the marks beside it and is as wide as the wired network mark. It sat low and
+  small.
 - Control Center has a Keep awake button. One tap turns it on, and the screen
   stops dimming and locking and the computer stops sleeping on its own; one tap
   turns it off. While it is on it is filled with the accent and reads Until you
