@@ -714,6 +714,8 @@ Item {
             activePerformancePreset: Plasmoid.performance.activePreset
             openPerformancePage: () => { systemTrayState.page = "performance"; }
             accentColor: root.accentColor
+            outputName: root.outputName
+            outputModel: root.outputModel
         }
 
         PerformancePage {

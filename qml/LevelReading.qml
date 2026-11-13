@@ -122,14 +122,19 @@ Item {
     onWatchingChanged: {
         readFirst();
         lastBrightness = -1;
+        lastBrightnesses = {};
         lastKeyboard = -1;
     }
     Component.onCompleted: readFirst()
 
-    // The first display's brightness, as Control Center's slider reads it.
+    // The brightness of the display that last changed, as Control Center's
+    // slider for its screen reads it. Each display is watched, so a change
+    // to any screen, from its keys or from that screen's Control Center,
+    // reads as its own.
     property real brightness: 0
     property real brightnessMax: 100
     property real lastBrightness: -1
+    property var lastBrightnesses: ({})
     Loader {
         active: reading.watching
         sourceComponent: Brightness.ScreenBrightnessControl {
@@ -140,14 +145,31 @@ Item {
                 if (!displays || displays.rowCount() < 1) {
                     return;
                 }
-                const index = displays.index(0, 0);
-                const value = displays.data(index, displays.KItemModels.KRoleNames.role("brightness"));
-                const most = displays.data(index, displays.KItemModels.KRoleNames.role("maxBrightness")) || 100;
-                const changed = reading.lastBrightness >= 0 && value !== reading.lastBrightness;
+                const roles = displays.KItemModels.KRoleNames;
+                const known = reading.lastBrightness >= 0;
+                const seen = reading.lastBrightnesses;
+                let changed = -1;
+                for (let row = 0; row < displays.rowCount(); ++row) {
+                    const index = displays.index(row, 0);
+                    const id = String(displays.data(index, roles.role("displayName")) || row);
+                    const value = displays.data(index, roles.role("brightness"));
+                    if (known && seen[id] !== undefined && seen[id] !== value && changed < 0) {
+                        changed = row;
+                    }
+                    seen[id] = value;
+                }
+                // Nothing moved: the reading keeps the display it shows.
+                if (known && changed < 0) {
+                    return;
+                }
+                const row = changed >= 0 ? changed : 0;
+                const index = displays.index(row, 0);
+                const value = displays.data(index, roles.role("brightness"));
+                const most = displays.data(index, roles.role("maxBrightness")) || 100;
                 reading.brightness = value;
                 reading.brightnessMax = most;
                 reading.lastBrightness = value;
-                if (changed) {
+                if (changed >= 0) {
                     reading.show("brightness");
                 }
             }

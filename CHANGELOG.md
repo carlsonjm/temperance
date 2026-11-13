@@ -4,6 +4,17 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning Status's notifications back on takes Plasma's own Notifications
+  widget out of the layout with its settings. It was stopped but left there,
+  and one left by an earlier turn is now taken out when Status starts.
+- With a Status Bar on each display, Control Center's brightness slider
+  changes the screen it was opened on. It changed the first screen Plasma
+  listed, whichever bar it was opened from.
+- With a Status Bar on each display, the bars share how far the notifications
+  have been read, so each counts the same unread under its bell, and no bar
+  shows a level reading while any bar's Control Center is open.
+- A Status Bar can be told not to play notification sounds, so that with one
+  on each display an allowed sound is heard once rather than once per bar.
 - Each application's notification rules, the ones Plasma's own settings keep,
   are followed: an application told not to show is filed without crossing the
   ticker, one allowed during Do Not Disturb still shows then, and one told not

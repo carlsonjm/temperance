@@ -11,6 +11,7 @@ import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.private.brightnesscontrolplugin as Brightness
+import "DisplayChoice.js" as DisplayChoice
 
 Item {
     id: page
@@ -26,6 +27,11 @@ Item {
     required property string activePerformancePreset
     required property var openPerformancePage
     required property color accentColor
+    // The screen this Control Center opened on: its slider changes that
+    // screen's brightness.
+    property string outputName: ""
+    property string outputModel: ""
+    onOutputNameChanged: updateBrightness()
     readonly property int compactSpacing: 8
     readonly property int standardSpacing: 12
     readonly property int surfaceSpacing: 24
@@ -105,7 +111,9 @@ Item {
             displayBrightnessMax = 100;
             return;
         }
-        const idx = displays.index(0, 0);
+        const row = DisplayChoice.rowFor(displays, name => displays.KItemModels.KRoleNames.role(name),
+            page.outputName, page.outputModel);
+        const idx = displays.index(Math.max(0, row), 0);
         displayName = displays.data(idx, displays.KItemModels.KRoleNames.role("displayName"));
         displayBrightness = displays.data(idx, displays.KItemModels.KRoleNames.role("brightness"));
         displayBrightnessMax = displays.data(idx, displays.KItemModels.KRoleNames.role("maxBrightness")) || 100;
