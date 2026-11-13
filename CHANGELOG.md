@@ -9,6 +9,9 @@ This file records user-visible changes.
   ticker, one allowed during Do Not Disturb still shows then, and one told not
   to stay is left out of Notifications & Events. An application can also be
   allowed the sound its notifications carry; none plays unless allowed.
+- On a thin Status Bar the tray's triangle stands on the same middle line as
+  the marks beside it and is as wide as the wired network mark. It sat low and
+  small.
 - An important banner's lifetime runs from 1 second to 2 minutes, the range
   Plasma's own notifications take, or until dismissed. It was 3 to 60 seconds.
 - Control Center has a Keep awake button. One tap turns it on, and the screen

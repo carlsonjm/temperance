@@ -16,19 +16,25 @@ Canvas {
     // Ringed while the tray is open; the ring widens as the ripple runs.
     property bool ring: false
     property real rippleProgress: 0
+    // Moves the mark inside its canvas, in pixels and down when positive.
+    // The mark's ink stands 0.041 of its size below the canvas's middle,
+    // the point reaching further than the flat side, so a row that centres
+    // its marks lifts this one by that much.
+    property real level: 0
 
     width: Math.round(mark * 28 / 9)
     height: width
     onWidthChanged: requestPaint()
     onInkChanged: requestPaint()
     onRingChanged: requestPaint()
+    onLevelChanged: requestPaint()
     onRippleProgressChanged: requestPaint()
     onPaint: {
         const ctx = getContext("2d");
         ctx.reset();
         function triangle(size) {
             const cx = width / 2;
-            const cy = height / 2;
+            const cy = height / 2 + glyph.level;
             const vertices = [[cx, cy + size * 0.55],
                 [cx - size * 0.6, cy - size * 0.4],
                 [cx + size * 0.6, cy - size * 0.4]];

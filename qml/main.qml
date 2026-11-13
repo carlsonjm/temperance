@@ -1738,12 +1738,18 @@ ContainmentItem {
                     hovered: trayHover.hovered
                     TrayGlyph {
                         id: trayGlyph
-                        mark: root.slim ? 9 : 12
+                        // The slim row's mark is as wide as the wired port
+                        // beside it, in a canvas of a whole, even size, which
+                        // centres on a pixel.
+                        mark: root.slim ? 9.65 : 12
                         anchors.centerIn: parent
                         // Measured on the bar: 1 px down sets the downward
                         // triangle, ring and all, level with the bell, Wi-Fi
-                        // and battery marks beside it.
-                        anchors.verticalCenterOffset: 1
+                        // and battery marks beside it. The slim row's bell
+                        // and marks stand on the row's middle line, so there
+                        // the triangle's ink is lifted onto that line.
+                        anchors.verticalCenterOffset: root.slim ? 0 : 1
+                        level: root.slim ? -0.4 : 0
                         ink: tone.text
                         ring: trayButton.active
                         rippleProgress: trayButton.rippleProgress
