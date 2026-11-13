@@ -567,6 +567,14 @@ void SystemTray::restoreContents(KConfigGroup &group)
     for (const QString &group : cg.groupList()) {
         KConfigGroup appletConfig(&cg, group);
         QString plugin = appletConfig.readEntry("plugin");
+        // Plasma's Notifications widget is made anew each time it is wanted.
+        // One left in the file, by a session that ended while it was shown,
+        // goes here, so none is ever brought back unasked.
+        if (plugin == plasmaNotificationsId) {
+            appletConfig.deleteGroup();
+            Q_EMIT configNeedsSaving();
+            continue;
+        }
         if (!plugin.isEmpty()) {
             m_configGroupIds[plugin] = group.toInt();
         }
@@ -921,9 +929,24 @@ void SystemTray::setPlasmaNotificationsWanted(bool wanted)
         startApplet(plasmaNotificationsId);
     } else {
         // Gone before Status shows notifications again, so none shows twice.
-        stopApplet(plasmaNotificationsId);
+        removePlasmaNotifications();
         setPlasmaNotificationsShown(false);
     }
+}
+
+// The widget goes with its place in the file, so nothing of it is left for a
+// later session to find.
+void SystemTray::removePlasmaNotifications()
+{
+    const auto appletsList = applets();
+    for (Plasma::Applet *applet : appletsList) {
+        if (applet->pluginMetaData().isValid() && applet->pluginMetaData().pluginId() == plasmaNotificationsId) {
+            applet->config().parent().deleteGroup();
+            delete applet;
+        }
+    }
+    m_configGroupIds.remove(plasmaNotificationsId);
+    Q_EMIT configNeedsSaving();
 }
 
 void SystemTray::setPlasmaNotificationsShown(bool shown)

@@ -159,3 +159,18 @@ if(refuse_position LESS 0 OR server_position LESS refuse_position
    OR NOT main_qml MATCHES "showNotifications: !root.needsUpdate")
     message(FATAL_ERROR "A build for another Plasma or Qt must leave notifications and the tray to Plasma")
 endif()
+
+# Plasma's Notifications widget leaves nothing in the layout file when it goes,
+# and a Status Bar told that another shows notifications never asks for it.
+string(FIND "${systemtray_cpp}" "void SystemTray::removePlasmaNotifications()" remove_position)
+string(FIND "${systemtray_cpp}" "m_configGroupIds.remove(plasmaNotificationsId);" forget_position)
+string(FIND "${systemtray_cpp}" "removePlasmaNotifications();\n        setPlasmaNotificationsShown(false);" turned_on_position)
+string(FIND "${systemtray_cpp}" "if (plugin == plasmaNotificationsId) {\n            appletConfig.deleteGroup();" leftover_position)
+string(FIND "${main_qml}" "value: !root.needsUpdate && !root.notificationsWanted && !root.notificationsElsewhere" silent_ask_position)
+string(FIND "${main_qml}" "notificationsEnabled: !notificationsElsewhere" silent_show_position)
+if(remove_position LESS 0 OR forget_position LESS remove_position
+   OR turned_on_position LESS 0 OR leftover_position LESS 0
+   OR silent_ask_position LESS 0 OR silent_show_position LESS 0
+   OR NOT config_xml MATCHES "name=\"notificationsElsewhere\"")
+    message(FATAL_ERROR "Plasma's Notifications widget must go with its entry, and a silent Status Bar must not ask for it")
+endif()

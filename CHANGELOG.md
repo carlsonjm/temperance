@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning "Show the notification ticker and bell" back on now removes Plasma's
+  own Notifications widget completely. Its entry stayed behind in Plasma's
+  layout file, where it gathered and could be brought back.
+- With a Status Bar on each display, "Leave notifications to another Status
+  Bar" keeps one silent: it shows no ticker or bell and does not ask Plasma for
+  its pop-ups, so each notification is shown once. It is off unless chosen.
 - Each application's notification rules, the ones Plasma's own settings keep,
   are followed: an application told not to show is filed without crossing the
   ticker, one allowed during Do Not Disturb still shows then, and one told not

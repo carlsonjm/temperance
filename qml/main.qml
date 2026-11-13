@@ -172,7 +172,11 @@ ContainmentItem {
     // Off, Plasma's own Notifications widget shows them in Status's place;
     // Status keeps showing them until it is up, or if it cannot load.
     readonly property bool notificationsWanted: Plasmoid.configuration.showNotifications !== false
-    readonly property bool notificationsEnabled: notificationsWanted || !Plasmoid.plasmaNotificationsShown
+    // Another Status Bar shows them: this one neither shows them nor asks
+    // Plasma to, so each notification is shown once.
+    readonly property bool notificationsElsewhere: Plasmoid.configuration.notificationsElsewhere === true
+    readonly property bool notificationsEnabled: !notificationsElsewhere
+        && (notificationsWanted || !Plasmoid.plasmaNotificationsShown)
     // With the ticker off the bell stays and counts what waits; nothing
     // scrolls beside it.
     readonly property bool tickerEnabled: notificationsEnabled
@@ -1155,7 +1159,7 @@ ContainmentItem {
     Binding {
         target: Plasmoid
         property: "plasmaNotificationsWanted"
-        value: !root.needsUpdate && !root.notificationsWanted
+        value: !root.needsUpdate && !root.notificationsWanted && !root.notificationsElsewhere
     }
     // The calendars linked in the settings; a link is read when it is added.
     Binding {

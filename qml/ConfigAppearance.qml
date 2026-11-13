@@ -27,6 +27,8 @@ KCMUtils.ScrollViewKCM {
     property int cfg_compactWidth
     property bool cfg_adaptiveWidth
     property bool cfg_showNotifications
+    property bool cfg_notificationsElsewhere
+    readonly property bool notificationsHere: cfg_showNotifications && !cfg_notificationsElsewhere
     property bool cfg_showTicker
     property string cfg_waitingShows
     property bool cfg_showWeather
@@ -151,12 +153,28 @@ KCMUtils.ScrollViewKCM {
             Kirigami.FormData.label: i18n("Notifications:")
             text: i18n("Show the notification ticker and bell")
             checked: page.cfg_showNotifications
+            enabled: !page.cfg_notificationsElsewhere
             onToggled: page.cfg_showNotifications = checked
         }
 
         QQC2.Label {
-            visible: !page.cfg_showNotifications
+            visible: !page.cfg_showNotifications && !page.cfg_notificationsElsewhere
             text: i18n("Plasma's own notifications show them instead.")
+            wrapMode: Text.Wrap
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 22
+        }
+
+        // For a Status Bar on each display: one shows notifications and the
+        // others, with this on, stay silent, so each is shown once.
+        QQC2.CheckBox {
+            text: i18n("Leave notifications to another Status Bar")
+            checked: page.cfg_notificationsElsewhere
+            onToggled: page.cfg_notificationsElsewhere = checked
+        }
+
+        QQC2.Label {
+            visible: page.cfg_notificationsElsewhere
+            text: i18n("This Status Bar stays silent. Turn it on only where another Status Bar shows notifications.")
             wrapMode: Text.Wrap
             Layout.maximumWidth: Kirigami.Units.gridUnit * 22
         }
@@ -164,7 +182,7 @@ KCMUtils.ScrollViewKCM {
         QQC2.CheckBox {
             text: i18n("Scroll notifications in the ticker")
             checked: page.cfg_showTicker
-            enabled: page.cfg_showNotifications
+            enabled: page.notificationsHere
             onToggled: page.cfg_showTicker = checked
         }
 
@@ -176,7 +194,7 @@ KCMUtils.ScrollViewKCM {
                 { "label": i18n("Count them under the bell"), "value": "count" },
                 { "label": i18n("Show the bell alone"), "value": "bell" }
             ]
-            enabled: page.cfg_showNotifications
+            enabled: page.notificationsHere
             Component.onCompleted: currentIndex = Math.max(0,
                 indexOfValue(page.cfg_waitingShows))
             onActivated: page.cfg_waitingShows = currentValue
@@ -258,7 +276,7 @@ KCMUtils.ScrollViewKCM {
             Kirigami.FormData.label: i18n("System alerts:")
             text: i18n("Show important notification banners")
             checked: page.cfg_showPriorityBanners
-            enabled: page.cfg_showNotifications
+            enabled: page.notificationsHere
             onToggled: page.cfg_showPriorityBanners = checked
         }
 
@@ -269,7 +287,7 @@ KCMUtils.ScrollViewKCM {
             from: 0
             to: 120
             value: page.cfg_priorityAlertDuration
-            enabled: page.cfg_showNotifications && page.cfg_showPriorityBanners
+            enabled: page.notificationsHere && page.cfg_showPriorityBanners
             onValueModified: page.cfg_priorityAlertDuration = value
             textFromValue: (value, locale) => value === 0 ? i18n("Until dismissed")
                 : i18np("%1 second", "%1 seconds", value)

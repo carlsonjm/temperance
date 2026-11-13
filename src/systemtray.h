@@ -185,6 +185,7 @@ private:
     void initSettingsAndRegistry();
     void watchPlasmaNotifications(Plasma::Applet *applet);
     void setPlasmaNotificationsShown(bool shown);
+    void removePlasmaNotifications();
     void releasePlasmaNotificationPopups();
 
     KConfigWatcher::Ptr m_configWatcher;
