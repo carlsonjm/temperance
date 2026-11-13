@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QDateTime>
 #include <QVariantMap>
 #include <QPointer>
 #include <QList>
@@ -79,6 +80,13 @@ class SystemTray : public Plasma::Containment
     // Cards' gutter between a window and the work area's edge, which pages
     // keep from the screen's edges too.
     Q_PROPERTY(int windowGutter READ windowGutter NOTIFY popupRoomChanged)
+    // Shared by every Status Bar in the shell, one on each display: how far
+    // the notifications have been read, so each bar counts the same unread,
+    // and whether any bar's Control Center is open, which keeps every bar's
+    // level reading quiet while its sliders say the level.
+    Q_PROPERTY(QDateTime notificationsReadUntil READ notificationsReadUntil WRITE setNotificationsReadUntil
+                   NOTIFY notificationsReadUntilChanged)
+    Q_PROPERTY(bool controlCenterOpenAnywhere READ controlCenterOpenAnywhere NOTIFY controlCenterOpenAnywhereChanged)
 
 public:
     SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args);
@@ -124,6 +132,12 @@ public:
     void setPlasmaNotificationsWanted(bool wanted);
     bool plasmaNotificationsShown() const;
 
+    QDateTime notificationsReadUntil() const;
+    void setNotificationsReadUntil(const QDateTime &until);
+    bool controlCenterOpenAnywhere() const;
+    // This bar's Control Center opened or closed.
+    Q_INVOKABLE void setControlCenterOpen(bool open);
+
     /**
      * @brief isSystemTrayApplet checks if applet is allowed in the System Tray
      * @param appletId also known as plugin Id
@@ -168,6 +182,8 @@ Q_SIGNALS:
     void plasmaNotificationsWantedChanged();
     void plasmaNotificationsShownChanged();
     void popupRoomChanged();
+    void notificationsReadUntilChanged();
+    void controlCenterOpenAnywhereChanged();
 
 private Q_SLOTS:
     // synchronizes with configuration and deletes not allowed applets

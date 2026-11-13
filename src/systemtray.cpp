@@ -352,9 +352,19 @@ static void showSystemTrayMenuWayland(QMenu *menu, QQuickItem *trayItem, Plasma:
     menu->popup(trayWindow->screen()->geometry().topLeft());
 }
 
+// Every Status Bar in this shell, and what they share.
+static QList<SystemTray *> &statusBars()
+{
+    static QList<SystemTray *> bars;
+    return bars;
+}
+static QDateTime s_notificationsReadUntil;
+static QList<SystemTray *> s_controlCentersOpen;
+
 SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVariantList &args)
     : Plasma::Containment(parent, data, args)
 {
+    statusBars().append(this);
     // Plasma's own version is plasmashell's, which is plasma-workspace's.
     const QString runningPlasma = QCoreApplication::applicationVersion();
     const QString runningQt = QString::fromLatin1(qVersion());
@@ -388,6 +398,12 @@ static const QString plasmaNotificationsId = u"org.kde.plasma.notifications"_s;
 
 SystemTray::~SystemTray()
 {
+    statusBars().removeAll(this);
+    if (s_controlCentersOpen.removeAll(this) > 0 && s_controlCentersOpen.isEmpty()) {
+        for (SystemTray *bar : std::as_const(statusBars())) {
+            Q_EMIT bar->controlCenterOpenAnywhereChanged();
+        }
+    }
     // When the applet is about to be deleted, delete now to avoid calling loadConfig()
     delete m_settings;
     // The applets outlive this part of the object; none may call back into it.
@@ -568,17 +584,24 @@ void SystemTray::restoreContents(KConfigGroup &group)
     // notifications are off. One an earlier stop left in the layout, its
     // settings kept, is taken out with them.
     const bool statusShowsNotifications =
-        config().group(u"General"_s).readEntry("showNotifications", true);
+        group.group(u"Configuration"_s).group(u"General"_s).readEntry("showNotifications", true);
+    bool tookOut = false;
     for (const QString &group : cg.groupList()) {
         KConfigGroup appletConfig(&cg, group);
         QString plugin = appletConfig.readEntry("plugin");
         if (plugin == plasmaNotificationsId && statusShowsNotifications) {
             appletConfig.deleteGroup();
+            tookOut = true;
             continue;
         }
         if (!plugin.isEmpty()) {
             m_configGroupIds[plugin] = group.toInt();
         }
+    }
+
+    // Saved now, rather than with the next change to the layout.
+    if (tookOut) {
+        Q_EMIT configNeedsSaving();
     }
 
     initSettingsAndRegistry();
@@ -914,6 +937,42 @@ bool SystemTray::plasmaNotificationsWanted() const
 bool SystemTray::plasmaNotificationsShown() const
 {
     return m_plasmaNotificationsShown;
+}
+
+QDateTime SystemTray::notificationsReadUntil() const
+{
+    return s_notificationsReadUntil;
+}
+
+void SystemTray::setNotificationsReadUntil(const QDateTime &until)
+{
+    if (!until.isValid() || until == s_notificationsReadUntil) {
+        return;
+    }
+    s_notificationsReadUntil = until;
+    for (SystemTray *bar : std::as_const(statusBars())) {
+        Q_EMIT bar->notificationsReadUntilChanged();
+    }
+}
+
+bool SystemTray::controlCenterOpenAnywhere() const
+{
+    return !s_controlCentersOpen.isEmpty();
+}
+
+void SystemTray::setControlCenterOpen(bool open)
+{
+    const bool before = !s_controlCentersOpen.isEmpty();
+    if (open && !s_controlCentersOpen.contains(this)) {
+        s_controlCentersOpen.append(this);
+    } else if (!open) {
+        s_controlCentersOpen.removeAll(this);
+    }
+    if (before != !s_controlCentersOpen.isEmpty()) {
+        for (SystemTray *bar : std::as_const(statusBars())) {
+            Q_EMIT bar->controlCenterOpenAnywhereChanged();
+        }
+    }
 }
 
 // Both read the same notifications from the one server in this process, so

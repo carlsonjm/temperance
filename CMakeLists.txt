@@ -158,6 +158,7 @@ plasma_add_applet(co.goodinput.temperance
         qml/StatusIconButton.qml
         qml/StatusFace.qml
         qml/StatusGlyphs.js
+        qml/DisplayChoice.js
     RESOURCES
         main.xml
         assets/icons/lucide/ellipsis-vertical.svg
