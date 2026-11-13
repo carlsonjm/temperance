@@ -4,6 +4,11 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Each application's notification rules, the ones Plasma's own settings keep,
+  are followed: an application told not to show is filed without crossing the
+  ticker, one allowed during Do Not Disturb still shows then, and one told not
+  to stay is left out of Notifications & Events. An application can also be
+  allowed the sound its notifications carry; none plays unless allowed.
 - An important banner's lifetime runs from 1 second to 2 minutes, the range
   Plasma's own notifications take, or until dismissed. It was 3 to 60 seconds.
 - Control Center has a Keep awake button. One tap turns it on, and the screen
