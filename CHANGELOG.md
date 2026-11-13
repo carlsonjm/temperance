@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Turning Status's notifications back on takes Plasma's own Notifications
+  widget out of the layout with its settings. It was stopped but left there,
+  and one left by an earlier turn is now taken out when Status starts.
 - Each application's notification rules, the ones Plasma's own settings keep,
   are followed: an application told not to show is filed without crossing the
   ticker, one allowed during Do Not Disturb still shows then, and one told not

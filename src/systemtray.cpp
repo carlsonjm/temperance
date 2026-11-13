@@ -564,9 +564,18 @@ void SystemTray::restoreContents(KConfigGroup &group)
 
     // cache known config group ids for applets
     KConfigGroup cg = group.group(u"Applets"_s);
+    // Plasma's Notifications widget belongs only where Status's own
+    // notifications are off. One an earlier stop left in the layout, its
+    // settings kept, is taken out with them.
+    const bool statusShowsNotifications =
+        config().group(u"General"_s).readEntry("showNotifications", true);
     for (const QString &group : cg.groupList()) {
         KConfigGroup appletConfig(&cg, group);
         QString plugin = appletConfig.readEntry("plugin");
+        if (plugin == plasmaNotificationsId && statusShowsNotifications) {
+            appletConfig.deleteGroup();
+            continue;
+        }
         if (!plugin.isEmpty()) {
             m_configGroupIds[plugin] = group.toInt();
         }
@@ -1045,6 +1054,13 @@ void SystemTray::stopApplet(const QString &pluginId)
     const auto appletsList = applets();
     for (Plasma::Applet *applet : appletsList) {
         if (applet->pluginMetaData().isValid() && pluginId == applet->pluginMetaData().pluginId()) {
+            // Plasma's Notifications widget goes with its settings, so none
+            // is left in the layout to be found again: Status shows the
+            // notifications from here on.
+            if (pluginId == plasmaNotificationsId) {
+                applet->config().parent().deleteGroup();
+                m_configGroupIds.remove(pluginId);
+            }
             delete applet;
         }
     }
