@@ -173,6 +173,10 @@
       <label>Applications, by desktop entry or notifyrc name, allowed to play the sound a notification of theirs names</label>
       <default></default>
     </entry>
+    <entry name="playNotificationSounds" type="Bool">
+      <label>Whether this Status Bar plays the sounds notifications name; with a Status Bar on each display, one plays them</label>
+      <default>true</default>
+    </entry>
     <entry name="priorityAlertDuration" type="Int">
       <label>Seconds important system notifications remain live, from 1 to 120; 0 keeps them until dismissed</label>
       <default>20</default>

@@ -1210,7 +1210,10 @@ ContainmentItem {
                     applicationRules.registerKnownApplication(application);
                     applicationRules.save();
                 }
-                if (root.applicationSounds(notificationHistory, idx)
+                // With a Status Bar on each display, only one plays the
+                // sound, so it is heard once.
+                if (Plasmoid.configuration.playNotificationSounds !== false
+                        && root.applicationSounds(notificationHistory, idx)
                         && root.arrivesInView(notificationHistory, idx)
                         && !applicationRules.notificationSoundsInhibited)
                     notificationHistory.playSoundHint(idx);
