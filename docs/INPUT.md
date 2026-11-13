@@ -145,6 +145,5 @@ documents cite this one.
 | Choose a linked calendar's color | Its events' dots take it. |
 | Remove a linked calendar | Unlinks it, forgetting its color. |
 | Notifications off in Appearance | Plasma's own notifications show them. |
-| Setting "Leave notifications to another Status Bar", on | This Status Bar shows no ticker or bell and leaves Plasma's pop-ups alone; off brings them back. |
 | Setting "Scroll notifications in the ticker", off | The bell counts what waits; nothing scrolls. |
 | Choose a clock font | Sets the clock's typeface. |
