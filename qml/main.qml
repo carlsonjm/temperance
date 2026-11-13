@@ -186,8 +186,8 @@ ContainmentItem {
     // the default window to be shown, so old alerts never replay at login.
     readonly property bool priorityAlertsUntilDismissed:
         Number(Plasmoid.configuration.priorityAlertDuration) === 0
-    readonly property int priorityAlertFreshnessMs: (priorityAlertsUntilDismissed ? 20 : Math.max(3,
-        Math.min(60, Number(Plasmoid.configuration.priorityAlertDuration) || 20))) * 1000
+    readonly property int priorityAlertFreshnessMs: (priorityAlertsUntilDismissed ? 20 : Math.max(1,
+        Math.min(120, Number(Plasmoid.configuration.priorityAlertDuration) || 20))) * 1000
     // Banners shown while they are kept until dismissed, by key.
     property var heldPriorityNotifications: ({})
     // Unset, the unit follows the region: Fahrenheit where the region

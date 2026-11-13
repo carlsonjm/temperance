@@ -170,7 +170,7 @@
       <default>true</default>
     </entry>
     <entry name="priorityAlertDuration" type="Int">
-      <label>Seconds important system notifications remain live, from 3; 0 keeps them until dismissed</label>
+      <label>Seconds important system notifications remain live, from 1 to 120; 0 keeps them until dismissed</label>
       <default>20</default>
     </entry>
   </group>

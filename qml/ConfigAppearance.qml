@@ -262,25 +262,21 @@ KCMUtils.ScrollViewKCM {
             onToggled: page.cfg_showPriorityBanners = checked
         }
 
-        // 0 keeps a banner until it is dismissed; below it, 3 seconds is the
-        // shortest, so a step down from 3 or up from 0 skips 1 and 2.
+        // 0 keeps a banner until it is dismissed; above it, 1 second to
+        // 2 minutes, the range Plasma's own notifications take.
         QQC2.SpinBox {
             Kirigami.FormData.label: i18n("Banner lifetime:")
             from: 0
-            to: 60
+            to: 120
             value: page.cfg_priorityAlertDuration
             enabled: page.cfg_showNotifications && page.cfg_showPriorityBanners
-            onValueModified: {
-                if (value > 0 && value < 3)
-                    value = page.cfg_priorityAlertDuration === 0 ? 3 : 0;
-                page.cfg_priorityAlertDuration = value;
-            }
+            onValueModified: page.cfg_priorityAlertDuration = value
             textFromValue: (value, locale) => value === 0 ? i18n("Until dismissed")
                 : i18np("%1 second", "%1 seconds", value)
             valueFromText: (text, locale) => {
                 const seconds = parseInt(text, 10);
                 return text === i18n("Until dismissed") || seconds === 0 ? 0
-                    : Number.isFinite(seconds) ? Math.max(3, seconds) : 20;
+                    : Number.isFinite(seconds) ? Math.min(120, Math.max(1, seconds)) : 20;
             }
         }
 
