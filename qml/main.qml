@@ -255,6 +255,43 @@ ContainmentItem {
             priorityNotificationKey(model, modelIndex)]);
     }
 
+    // What each application may do, as Plasma's own notification settings
+    // keep it: whether its notifications show, whether they show during do
+    // not disturb, and whether they stay in the history. An application is
+    // named by its desktop entry, a service by its notifyrc name.
+    function notifierListed(model, modelIndex, applications, services) {
+        const application = String(model.data(modelIndex,
+            NotificationManager.Notifications.DesktopEntryRole) || "");
+        const service = String(model.data(modelIndex,
+            NotificationManager.Notifications.NotifyRcNameRole) || "");
+        return (application.length > 0 && applications.indexOf(application) >= 0)
+            || (service.length > 0 && services.indexOf(service) >= 0);
+    }
+    function applicationShows(model, modelIndex) {
+        return !notifierListed(model, modelIndex, applicationRules.popupBlacklistedApplications,
+            applicationRules.popupBlacklistedServices);
+    }
+    function applicationBreaksQuiet(model, modelIndex) {
+        return notifierListed(model, modelIndex, applicationRules.doNotDisturbPopupWhitelistedApplications,
+            applicationRules.doNotDisturbPopupWhitelistedServices);
+    }
+    function applicationKept(model, modelIndex) {
+        return !notifierListed(model, modelIndex, applicationRules.historyBlacklistedApplications,
+            applicationRules.historyBlacklistedServices);
+    }
+    // Whether a notification is still to be read where it arrives, on the
+    // ticker or as a banner, rather than only filed.
+    function arrivesInView(model, modelIndex) {
+        return applicationShows(model, modelIndex)
+            && ((!doNotDisturb && !addedDuringDoNotDisturb(model, modelIndex))
+                || applicationBreaksQuiet(model, modelIndex));
+    }
+    // The applications allowed the sound a notification of theirs names.
+    function applicationSounds(model, modelIndex) {
+        const allowed = Plasmoid.configuration.notificationSoundApplications || [];
+        return notifierListed(model, modelIndex, allowed, allowed);
+    }
+
     // A transfer, and a drive plugged in that nothing mounted, are Ambient's,
     // which keeps each in view for a minute first. The end of a transfer and
     // the drive, filed in their freedesktop categories, are kept in the
@@ -1140,6 +1177,47 @@ ContainmentItem {
         }
     }
 
+    // Plasma's notification settings, followed as they change. They hold
+    // each application's rules and the applications seen so far, which is
+    // the list its settings offer.
+    NotificationManager.Settings {
+        id: applicationRules
+        live: true
+        onSettingsChanged: {
+            priorityNotifications.invalidateFilter();
+            railNotifications.invalidateFilter();
+            checkedNotifications.invalidateFilter();
+        }
+    }
+
+    Connections {
+        target: notificationHistory
+        function onRowsInserted(parent, first, last) {
+            if (!root.notificationsEnabled)
+                return;
+            for (let row = first; row <= last; ++row) {
+                const idx = notificationHistory.index(row, 0);
+                if (!root.isFreshNotification(notificationHistory, idx))
+                    continue;
+                const application = String(notificationHistory.data(idx,
+                    NotificationManager.Notifications.DesktopEntryRole) || "");
+                const service = String(notificationHistory.data(idx,
+                    NotificationManager.Notifications.NotifyRcNameRole) || "");
+                // An application seen sending one can be given rules later; one
+                // with a notifyrc is already listed.
+                if (application.length > 0 && service.length === 0
+                        && applicationRules.knownApplications.indexOf(application) < 0) {
+                    applicationRules.registerKnownApplication(application);
+                    applicationRules.save();
+                }
+                if (root.applicationSounds(notificationHistory, idx)
+                        && root.arrivesInView(notificationHistory, idx)
+                        && !applicationRules.notificationSoundsInhibited)
+                    notificationHistory.playSoundHint(idx);
+            }
+        }
+    }
+
     NotificationManager.Notifications {
         id: notificationHistory
         objectName: "temperance-notification-history"
@@ -1171,6 +1249,9 @@ ContainmentItem {
         groupMode: NotificationManager.Notifications.GroupApplicationsFlat
         groupLimit: 1
         expandUnread: false
+        // An application told not to stay in the list is left out of it.
+        blacklistedDesktopEntries: applicationRules.historyBlacklistedApplications
+        blacklistedNotifyRcNames: applicationRules.historyBlacklistedServices
         urgencies: NotificationManager.Notifications.LowUrgency
             | NotificationManager.Notifications.NormalUrgency
             | NotificationManager.Notifications.CriticalUrgency
@@ -1189,7 +1270,8 @@ ContainmentItem {
             if (root.isPriorityNotificationHeld(sourceModel, idx))
                 return true;
             const shown = root.isFreshNotification(sourceModel, idx)
-                && root.isPriorityNotificationCandidate(sourceModel, idx);
+                && root.isPriorityNotificationCandidate(sourceModel, idx)
+                && root.applicationShows(sourceModel, idx);
             if (shown && root.priorityAlertsUntilDismissed)
                 root.heldPriorityNotifications[root.priorityNotificationKey(sourceModel, idx)] = true;
             return shown;
@@ -1215,10 +1297,10 @@ ContainmentItem {
             // presentation. Do not queue another automatic readout.
             // Do not disturb stops the ticker as it stops Plasma's popups, and
             // what arrived meanwhile waits in the history instead of playing
-            // once it ends.
+            // once it ends. An application allowed through it still plays,
+            // and one told not to show never does.
             return unread && !reservedForBanner
-                && !root.doNotDisturb
-                && !root.addedDuringDoNotDisturb(sourceModel, idx)
+                && root.arrivesInView(sourceModel, idx)
                 && !root.isPriorityNotificationMinimized(sourceModel, idx)
                 && !root.isFiledQuietly(sourceModel, idx)
                 && !sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole);
@@ -1239,6 +1321,7 @@ ContainmentItem {
             return root.unreadInHistory(sourceModel, idx)
                 && (Boolean(sourceModel.data(idx, NotificationManager.Notifications.ExpiredRole))
                     || root.addedDuringDoNotDisturb(sourceModel, idx))
+                && root.applicationKept(sourceModel, idx)
                 && !root.isFiledQuietly(sourceModel, idx);
         }
         Component.onCompleted: sourceModel = notificationHistory

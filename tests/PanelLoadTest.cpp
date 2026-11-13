@@ -133,6 +133,45 @@ int main(int argc, char **argv)
         qCritical() << "Banner routing regression:" << routingTest.toString();
         return 21;
     }
+    // Each application's rules: one told not to show never reaches the
+    // ticker, one allowed through do not disturb still does, and the sound
+    // is only for the applications named.
+    QString ruleFunctions;
+    for (const auto &name : {"notifierListed", "applicationShows", "applicationBreaksQuiet", "applicationKept",
+                             "arrivesInView", "applicationSounds", "addedDuringDoNotDisturb"}) {
+        const auto begin = qml.indexOf(QStringLiteral("function ") + QString::fromLatin1(name) + QStringLiteral("("));
+        const auto finish = qml.indexOf(QStringLiteral("\n    }"), begin);
+        if (begin < 0 || finish < 0) return 22;
+        ruleFunctions += qml.mid(begin, finish - begin + 6);
+    }
+    const auto rulesTest = engine.evaluate(QStringLiteral(R"JS(
+        (function() {
+            const NotificationManager = { Notifications: { DesktopEntryRole: 1, NotifyRcNameRole: 2,
+                WasAddedDuringInhibitionRole: 3 } };
+            const applicationRules = {
+                popupBlacklistedApplications: ['game'], popupBlacklistedServices: ['noisyrc'],
+                doNotDisturbPopupWhitelistedApplications: ['mail'], doNotDisturbPopupWhitelistedServices: [],
+                historyBlacklistedApplications: ['chat'], historyBlacklistedServices: [] };
+            const Plasmoid = { configuration: { notificationSoundApplications: ['mail'] } };
+            let doNotDisturb = false;
+            function model(fields) { return { data: (index, role) => fields[role] }; }
+    )JS") + ruleFunctions + QStringLiteral(R"JS(
+            if (!arrivesInView(model({1: 'mail'}), 0) || !arrivesInView(model({}), 0)) throw 'shows by default';
+            if (arrivesInView(model({1: 'game'}), 0) || arrivesInView(model({2: 'noisyrc'}), 0)) throw 'told not to show';
+            if (!applicationKept(model({1: 'mail'}), 0) || applicationKept(model({1: 'chat'}), 0)) throw 'kept';
+            if (!applicationSounds(model({1: 'mail'}), 0) || applicationSounds(model({1: 'chat'}), 0)
+                || applicationSounds(model({}), 0)) throw 'sound';
+            if (arrivesInView(model({1: 'chat', 3: true}), 0)) throw 'arrived during quiet';
+            doNotDisturb = true;
+            if (arrivesInView(model({1: 'chat'}), 0)) throw 'quiet';
+            if (!arrivesInView(model({1: 'mail', 3: true}), 0)) throw 'allowed through quiet';
+            return true;
+        })()
+    )JS"));
+    if (rulesTest.isError() || !rulesTest.toBool()) {
+        qCritical() << "Application rules regression:" << rulesTest.toString();
+        return 22;
+    }
     const auto acStart = qml.indexOf(QStringLiteral("function acHoldingCharge("));
     const auto acEnd = qml.indexOf(QStringLiteral("\n    }"), acStart);
     if (acStart < 0 || acEnd < 0) return 9;

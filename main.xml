@@ -169,6 +169,10 @@
       <label>Whether important system notifications use the matching banner</label>
       <default>true</default>
     </entry>
+    <entry name="notificationSoundApplications" type="StringList">
+      <label>Applications, by desktop entry or notifyrc name, allowed to play the sound a notification of theirs names</label>
+      <default></default>
+    </entry>
     <entry name="priorityAlertDuration" type="Int">
       <label>Seconds important system notifications remain live, from 1 to 120; 0 keeps them until dismissed</label>
       <default>20</default>
