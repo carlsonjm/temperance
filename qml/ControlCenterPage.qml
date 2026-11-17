@@ -63,9 +63,10 @@ Item {
     readonly property int displayBrightnessPercent: displayBrightnessMax
         ? Math.round(displayBrightness / displayBrightnessMax * 100) : 0
     readonly property bool hasPerformanceProfiles: performancePresets.length > 0
+    // Keep awake shows where the computer can be kept awake, unless it is
+    // turned off in the settings (`showKeepAwake`).
     readonly property bool hasKeepAwake: Plasmoid.keepAwake.available
-    // Keep awake comes after every other pill.
-    readonly property int keepAwakeSlot: controlRepeater.count + (hasPerformanceProfiles ? 1 : 0)
+        && Plasmoid.configuration.showKeepAwake !== false
 
     // Closes the profile list, which stands in a window of its own, whenever
     // Control Center closes or changes page.
@@ -74,23 +75,45 @@ Item {
     }
     onVisibleChanged: if (!visible) closeMenus()
 
-    // The Performance pill takes its place in Control Center's order from
-    // the same list as the tray entries; unlisted, it comes last.
+    // Performance and Keep awake are Status's own pills. Each takes its place
+    // in Control Center's order from the same list as the tray entries;
+    // unlisted, Performance comes after the tray's pills and Keep awake last.
     readonly property string performanceItemId: "temperance.performance"
-    readonly property int performanceOrder: {
-        const position = (Plasmoid.configuration.controlCenterItems || []).indexOf(performanceItemId);
-        return position >= 0 ? position : 100;
+    readonly property string keepAwakeItemId: "temperance.keepawake"
+    function ownOrder(itemId, otherwise) {
+        const position = (Plasmoid.configuration.controlCenterItems || []).indexOf(itemId);
+        return position >= 0 ? position : otherwise;
     }
+    readonly property int performanceOrder: ownOrder(performanceItemId, 100)
+    readonly property int keepAwakeOrder: ownOrder(keepAwakeItemId, 101)
     property int controlOrderRevision: 0
-    readonly property int performanceSlot: {
+    // How many of the tray's pills stand before an order.
+    function trayPillsBefore(order) {
         controlOrderRevision;
         const model = page.controlCenterModel;
         const role = model.KItemModels.KRoleNames.role("controlCenterOrder");
-        let slot = 0;
+        let count = 0;
         for (let row = 0; row < model.rowCount(); ++row) {
-            if (model.data(model.index(row, 0), role) < performanceOrder) ++slot;
+            if (model.data(model.index(row, 0), role) < order) ++count;
         }
-        return slot;
+        return count;
+    }
+    readonly property int performanceBefore: { controlOrderRevision; return trayPillsBefore(performanceOrder); }
+    readonly property int keepAwakeBefore: { controlOrderRevision; return trayPillsBefore(keepAwakeOrder); }
+    // Each own pill's slot: the tray's pills before it, and the other own
+    // pill too where that one stands earlier.
+    readonly property int performanceSlot: performanceBefore
+        + (hasKeepAwake && (keepAwakeBefore < performanceBefore
+            || (keepAwakeBefore === performanceBefore && keepAwakeOrder < performanceOrder)) ? 1 : 0)
+    readonly property int keepAwakeSlot: keepAwakeBefore
+        + (hasPerformanceProfiles && (performanceBefore < keepAwakeBefore
+            || (performanceBefore === keepAwakeBefore && performanceOrder < keepAwakeOrder)) ? 1 : 0)
+    // A tray pill's slot: its place among the tray's, moved on by each own
+    // pill that stands before it.
+    function traySlot(index) {
+        return index
+            + (hasPerformanceProfiles && index >= performanceBefore ? 1 : 0)
+            + (hasKeepAwake && index >= keepAwakeBefore ? 1 : 0);
     }
 
     Connections {
@@ -379,8 +402,7 @@ Item {
                     required property int index
                     required property int effectiveStatus
                     required property var model
-                    readonly property int slot: index
-                        + (page.hasPerformanceProfiles && index >= page.performanceSlot ? 1 : 0)
+                    readonly property int slot: page.traySlot(index)
                     Layout.row: Math.floor(slot / controlGrid.columns)
                     Layout.column: slot % controlGrid.columns
                     Layout.fillWidth: true

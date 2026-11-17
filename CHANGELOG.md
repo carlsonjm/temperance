@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Control Center's Keep awake button can be turned off in Status's settings,
+  and takes its place in Control Center's order as the Performance button
+  does. It shows by default, last, as before.
 - Turning Status's notifications back on takes Plasma's own Notifications
   widget out of the layout with its settings. It was stopped but left there,
   and one left by an earlier turn is now taken out when Status starts.
