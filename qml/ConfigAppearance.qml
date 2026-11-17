@@ -24,6 +24,7 @@ KCMUtils.ScrollViewKCM {
     property bool cfg_showSleep
     property list<string> cfg_sessionRow: []
     property bool cfg_showPinButton
+    property bool cfg_showKeepAwake
     property int cfg_compactWidth
     property bool cfg_adaptiveWidth
     property bool cfg_showNotifications
@@ -285,6 +286,12 @@ KCMUtils.ScrollViewKCM {
             text: i18n("Selected tray entries become pills and leave the organized tray.")
             wrapMode: Text.Wrap
             Layout.maximumWidth: Kirigami.Units.gridUnit * 22
+        }
+
+        QQC2.CheckBox {
+            text: i18n("Show the Keep awake button")
+            checked: page.cfg_showKeepAwake
+            onToggled: page.cfg_showKeepAwake = checked
         }
     }
 

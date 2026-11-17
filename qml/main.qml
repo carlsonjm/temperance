@@ -370,6 +370,7 @@ ContainmentItem {
     // The output this window is on, for the host's clock; asked once it is
     // known, and again only when the window moves to another output.
     readonly property string outputName: Screen.name
+    readonly property string outputModel: Screen.model
     onOutputNameChanged: if (!needsUpdate) Plasmoid.watchHostClock(outputName)
 
     // Applets by their own plugin id, rebuilt whole from the tray's rows.
@@ -446,8 +447,14 @@ ContainmentItem {
         systemTrayState.expanded = true;
     }
 
+    // Read up to now, on every Status Bar at once: each counts the same
+    // unread.
+    function markNotificationsRead() {
+        Plasmoid.notificationsReadUntil = new Date();
+    }
+
     function openNotifications() {
-        notificationHistory.lastRead = new Date();
+        root.markNotificationsRead();
         openSurface("notifications");
     }
 
@@ -534,7 +541,7 @@ ContainmentItem {
         if (railNotifications.count > 0) {
             // "Seen" removes alerts from the quiet rail while retaining them in
             // notification history. Clearing history remains a separate action.
-            notificationHistory.lastRead = new Date();
+            root.markNotificationsRead();
         } else {
             demoNotificationVisible = false;
         }
@@ -913,7 +920,7 @@ ContainmentItem {
     // already: the finger chose it, so it does not close it.
     function showStatusPage(key) {
         if (key === "notifications") {
-            notificationHistory.lastRead = new Date();
+            root.markNotificationsRead();
             showSurface("notifications");
         } else if (key === "weather") {
             showApplet("org.kde.plasma.weather");
@@ -1210,7 +1217,10 @@ ContainmentItem {
                     applicationRules.registerKnownApplication(application);
                     applicationRules.save();
                 }
-                if (root.applicationSounds(notificationHistory, idx)
+                // With a Status Bar on each display, only one plays the
+                // sound, so it is heard once.
+                if (Plasmoid.configuration.playNotificationSounds !== false
+                        && root.applicationSounds(notificationHistory, idx)
                         && root.arrivesInView(notificationHistory, idx)
                         && !applicationRules.notificationSoundsInhibited)
                     notificationHistory.playSoundHint(idx);
@@ -1326,6 +1336,16 @@ ContainmentItem {
         }
         Component.onCompleted: sourceModel = notificationHistory
     }
+    Binding {
+        target: notificationHistory
+        property: "lastRead"
+        value: Plasmoid.notificationsReadUntil
+        when: !root.needsUpdate && !isNaN(new Date(Plasmoid.notificationsReadUntil).getTime())
+    }
+    // Any bar's Control Center open keeps every bar's level reading quiet:
+    // its sliders already say the level.
+    readonly property bool controlCenterShown: systemTrayState.expanded && systemTrayState.page === "control"
+    onControlCenterShownChanged: if (!needsUpdate) Plasmoid.setControlCenterOpen(controlCenterShown)
     Connections {
         target: notificationHistory
         function onLastReadChanged() {
@@ -1681,7 +1701,7 @@ ContainmentItem {
                 objectName: "temperance-level-reading"
                 audio: Plasmoid.audio
                 watching: Plasmoid.configuration.showLevels === true
-                quiet: systemTrayState.expanded && systemTrayState.page === "control"
+                quiet: root.controlCenterShown || Plasmoid.controlCenterOpenAnywhere
                 ink: tone.text
                 track: tone.wash(0.24)
                 pitch: root.statusPitch

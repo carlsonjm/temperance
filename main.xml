@@ -58,7 +58,7 @@
       <default>#00F2BA</default>
     </entry>
     <entry name="controlCenterItems" type="StringList">
-      <label>System tray entries promoted to Control Center pills, in their order; temperance.performance places the Performance pill, and kadunce-control_kadunce-control is Kadunce's Cards switch. A listed applet is loaded even when the tray would leave it off</label>
+      <label>System tray entries promoted to Control Center pills, in their order; temperance.performance places the Performance pill and temperance.keepawake the Keep awake pill, and kadunce-control_kadunce-control is Kadunce's Cards switch. A listed applet is loaded even when the tray would leave it off</label>
       <default>org.kde.plasma.networkmanagement,org.kde.plasma.bluetooth,org.kde.kdeconnect,kadunce-control_kadunce-control</default>
     </entry>
     <entry name="showLock" type="Bool">
@@ -125,6 +125,10 @@
       <label>Whether the date is shown with the time</label>
       <default>false</default>
     </entry>
+    <entry name="showKeepAwake" type="Bool">
+      <label>Whether Control Center shows its Keep awake pill, where the computer can be kept awake; its place follows temperance.keepawake in controlCenterItems, or it comes last</label>
+      <default>true</default>
+    </entry>
     <entry name="showLevels" type="Bool">
       <label>Whether a change of volume, screen or keyboard brightness, or the microphone's mute is shown for a moment in the status area, for a desktop that turns Plasma's own popups off</label>
       <default>false</default>
@@ -172,6 +176,10 @@
     <entry name="notificationSoundApplications" type="StringList">
       <label>Applications, by desktop entry or notifyrc name, allowed to play the sound a notification of theirs names</label>
       <default></default>
+    </entry>
+    <entry name="playNotificationSounds" type="Bool">
+      <label>Whether this Status Bar plays the sounds notifications name; with a Status Bar on each display, one plays them</label>
+      <default>true</default>
     </entry>
     <entry name="priorityAlertDuration" type="Int">
       <label>Seconds important system notifications remain live, from 1 to 120; 0 keeps them until dismissed</label>
