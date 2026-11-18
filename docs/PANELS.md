@@ -123,6 +123,20 @@ and neighbours are not measured. Another version, a bar not presenting, an error
 or no service leaves the width to the neighbour measurement in `ARCHITECTURE.md`
 § Width, and the service leaving hands it back there. A fixed width stays fixed.
 
+### Keep awake
+
+The shell keeps one Keep awake, however many Status Bars it shows, so every
+bar's switch reads the same. Other programs reach it on the session bus as
+`co.goodinput.Temperance`, at `/KeepAwake`, interface
+`co.goodinput.Temperance.KeepAwake`: `Active() → b`; `Until() → s`, the time
+it ends by itself as ISO 8601, or empty while it lasts until sign-out and
+while off; `Set(b active, s until) → b`, where an empty `until` is until
+sign-out, and words that are no time, or a time not ahead, change nothing
+and answer false; and the signal `Changed(b active, s until)`. A time given
+there shows under the switch's name ("Until 5:00 PM"), and a tap on the
+switch turns it off as always. Search's quick action uses the door; nothing
+needs it to be there (`src/keepawake.h`).
+
 ### Split Rock's Core
 
 When Do Not Disturb ends, Temperance counts the notifications the server marked

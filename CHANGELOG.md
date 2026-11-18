@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Keep awake is one switch for every Status Bar, so each bar shows the same,
+  and it can be on until a time: turned on from Search for an hour, it says
+  until when under its name and turns itself off.
 - Do Not Disturb follows Plasma's own setting: turned on elsewhere, with an
   end time or without, the bell shows it and it ends by itself. Turned on in
   Status it now stays on through signing out, until it is turned off.

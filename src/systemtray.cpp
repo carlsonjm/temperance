@@ -76,6 +76,26 @@ using namespace Qt::StringLiterals;
 [[gnu::used]] static const char builtFor[] =
     "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
 
+// One Keep awake for the whole shell, however many Status Bars it shows, so
+// each bar's switch says the same and other programs find one door to it
+// (src/keepawake.h). It is started by the first bar that runs.
+static KeepAwake *sharedKeepAwake(bool run)
+{
+    static QPointer<KeepAwake> keeper;
+    static bool running = false;
+    if (!keeper) {
+        keeper = new KeepAwake(QCoreApplication::instance());
+    }
+    if (run && !running) {
+        running = true;
+        keeper->start();
+        if (!keeper->openDoor()) {
+            qCWarning(SYSTEM_TRAY) << "Keep awake could not be offered on the session bus";
+        }
+    }
+    return keeper;
+}
+
 // One follower of Plasma's timed Do Not Disturb for the whole shell: the time
 // kept in Plasma's notification settings is the server's quiet until it
 // passes, and turning Do Not Disturb off ends the time (src/timedquiet.h).
@@ -428,7 +448,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
     m_performance = new PerformanceController(this);
     m_audio = new AudioStatus(this);
     m_session = new SessionActions(this);
-    m_keepAwake = new KeepAwake(this);
+    m_keepAwake = sharedKeepAwake(false);
     m_coreFocus = new CoreFocus(this);
     setContainmentDisplayHints(Plasma::Types::ContainmentDrawsPlasmoidHeading | Plasma::Types::ContainmentForcesSquarePlasmoids);
     if (m_needsUpdate) {
@@ -438,7 +458,7 @@ SystemTray::SystemTray(QObject *parent, const KPluginMetaData &data, const QVari
         return;
     }
     m_session->start();
-    m_keepAwake->start();
+    sharedKeepAwake(true);
     m_coreFocus->start();
     setHasConfigurationInterface(true);
 }

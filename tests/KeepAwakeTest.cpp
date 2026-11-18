@@ -207,6 +207,93 @@ private Q_SLOTS:
         QTRY_VERIFY(power.screen.held.isEmpty());
     }
 
+    void aTimeEndsItByItself()
+    {
+        Power power(QStringLiteral("power-timed"));
+        QVERIFY(power.up());
+        KeepAwake awake;
+        awake.start();
+        QVERIFY(awake.available());
+
+        // A time already gone is refused.
+        QVERIFY(!awake.setActiveUntil(QDateTime::currentDateTime().addSecs(-5)));
+        QVERIFY(!awake.active());
+
+        const QDateTime end = QDateTime::currentDateTime().addMSecs(400);
+        QVERIFY(awake.setActiveUntil(end));
+        QVERIFY(awake.active());
+        QVERIFY(awake.timed());
+        QCOMPARE(awake.until(), end);
+        QTRY_COMPARE(power.sleep.held.size(), 1);
+        QTRY_VERIFY(!awake.active());
+        QVERIFY(!awake.timed());
+        QTRY_VERIFY(power.sleep.held.isEmpty());
+        QTRY_VERIFY(power.screen.held.isEmpty());
+    }
+
+    void aTapWhileTimedTurnsItOff()
+    {
+        Power power(QStringLiteral("power-timed-tap"));
+        QVERIFY(power.up());
+        KeepAwake awake;
+        awake.start();
+        QVERIFY(awake.setActiveUntil(QDateTime::currentDateTime().addSecs(3600)));
+        QTRY_COMPARE(power.sleep.held.size(), 1);
+        awake.toggle();
+        QVERIFY(!awake.active());
+        QVERIFY(!awake.timed());
+        QTRY_VERIFY(power.sleep.held.isEmpty());
+
+        // With no time it is on until sign-out, as a tap is.
+        QVERIFY(awake.setActiveUntil({}));
+        QVERIFY(awake.active());
+        QVERIFY(!awake.timed());
+        QTRY_COMPARE(power.sleep.held.size(), 1);
+    }
+
+    void otherProgramsReachItByItsDoor()
+    {
+        Power power(QStringLiteral("power-door"));
+        QVERIFY(power.up());
+        KeepAwake awake;
+        awake.start();
+        QVERIFY(awake.openDoor());
+
+        QDBusConnection other = QDBusConnection::connectToBus(QDBusConnection::SessionBus, QStringLiteral("door-caller"));
+        const auto ask = [&other](const QString &method, const QVariantList &arguments = {}) {
+            QDBusMessage message = QDBusMessage::createMethodCall(QLatin1String(KeepAwake::DoorService),
+                QLatin1String(KeepAwake::DoorPath), QLatin1String(KeepAwake::DoorInterface), method);
+            message.setArguments(arguments);
+            const QDBusMessage reply = other.call(message);
+            return reply.type() == QDBusMessage::ReplyMessage ? reply.arguments().value(0) : QVariant();
+        };
+        QCOMPARE(ask(QStringLiteral("Active")), QVariant(false));
+        QCOMPARE(ask(QStringLiteral("Until")), QVariant(QString()));
+
+        const QDateTime end = QDateTime::currentDateTime().addSecs(3600);
+        const QString endText = end.toOffsetFromUtc(end.offsetFromUtc()).toString(Qt::ISODate);
+        QCOMPARE(ask(QStringLiteral("Set"), {true, endText}), QVariant(true));
+        QVERIFY(awake.active());
+        QVERIFY(awake.timed());
+        QCOMPARE(ask(QStringLiteral("Active")), QVariant(true));
+        QCOMPARE(ask(QStringLiteral("Until")), QVariant(endText));
+        QTRY_COMPARE(power.sleep.held.size(), 1);
+
+        // Words that are no time, and a time gone, change nothing.
+        QCOMPARE(ask(QStringLiteral("Set"), {true, QStringLiteral("soon")}), QVariant(false));
+        QCOMPARE(ask(QStringLiteral("Set"), {true, QStringLiteral("2020-01-01T00:00:00Z")}), QVariant(false));
+        QCOMPARE(ask(QStringLiteral("Until")), QVariant(endText));
+
+        QCOMPARE(ask(QStringLiteral("Set"), {true, QString()}), QVariant(true));
+        QVERIFY(awake.active());
+        QVERIFY(!awake.timed());
+
+        QCOMPARE(ask(QStringLiteral("Set"), {false, QString()}), QVariant(true));
+        QVERIFY(!awake.active());
+        QTRY_VERIFY(power.sleep.held.isEmpty());
+        QDBusConnection::disconnectFromBus(QStringLiteral("door-caller"));
+    }
+
     void removingTheWidgetLetsGo()
     {
         Power power(QStringLiteral("power-removed"));

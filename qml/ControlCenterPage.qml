@@ -520,11 +520,15 @@ Item {
 
             // Keep awake: one tap holds the screen on and the computer awake
             // until sign-out, another lets go. Drawn as the tray's switches
-            // are, filled with the accent and saying until when while on.
+            // are, filled with the accent and saying until when while on:
+            // sign-out, or the time it was given from elsewhere.
             Rectangle {
                 id: keepAwakeEntry
                 objectName: "temperance-keep-awake-entry"
                 readonly property bool switchedOn: Plasmoid.keepAwake.active
+                readonly property string lasts: !Plasmoid.keepAwake.timed ? i18n("Until you sign out")
+                    : i18nc("@info keep awake ends at this time", "Until %1",
+                            Plasmoid.keepAwake.until.toLocaleTimeString(Qt.locale(), Locale.ShortFormat))
                 visible: page.hasKeepAwake
                 Layout.row: Math.floor(page.keepAwakeSlot / controlGrid.columns)
                 Layout.column: page.keepAwakeSlot % controlGrid.columns
@@ -571,7 +575,7 @@ Item {
                             objectName: "temperance-keep-awake-state"
                             Layout.fillWidth: true
                             visible: keepAwakeEntry.switchedOn
-                            text: i18n("Until you sign out")
+                            text: keepAwakeEntry.lasts
                             font.pixelSize: 12
                             opacity: 0.72
                             maximumLineCount: 1
@@ -585,7 +589,7 @@ Item {
                 Accessible.name: i18n("Keep awake")
                 Accessible.checkable: true
                 Accessible.checked: switchedOn
-                Accessible.description: switchedOn ? i18n("Until you sign out") : ""
+                Accessible.description: switchedOn ? lasts : ""
                 Accessible.onPressAction: Plasmoid.keepAwake.toggle()
                 Keys.onReturnPressed: Plasmoid.keepAwake.toggle()
                 Keys.onSpacePressed: Plasmoid.keepAwake.toggle()

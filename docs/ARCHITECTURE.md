@@ -153,7 +153,7 @@ name and accent-filled while on, and leave the organized tray, which
 keeps the Apps, Devices, System order and drops empty sections from its spacing. Controls the machine cannot use are left out: battery
 follows the system's power state, and the Performance entry, placed by
 `temperance.performance`, needs the z13ctl-plus helper's daemon; a right-click lists its profiles.
-Keep awake holds sleep and the screen until sign-out, as Plasma's battery page does.
+Keep awake holds sleep and the screen until sign-out or a set time (`PANELS.md`).
 Each profile's charge limit lives in `temperancerc`. The refresh-rate switch
 uses libkscreen; a rate other than the profile's holds until the profile
 changes, and returns after unlock when the helper re-applies it.
