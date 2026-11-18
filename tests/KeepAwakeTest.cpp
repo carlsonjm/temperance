@@ -9,6 +9,7 @@
 #include <QDBusConnectionInterface>
 #include <QDBusContext>
 #include <QDBusMessage>
+#include <QDBusPendingCall>
 #include <QSignalSpy>
 #include <QTest>
 
@@ -264,7 +265,11 @@ private Q_SLOTS:
             QDBusMessage message = QDBusMessage::createMethodCall(QLatin1String(KeepAwake::DoorService),
                 QLatin1String(KeepAwake::DoorPath), QLatin1String(KeepAwake::DoorInterface), method);
             message.setArguments(arguments);
-            const QDBusMessage reply = other.call(message);
+            // Answered by this same thread, so wait with its events running.
+            QDBusPendingCall call = other.asyncCall(message);
+            for (int waited = 0; !call.isFinished() && waited < 5000; waited += 10)
+                QTest::qWait(10);
+            const QDBusMessage reply = call.reply();
             return reply.type() == QDBusMessage::ReplyMessage ? reply.arguments().value(0) : QVariant();
         };
         QCOMPARE(ask(QStringLiteral("Active")), QVariant(false));

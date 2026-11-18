@@ -198,7 +198,7 @@ void KeepAwake::setUntil(const QDateTime &until)
     // A timer counts in an int of milliseconds: a far end is looked at
     // again on the way.
     const qint64 ahead = QDateTime::currentDateTime().msecsTo(until);
-    m_end->start(int(qBound<qint64>(0, ahead + 1, 24 * 60 * 60 * 1000)));
+    m_end->start(int(qBound(qint64(0), ahead + 1, qint64(24 * 60 * 60 * 1000))));
 }
 
 void KeepAwake::timeUp()
