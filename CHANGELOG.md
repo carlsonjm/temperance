@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Do Not Disturb follows Plasma's own setting: turned on elsewhere, with an
+  end time or without, the bell shows it and it ends by itself. Turned on in
+  Status it now stays on through signing out, until it is turned off.
 - Control Center's Keep awake button can be turned off in Status's settings,
   and takes its place in Control Center's order as the Performance button
   does. It shows by default, last, as before.

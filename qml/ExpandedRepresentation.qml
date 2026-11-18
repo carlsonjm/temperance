@@ -635,7 +635,7 @@ Item {
                         ? ((root.accentColor.r * 0.299 + root.accentColor.g * 0.587 + root.accentColor.b * 0.114) > 0.58
                             ? "#102729" : "#FFFFFF")
                         : tone.text
-                    function toggle() { NotificationManager.Server.inhibited = !NotificationManager.Server.inhibited }
+                    function toggle() { root.setDoNotDisturb(!NotificationManager.Server.inhibited) }
                     Layout.preferredWidth: doNotDisturbContent.implicitWidth + 22
                     Layout.minimumWidth: Layout.preferredWidth
                     Layout.maximumWidth: Layout.preferredWidth

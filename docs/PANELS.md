@@ -146,6 +146,15 @@ Temperance sends `SharingEnded` or `SharingEndedInView` in place of the two
 above, so Core says "While you were sharing"; a Core without them hears the
 plain ones (`src/sharingquiet.h`).
 
+Do Not Disturb is also Plasma's own: the time it lasts until, kept in
+Plasma's notification settings (`plasmanotifyrc`, `[DoNotDisturb]` `Until`).
+While that time is ahead Temperance keeps the server quiet, and lifts it when
+the time passes or is taken out, so Do Not Disturb set from System Settings
+or by another program, with an end or without, shows on the bell and ends by
+itself. Status's own switch keeps it there too, as a time a year ahead, so
+it stays through signing out until it is turned off. Turning it off anywhere
+takes the time out (`src/timedquiet.h`).
+
 What came in during the last Do Not Disturb leads the history under "While
 you were focused" ("While you were sharing" after a share), with how many and
 from when to when, each card with a 3 px amber edge and a stronger wash; the

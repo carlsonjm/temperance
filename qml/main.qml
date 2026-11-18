@@ -178,6 +178,19 @@ ContainmentItem {
     readonly property bool tickerEnabled: notificationsEnabled
         && Plasmoid.configuration.showTicker !== false
     readonly property bool doNotDisturb: NotificationManager.Server.inhibited
+    // Do Not Disturb, on until it is turned off, is kept where Plasma keeps
+    // its own, as a time a year ahead, so it stays through signing out and
+    // anything else that sets Plasma's sees it on. Off is off at once, and
+    // the time ends with it (src/timedquiet.h).
+    function setDoNotDisturb(on) {
+        if (on) {
+            const until = new Date();
+            until.setFullYear(until.getFullYear() + 1);
+            applicationRules.notificationsInhibitedUntil = until;
+            applicationRules.save();
+        }
+        NotificationManager.Server.inhibited = on;
+    }
     readonly property bool weatherEnabled: Plasmoid.configuration.showWeather === true
     readonly property bool timeEnabled: Plasmoid.configuration.showTime !== false
     readonly property bool dateEnabled: Plasmoid.configuration.showDate === true
