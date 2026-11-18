@@ -25,6 +25,7 @@
 #include "keepawake.h"
 #include "sessionactions.h"
 #include "sharingquiet.h"
+#include "timedquiet.h"
 
 #include <QScreen>
 #include <optional>
@@ -52,6 +53,7 @@
 #include <qpa/qplatformscreen.h>
 
 #include <notificationmanager/server.h>
+#include <notificationmanager/settings.h>
 
 #include <Plasma/Applet>
 #include <Plasma/Corona>
@@ -73,6 +75,55 @@ using namespace Qt::StringLiterals;
 // to warn before it installs a build the running Plasma or Qt will not run.
 [[gnu::used]] static const char builtFor[] =
     "temperance-built-for plasma " TEMPERANCE_BUILT_PLASMA " qt " TEMPERANCE_BUILT_QT;
+
+// One follower of Plasma's timed Do Not Disturb for the whole shell: the time
+// kept in Plasma's notification settings is the server's quiet until it
+// passes, and turning Do Not Disturb off ends the time (src/timedquiet.h).
+static void followTimedQuiet()
+{
+    static QPointer<TimedQuiet> follower;
+    if (follower) {
+        return;
+    }
+    follower = new TimedQuiet(QCoreApplication::instance());
+    auto *server = &NotificationManager::Server::self();
+    auto *settings = new NotificationManager::Settings(follower);
+    settings->setLive(true);
+    auto *again = new QTimer(follower);
+    again->setSingleShot(true);
+    const auto look = [settings] {
+        follower->untilChanged(settings->notificationsInhibitedUntil(), QDateTime::currentDateTime());
+    };
+    QObject::connect(follower, &TimedQuiet::setInhibited, server, [server](bool inhibited) {
+        server->setInhibited(inhibited);
+    });
+    QObject::connect(follower, &TimedQuiet::clearUntil, settings, [settings] {
+        settings->setNotificationsInhibitedUntil(QDateTime());
+        settings->save();
+    });
+    QObject::connect(follower, &TimedQuiet::wake, again, [again](int milliseconds) {
+        if (milliseconds < 0) {
+            again->stop();
+        } else {
+            again->start(milliseconds);
+        }
+    });
+    QObject::connect(again, &QTimer::timeout, follower, look);
+    QObject::connect(settings, &NotificationManager::Settings::settingsChanged, follower, look);
+    // The setting is read afresh: Status's own switch writes it through
+    // another reader, which this one is not told of.
+    const auto told = [settings, look](bool inhibited) {
+        settings->load();
+        follower->inhibitedChanged(inhibited, settings->notificationsInhibitedUntil(), QDateTime::currentDateTime());
+        if (inhibited) {
+            look();
+        }
+    };
+    QObject::connect(server, &NotificationManager::Server::inhibitedChanged, follower, told);
+    // A time already gone is no reason to take it out at the start.
+    follower->inhibitedChanged(server->inhibited(), QDateTime(), QDateTime::currentDateTime());
+    look();
+}
 
 // One keeper of the quiet for the whole shell, however many Status Bars it
 // shows: it follows the applications asking the notification server for
@@ -437,6 +488,7 @@ void SystemTray::init()
                                << "Temperance shows no notifications while it does";
     }
     sharingQuiet();
+    followTimedQuiet();
 
     m_audio->start();
 
