@@ -1072,6 +1072,10 @@ ContainmentItem {
         appletInstantiator.active = true;
         if (!needsUpdate) Plasmoid.watchHostClock(outputName);
         Qt.callLater(refreshResponsiveWidth);
+        // A new start of the shell has no record of what came in during an
+        // earlier Do Not Disturb, so an island Core kept from then has
+        // nothing behind it.
+        Qt.callLater(settleArrivals);
     }
 
     Timer {
@@ -1424,16 +1428,55 @@ ContainmentItem {
     }
 
     // Notifications the server marked as added during Do Not Disturb since
-    // that moment.
+    // that moment, counted only where the history lists them: an
+    // application kept out of the history, or a transfer filed quietly, is
+    // not one the island can promise.
     function addedSince(since) {
         let added = 0;
         for (let row = 0; row < notificationHistory.rowCount(); ++row) {
             const modelIndex = notificationHistory.index(row, 0);
             if (!addedDuringDoNotDisturb(notificationHistory, modelIndex)) continue;
+            if (!listedInHistory(notificationHistory, modelIndex)) continue;
             const created = notificationHistory.data(modelIndex, NotificationManager.Notifications.CreatedRole);
             if (created && created.getTime && created.getTime() >= since.getTime()) ++added;
         }
         return added;
+    }
+
+    // Whether the history shows a notification at all.
+    function listedInHistory(model, modelIndex) {
+        return applicationKept(model, modelIndex) && !isFiledQuietly(model, modelIndex);
+    }
+
+    // How many of what came in during the last Do Not Disturb the history
+    // still lists. An app can take its own notification back, and a
+    // restart of the shell empties the history.
+    function arrivalsListed() {
+        if (!focusArrivals) return 0;
+        let listed = 0;
+        for (let row = 0; row < notificationHistory.rowCount(); ++row) {
+            const modelIndex = notificationHistory.index(row, 0);
+            if (cameDuringFocus(notificationHistory, modelIndex) && listedInHistory(notificationHistory, modelIndex))
+                ++listed;
+        }
+        return listed;
+    }
+
+    // Core's island about what came in stays only while the history still
+    // has something to show for it. Once nothing is left, or this history
+    // started without a record of any, Core takes the island down, so it
+    // never opens onto an empty list.
+    function settleArrivals() {
+        if (needsUpdate) return;
+        if (focusArrivals && arrivalsListed() > 0) return;
+        focusArrivals = null;
+        if (Plasmoid.coreFocus) Plasmoid.coreFocus.seen();
+    }
+    Connections {
+        target: notificationHistory
+        enabled: !root.needsUpdate && !!root.focusArrivals
+        function onRowsRemoved() { Qt.callLater(root.settleArrivals); }
+        function onModelReset() { Qt.callLater(root.settleArrivals); }
     }
 
     // Split Rock's Core asked to see what came in during Do Not Disturb: the
@@ -1446,6 +1489,9 @@ ContainmentItem {
             root.showStatusPage("notifications");
             root.focusArrivalsShown();
         }
+        // Core starting, as at sign-in, brings back the island it had up
+        // before; this history may hold nothing of what it counted.
+        function onAppeared() { root.settleArrivals(); }
     }
 
     // The server marks what arrives while do not disturb is on.

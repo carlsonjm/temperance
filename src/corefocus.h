@@ -43,6 +43,10 @@ public:
 Q_SIGNALS:
     // Core asked to see the notifications that came in.
     void openRequested();
+    // Core came onto the bus, as at sign-in or after it restarted. What it
+    // remembers from before may no longer be in the history, so Status
+    // tells it what is.
+    void appeared();
 
 private Q_SLOTS:
     void requested();
@@ -50,4 +54,5 @@ private Q_SLOTS:
 private:
     void send(const QString &method, const QVariantList &arguments = {}, const QString &otherwise = {});
     bool m_started = false;
+    QObject *m_watcher = nullptr;
 };

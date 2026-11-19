@@ -10,6 +10,7 @@
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusServiceWatcher>
 
 using namespace Qt::StringLiterals;
 
@@ -20,6 +21,12 @@ CoreFocus::CoreFocus(QObject *parent)
 
 void CoreFocus::start()
 {
+    if (!m_watcher) {
+        auto *watcher = new QDBusServiceWatcher(QLatin1String(Service), QDBusConnection::sessionBus(),
+                                                QDBusServiceWatcher::WatchForRegistration, this);
+        connect(watcher, &QDBusServiceWatcher::serviceRegistered, this, &CoreFocus::appeared);
+        m_watcher = watcher;
+    }
     if (m_started) return;
     m_started = QDBusConnection::sessionBus().connect(QLatin1String(Service), QLatin1String(Path),
                                                       QLatin1String(Interface), u"OpenNotifications"_s,

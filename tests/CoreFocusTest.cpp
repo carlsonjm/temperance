@@ -97,6 +97,25 @@ private Q_SLOTS:
         bus.unregisterObject(QLatin1String(CoreFocus::Path));
     }
 
+    // Core coming onto the bus, as at sign-in, is heard, so Status can say
+    // what its history still holds.
+    void coreComingOnTheBusIsHeard()
+    {
+        QDBusConnection bus = QDBusConnection::sessionBus();
+        QVERIFY(bus.isConnected());
+        CoreFocus focus;
+        focus.start();
+        QSignalSpy appeared(&focus, &CoreFocus::appeared);
+        FakeCore core;
+        QVERIFY(bus.registerObject(QLatin1String(CoreFocus::Path), &core, QDBusConnection::ExportScriptableSlots));
+        QVERIFY(bus.registerService(QLatin1String(CoreFocus::Service)));
+        QTRY_COMPARE(appeared.count(), 1);
+        bus.unregisterService(QLatin1String(CoreFocus::Service));
+        bus.unregisterObject(QLatin1String(CoreFocus::Path));
+        QTest::qWait(100);
+        QCOMPARE(appeared.count(), 1);
+    }
+
     // The quiet kept while the screen is shared ends as sharing where Core
     // knows it, and as Do Not Disturb where Core is older.
     void sharingEndsAsSharingOrAsFocus()
