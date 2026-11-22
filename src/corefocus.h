@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <QDBusMessage>
 #include <QObject>
 
 // What Split Rock's Core hears from Status about Do Not Disturb: when it
@@ -41,15 +42,16 @@ public:
     Q_INVOKABLE void seen();
 
 Q_SIGNALS:
-    // Core asked to see the notifications that came in.
-    void openRequested();
+    // Core asked to see the notifications that came in, on the display named
+    // `screen`, or on every display when it is empty, as from an older Core.
+    void openRequested(const QString &screen);
     // Core came onto the bus, as at sign-in or after it restarted. What it
     // remembers from before may no longer be in the history, so Status
     // tells it what is.
     void appeared();
 
 private Q_SLOTS:
-    void requested();
+    void requested(const QDBusMessage &message);
 
 private:
     void send(const QString &method, const QVariantList &arguments = {}, const QString &otherwise = {});

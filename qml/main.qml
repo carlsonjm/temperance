@@ -1485,7 +1485,10 @@ ContainmentItem {
     Connections {
         target: Plasmoid.coreFocus
         enabled: !root.needsUpdate
-        function onOpenRequested() {
+        // Only the bar on the display the island was tapped on opens; every
+        // bar does for a Core that names none.
+        function onOpenRequested(screen) {
+            if (screen && screen !== root.outputName) return;
             root.showStatusPage("notifications");
             root.focusArrivalsShown();
         }

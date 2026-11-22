@@ -4,6 +4,8 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- With a Status Bar on each display, Core's island opens the notifications
+  only on the display it was tapped on, not on every display.
 - Opening what came in during Do Not Disturb from Core's island opens out
   each app's group that holds some of it, so every notification held shows
   at once instead of one per app behind Expand.

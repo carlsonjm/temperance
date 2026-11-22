@@ -30,7 +30,7 @@ void CoreFocus::start()
     if (m_started) return;
     m_started = QDBusConnection::sessionBus().connect(QLatin1String(Service), QLatin1String(Path),
                                                       QLatin1String(Interface), u"OpenNotifications"_s,
-                                                      this, SLOT(requested()));
+                                                      this, SLOT(requested(QDBusMessage)));
 }
 
 void CoreFocus::ended(int notifications)
@@ -78,7 +78,9 @@ void CoreFocus::send(const QString &method, const QVariantList &arguments, const
     });
 }
 
-void CoreFocus::requested()
+// An older Core names no display.
+void CoreFocus::requested(const QDBusMessage &message)
 {
-    Q_EMIT openRequested();
+    const QVariantList arguments = message.arguments();
+    Q_EMIT openRequested(arguments.isEmpty() ? QString() : arguments.constFirst().toString());
 }
