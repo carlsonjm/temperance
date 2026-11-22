@@ -4,6 +4,12 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- With a Status Bar on each display, Core's island opens the notifications
+  only on the display it was tapped on, not on every display.
+- The history opens out each app's group that holds something that came in
+  during Do Not Disturb, however it is opened (Core's island, the bell or
+  elsewhere), so every notification held shows at once instead of one per
+  app behind Expand. A group closed again stays closed.
 - Keep awake is one switch for every Status Bar, so each bar shows the same,
   and it can be on until a time: turned on from Search for an hour, it says
   until when under its name and turns itself off.

@@ -92,6 +92,14 @@ private Q_SLOTS:
                                                                QStringLiteral("OpenNotifications"));
         QVERIFY(bus.send(signal));
         QTRY_COMPARE(asked.count(), 1);
+        QCOMPARE(asked.constLast().constFirst().toString(), QString());
+        // A Core that names the display the island was tapped on.
+        QDBusMessage named = QDBusMessage::createSignal(QLatin1String(CoreFocus::Path), QLatin1String(CoreFocus::Interface),
+                                                        QStringLiteral("OpenNotifications"));
+        named << QStringLiteral("DP-1");
+        QVERIFY(bus.send(named));
+        QTRY_COMPARE(asked.count(), 2);
+        QCOMPARE(asked.constLast().constFirst().toString(), QStringLiteral("DP-1"));
 
         bus.unregisterService(QLatin1String(CoreFocus::Service));
         bus.unregisterObject(QLatin1String(CoreFocus::Path));
