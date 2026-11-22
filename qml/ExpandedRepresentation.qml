@@ -197,6 +197,8 @@ Item {
             }
             if (systemTrayState.expanded) Qt.callLater(popup.playEntrance);
             if (systemTrayState.expanded && systemTrayState.page === "calendar") calendarPage.reset();
+            if (systemTrayState.expanded && systemTrayState.page === "notifications")
+                Qt.callLater(notificationPage.openArrivalGroups);
             popup.refreshControlCenter();
         }
         function onPageChanged() {

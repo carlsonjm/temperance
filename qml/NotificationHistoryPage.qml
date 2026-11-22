@@ -83,27 +83,44 @@ Item {
         function onDataChanged() { ++page.modelRevision; }
         function onLayoutChanged() { ++page.modelRevision; }
         function onModelReset() { ++page.modelRevision; }
-        function onRowsInserted() { ++page.modelRevision; }
+        function onRowsInserted() { ++page.modelRevision; Qt.callLater(page.openArrivalGroups); }
         function onRowsRemoved() { ++page.modelRevision; }
         function onRowsMoved() { ++page.modelRevision; }
     }
 
-    // Back to the top, where what came in is, with each app's group that
-    // holds some of it opened out, so every one held shows without another
-    // tap. Its newest card leads a group, so a group whose first card came
-    // in during Do Not Disturb holds arrivals. From the bottom up, so the
-    // rows an opened group adds leave the rows still to read where they are.
-    function showArrivals() {
+    // Each app's group that holds some of what came in is opened out, so
+    // every one held shows without another tap, however the history was
+    // opened: from Core's island, the bell or anywhere else. Its newest card
+    // leads a group, so a group whose first card came in during Do Not
+    // Disturb holds arrivals. A group is opened once for each Do Not
+    // Disturb, so one the person closes again stays closed. Read from the
+    // model rather than the view, so it holds before the rows are laid out,
+    // and from the bottom up, so the rows an opened group adds leave the
+    // rows still to read where they are.
+    property var arrivalGroupsOpened: ({})
+    onFocusArrivalsChanged: {
+        if (!page.focusArrivals) page.arrivalGroupsOpened = ({});
+        else Qt.callLater(page.openArrivalGroups);
+    }
+    function openArrivalGroups() {
         const model = page.notificationModel;
-        if (model && page.focusArrivals) {
-            for (let row = historyView.count - 2; row >= 0; --row) {
-                const index = model.index(row, 0);
-                if (!Boolean(model.data(index, NotificationManager.Notifications.IsGroupRole))) continue;
-                if (Boolean(model.data(index, NotificationManager.Notifications.IsGroupExpandedRole))) continue;
-                if (page.arrival(row + 1))
-                    model.setData(index, true, NotificationManager.Notifications.IsGroupExpandedRole);
-            }
+        if (!model || !page.focusArrivals || !page.visible) return;
+        for (let row = model.rowCount() - 2; row >= 0; --row) {
+            const index = model.index(row, 0);
+            if (!Boolean(model.data(index, NotificationManager.Notifications.IsGroupRole))) continue;
+            if (!page.arrival(row + 1)) continue;
+            const key = String(model.data(index, NotificationManager.Notifications.ApplicationNameRole))
+                + "|" + String(model.data(index, NotificationManager.Notifications.DesktopEntryRole));
+            if (page.arrivalGroupsOpened[key]) continue;
+            page.arrivalGroupsOpened[key] = true;
+            if (!Boolean(model.data(index, NotificationManager.Notifications.IsGroupExpandedRole)))
+                model.setData(index, true, NotificationManager.Notifications.IsGroupExpandedRole);
         }
+    }
+    onVisibleChanged: if (visible) Qt.callLater(page.openArrivalGroups)
+    // Back to the top, where what came in is.
+    function showArrivals() {
+        page.openArrivalGroups();
         historyView.positionViewAtBeginning();
     }
 
