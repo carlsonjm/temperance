@@ -4,6 +4,9 @@ This file records user-visible changes.
 
 ## Unreleased
 
+- Opening what came in during Do Not Disturb from Core's island opens out
+  each app's group that holds some of it, so every notification held shows
+  at once instead of one per app behind Expand.
 - Keep awake is one switch for every Status Bar, so each bar shows the same,
   and it can be on until a time: turned on from Search for an hour, it says
   until when under its name and turns itself off.

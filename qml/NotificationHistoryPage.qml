@@ -88,8 +88,22 @@ Item {
         function onRowsMoved() { ++page.modelRevision; }
     }
 
-    // Back to the top, where what came in is.
+    // Back to the top, where what came in is, with each app's group that
+    // holds some of it opened out, so every one held shows without another
+    // tap. Its newest card leads a group, so a group whose first card came
+    // in during Do Not Disturb holds arrivals. From the bottom up, so the
+    // rows an opened group adds leave the rows still to read where they are.
     function showArrivals() {
+        const model = page.notificationModel;
+        if (model && page.focusArrivals) {
+            for (let row = historyView.count - 2; row >= 0; --row) {
+                const index = model.index(row, 0);
+                if (!Boolean(model.data(index, NotificationManager.Notifications.IsGroupRole))) continue;
+                if (Boolean(model.data(index, NotificationManager.Notifications.IsGroupExpandedRole))) continue;
+                if (page.arrival(row + 1))
+                    model.setData(index, true, NotificationManager.Notifications.IsGroupExpandedRole);
+            }
+        }
         historyView.positionViewAtBeginning();
     }
 
