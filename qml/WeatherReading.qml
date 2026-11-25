@@ -89,20 +89,45 @@ Item {
 
         // Without coordinates, the place the widget is set to is resolved
         // once, then the same lightweight current-temperature request is used.
+        // The widget's coordinates come only from its full view, which a
+        // Weather widget in a tray never opened has not made, so this is the
+        // usual way on a second display. The place search knows towns, not
+        // the station names the widget saves ("Minneapolis, Crystal Airport,
+        // MN"), so when the whole name finds nothing its first part is tried,
+        // then that with the name's last part.
         const location = placeName();
         if (!location) {
             pending = false;
             return;
         }
-        const geocode = new XMLHttpRequest();
-        geocode.onreadystatechange = function() {
-            if (geocode.readyState !== XMLHttpRequest.DONE) return;
-            if (geocode.status < 200 || geocode.status >= 300) {
+        geocode(placeCandidates(location), 0);
+    }
+
+    // The names to look the place up by, the widget's own first.
+    function placeCandidates(location) {
+        const parts = location.split(",").map(part => part.trim()).filter(part => part.length > 0);
+        const names = [location];
+        if (parts.length > 1) {
+            names.push(parts[0]);
+            if (parts.length > 2) names.push(parts[0] + ", " + parts[parts.length - 1]);
+        }
+        return names.filter((name, index) => names.indexOf(name) === index);
+    }
+
+    function geocode(names, index) {
+        if (index >= names.length) {
+            pending = false;
+            return;
+        }
+        const search = new XMLHttpRequest();
+        search.onreadystatechange = function() {
+            if (search.readyState !== XMLHttpRequest.DONE) return;
+            if (search.status < 200 || search.status >= 300) {
                 reading.pending = false;
                 return;
             }
             try {
-                const payload = JSON.parse(geocode.responseText);
+                const payload = JSON.parse(search.responseText);
                 const result = payload.results && payload.results.length ? payload.results[0] : null;
                 if (result) {
                     reading.fetchCurrentTemperature(Number(result.latitude), Number(result.longitude));
@@ -110,12 +135,14 @@ Item {
                 }
             } catch (error) {
                 console.warn("Temperance: unable to resolve weather location", error);
+                reading.pending = false;
+                return;
             }
-            reading.pending = false;
+            reading.geocode(names, index + 1);
         };
-        geocode.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name="
-            + encodeURIComponent(location), true);
-        geocode.send();
+        search.open("GET", "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name="
+            + encodeURIComponent(names[index]), true);
+        search.send();
     }
 
     function restart() {
